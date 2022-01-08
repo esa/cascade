@@ -32,6 +32,7 @@
 #include <heyoka/detail/dfloat.hpp>
 #include <heyoka/taylor.hpp>
 
+#include <cascade/detail/atomic_utils.hpp>
 #include <cascade/detail/logging_impl.hpp>
 #include <cascade/detail/mortonND_LUT.h>
 #include <cascade/detail/sim_data.hpp>
@@ -138,27 +139,13 @@ void sim::morton_encode_sort()
 
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
-            auto &glb = m_data->global_lb[chunk_idx];
-            auto &gub = m_data->global_ub[chunk_idx];
-
-            // Load the atomic global AABB data into the non-atomic counterpart.
-            const auto &glb_at = m_data->global_lb_atomic[chunk_idx];
-            const auto &gub_at = m_data->global_ub_atomic[chunk_idx];
-
-            glb[0] = glb_at.x.load(std::memory_order_relaxed);
-            glb[1] = glb_at.y.load(std::memory_order_relaxed);
-            glb[2] = glb_at.z.load(std::memory_order_relaxed);
-            glb[3] = glb_at.r.load(std::memory_order_relaxed);
-
             // TODO:
             // - bump up UB in order to ensure it's always > lb, as requested by the spatial
             //   discretisation function;
             // - check finiteness and the disc_single_coord requirements, before adjusting;
-            gub[0] = gub_at.x.load(std::memory_order_relaxed);
-            gub[1] = gub_at.y.load(std::memory_order_relaxed);
-            gub[2] = gub_at.z.load(std::memory_order_relaxed);
-            gub[3] = gub_at.r.load(std::memory_order_relaxed);
             // TODO: run a second check here to verify the new upper bound is not +inf.
+            auto &glb = m_data->global_lb[chunk_idx];
+            auto &gub = m_data->global_ub[chunk_idx];
 
             // Computation of the Morton codes.
             const auto offset = nparts * chunk_idx;
@@ -297,22 +284,18 @@ void sim::propagate_for(double t)
     m_data->srt_r_ub.resize(nparts * nchunks);
     m_data->srt_mcodes.resize(nparts * nchunks);
 
-    // Setup the global atomic lb/ub for each chunk.
-    // NOTE: clear() + resize() results in the default
-    // construction of the atomic lb/ub objects.
-    // TODO numeric cast.
-    m_data->global_lb_atomic.clear();
-    m_data->global_ub_atomic.clear();
-    m_data->global_lb_atomic.resize(nchunks);
-    m_data->global_ub_atomic.resize(nchunks);
+    constexpr auto finf = std::numeric_limits<float>::infinity();
 
+    // Setup the global lb/ub for each chunk.
     // TODO numeric casts.
     m_data->global_lb.resize(nchunks);
     m_data->global_ub.resize(nchunks);
+    // NOTE: the global AABBs need to be setup before
+    // the integration step.
+    std::ranges::fill(m_data->global_lb, std::array{finf, finf, finf, finf});
+    std::ranges::fill(m_data->global_ub, std::array{-finf, -finf, -finf, -finf});
 
     std::atomic<bool> int_error{false};
-
-    constexpr auto finf = std::numeric_limits<float>::infinity();
 
     // Batch integration and computation of the AABBs for all particles.
     // TODO scalar remainder.
@@ -406,8 +389,9 @@ void sim::propagate_for(double t)
             ta.propagate_for(delta_t, hy::kw::write_tc = true, hy::kw::callback = cbf);
 
             // Check for errors.
-            if (std::any_of(ta.get_propagate_res().begin(), ta.get_propagate_res().end(),
-                            [](const auto &tup) { return std::get<0>(tup) != hy::taylor_outcome::time_limit; })) {
+            if (std::ranges::any_of(ta.get_propagate_res(), [](const auto &tup) {
+                    return std::get<0>(tup) != hy::taylor_outcome::time_limit;
+                })) {
                 // TODO distinguish various error codes?
                 int_error.store(true, std::memory_order_relaxed);
 
@@ -553,12 +537,12 @@ void sim::propagate_for(double t)
         // global AABBs.
         for (auto chunk_idx = 0u; chunk_idx < nchunks; ++chunk_idx) {
             // The global bounding box for the current chunk.
-            auto &glb = m_data->global_lb_atomic[chunk_idx];
-            auto &gub = m_data->global_ub_atomic[chunk_idx];
+            auto &glb = m_data->global_lb[chunk_idx];
+            auto &gub = m_data->global_ub[chunk_idx];
 
-            // Chunk-specific global bounding box for the current particle range.
-            std::array<float, 4> local_lb = {finf, finf, finf, finf};
-            std::array<float, 4> local_ub = {-finf, -finf, -finf, -finf};
+            // Chunk-specific bounding box for the current particle range.
+            auto local_lb = std::array{finf, finf, finf, finf};
+            auto local_ub = std::array{-finf, -finf, -finf, -finf};
 
             const auto offset = nparts * chunk_idx;
 
@@ -593,43 +577,16 @@ void sim::propagate_for(double t)
                 }
             }
 
-            // Update the global AABB for the current chunk.
-            auto lb_updater = [](auto &out, float val) {
-                // Load the current value from the atomic.
-                auto orig_val = out.load(std::memory_order_relaxed);
-                float new_val;
+            // Atomically update the global AABB for the current chunk.
+            detail::lb_atomic_update(glb[0], local_lb[0]);
+            detail::lb_atomic_update(glb[1], local_lb[1]);
+            detail::lb_atomic_update(glb[2], local_lb[2]);
+            detail::lb_atomic_update(glb[3], local_lb[3]);
 
-                do {
-                    // Compute the new value.
-                    // TODO min usage?
-                    new_val = std::min(val, orig_val);
-                } while (!out.compare_exchange_weak(orig_val, new_val, std::memory_order_relaxed,
-                                                    std::memory_order_relaxed));
-            };
-
-            auto ub_updater = [](auto &out, float val) {
-                // Load the current value from the atomic.
-                auto orig_val = out.load(std::memory_order_relaxed);
-                float new_val;
-
-                do {
-
-                    // Compute the new value.
-                    // TODO max usage?
-                    new_val = std::max(val, orig_val);
-                } while (!out.compare_exchange_weak(orig_val, new_val, std::memory_order_relaxed,
-                                                    std::memory_order_relaxed));
-            };
-
-            lb_updater(glb.x, local_lb[0]);
-            lb_updater(glb.y, local_lb[1]);
-            lb_updater(glb.z, local_lb[2]);
-            lb_updater(glb.r, local_lb[3]);
-
-            ub_updater(gub.x, local_ub[0]);
-            ub_updater(gub.y, local_ub[1]);
-            ub_updater(gub.z, local_ub[2]);
-            ub_updater(gub.r, local_ub[3]);
+            detail::ub_atomic_update(gub[0], local_ub[0]);
+            detail::ub_atomic_update(gub[1], local_ub[1]);
+            detail::ub_atomic_update(gub[2], local_ub[2]);
+            detail::ub_atomic_update(gub[3], local_ub[3]);
         }
 
         // Put the integrator (back) into the cache.
