@@ -224,10 +224,11 @@ struct sim::sim_data {
     // The indices vectors for indirect sorting.
     std::vector<size_type> vidx;
 
-    // Temporary buffers to apply the indirect sorting
-    // to the AABB data and the Morton codes.
-    std::vector<float> aabb_isort;
-    std::vector<std::uint64_t> mcodes_isort;
+    // Versions of AABBs and Morton codes sorted
+    // according to vidx.
+    std::vector<float> srt_x_lb, srt_y_lb, srt_z_lb, srt_r_lb;
+    std::vector<float> srt_x_ub, srt_y_ub, srt_z_ub, srt_r_ub;
+    std::vector<std::uint64_t> srt_mcodes;
 };
 
 sim::sim()
@@ -381,8 +382,15 @@ void sim::propagate_for(double t)
     m_data->r_ub.resize(nparts * nchunks);
     m_data->mcodes.resize(nparts * nchunks);
     m_data->vidx.resize(nparts * nchunks);
-    m_data->aabb_isort.resize(nparts * nchunks);
-    m_data->mcodes_isort.resize(nparts * nchunks);
+    m_data->srt_x_lb.resize(nparts * nchunks);
+    m_data->srt_y_lb.resize(nparts * nchunks);
+    m_data->srt_z_lb.resize(nparts * nchunks);
+    m_data->srt_r_lb.resize(nparts * nchunks);
+    m_data->srt_x_ub.resize(nparts * nchunks);
+    m_data->srt_y_ub.resize(nparts * nchunks);
+    m_data->srt_z_ub.resize(nparts * nchunks);
+    m_data->srt_r_ub.resize(nparts * nchunks);
+    m_data->srt_mcodes.resize(nparts * nchunks);
 
     // Setup the global atomic lb/ub for each chunk.
     // NOTE: clear() + resize() results in the default
@@ -793,12 +801,22 @@ void sim::propagate_for(double t)
 
             auto mcodes_ptr = m_data->mcodes.data() + offset;
 
+            auto srt_x_lb_ptr = m_data->srt_x_lb.data() + offset;
+            auto srt_y_lb_ptr = m_data->srt_y_lb.data() + offset;
+            auto srt_z_lb_ptr = m_data->srt_z_lb.data() + offset;
+            auto srt_r_lb_ptr = m_data->srt_r_lb.data() + offset;
+
+            auto srt_x_ub_ptr = m_data->srt_x_ub.data() + offset;
+            auto srt_y_ub_ptr = m_data->srt_y_ub.data() + offset;
+            auto srt_z_ub_ptr = m_data->srt_z_ub.data() + offset;
+            auto srt_r_ub_ptr = m_data->srt_r_ub.data() + offset;
+
+            auto srt_mcodes_ptr = m_data->srt_mcodes.data() + offset;
+
             auto vidx_ptr = m_data->vidx.data() + offset;
 
-            auto aabb_isort_ptr = m_data->aabb_isort.data() + offset;
-            auto mcodes_isort_ptr = m_data->mcodes_isort.data() + offset;
-
             oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &r2) {
+                // NOTE: JIT optimisation opportunity here. Worth it?
                 for (auto pidx = r2.begin(); pidx != r2.end(); ++pidx) {
                     // Compute the centre of the AABB.
                     const auto x_ctr = x_lb_ptr[pidx] / 2 + x_ub_ptr[pidx] / 2;
@@ -822,36 +840,29 @@ void sim::propagate_for(double t)
             });
 
             // Helper to apply the indirect sorting defined in vidx to the data in src.
-            // tmp is used as temporary buffer.
-            auto isort_apply = [vidx_ptr, nparts](auto *tmp, auto *src) {
+            // The sorted data will be written into out.
+            auto isort_apply = [vidx_ptr, nparts](auto *out, const auto *src) {
                 oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &range) {
                     for (auto i = range.begin(); i != range.end(); ++i) {
-                        tmp[i] = src[vidx_ptr[i]];
-                    }
-                });
-
-                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &range) {
-                    for (auto i = range.begin(); i != range.end(); ++i) {
-                        src[i] = tmp[i];
+                        out[i] = src[vidx_ptr[i]];
                     }
                 });
             };
 
-            // oneapi::tbb::parallel_invoke(
-            //     [&]() {
-            isort_apply(aabb_isort_ptr, x_lb_ptr);
-            isort_apply(aabb_isort_ptr, y_lb_ptr);
-            isort_apply(aabb_isort_ptr, z_lb_ptr);
-            isort_apply(aabb_isort_ptr, r_lb_ptr);
+            // NOTE: can do all of these in parallel in principle, but performance
+            // is bottlenecked by RAM speed anyway. Perhaps revisit on machines
+            // with larger core counts during performance tuning.
+            isort_apply(srt_x_lb_ptr, x_lb_ptr);
+            isort_apply(srt_y_lb_ptr, y_lb_ptr);
+            isort_apply(srt_z_lb_ptr, z_lb_ptr);
+            isort_apply(srt_r_lb_ptr, r_lb_ptr);
 
-            isort_apply(aabb_isort_ptr, x_ub_ptr);
-            isort_apply(aabb_isort_ptr, y_ub_ptr);
-            isort_apply(aabb_isort_ptr, z_ub_ptr);
-            isort_apply(aabb_isort_ptr, r_ub_ptr);
-            //     },
-            //     [&]() {
-            isort_apply(mcodes_isort_ptr, mcodes_ptr);
-            //});
+            isort_apply(srt_x_ub_ptr, x_ub_ptr);
+            isort_apply(srt_y_ub_ptr, y_ub_ptr);
+            isort_apply(srt_z_ub_ptr, z_ub_ptr);
+            isort_apply(srt_r_ub_ptr, r_ub_ptr);
+
+            isort_apply(srt_mcodes_ptr, mcodes_ptr);
         }
     });
 

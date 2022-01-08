@@ -74,7 +74,7 @@ int main()
 
     std::vector<double> x, y, z, vx, vy, vz;
 
-    const auto nparts = 8192ull * 100u;
+    const auto nparts = 8192ull;
 
     for (auto i = 0ull; i < nparts; ++i) {
         const auto a = a_dist(rng);
