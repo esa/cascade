@@ -15,7 +15,8 @@ option(CASCADE_BUILD_BENCHMARKS "Build benchmarks." OFF)
 
 # List of source files.
 set(CASCADE_SRC_FILES
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/sim.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/sim_basic.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/sim_propagate.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/detail/logging_impl.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/logging.cpp"
 )
