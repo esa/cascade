@@ -38,6 +38,16 @@
 #include <cascade/detail/sim_data.hpp>
 #include <cascade/sim.hpp>
 
+#if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
+
+#define CASCADE_RESTRICT __restrict
+
+#else
+
+#define CASCADE_RESTRICT
+
+#endif
+
 namespace cascade
 {
 
@@ -150,32 +160,31 @@ void sim::morton_encode_sort()
             // Computation of the Morton codes.
             const auto offset = nparts * chunk_idx;
 
-            // TODO restrict pointers?
-            auto x_lb_ptr = m_data->x_lb.data() + offset;
-            auto y_lb_ptr = m_data->y_lb.data() + offset;
-            auto z_lb_ptr = m_data->z_lb.data() + offset;
-            auto r_lb_ptr = m_data->r_lb.data() + offset;
+            auto *CASCADE_RESTRICT x_lb_ptr = m_data->x_lb.data() + offset;
+            auto *CASCADE_RESTRICT y_lb_ptr = m_data->y_lb.data() + offset;
+            auto *CASCADE_RESTRICT z_lb_ptr = m_data->z_lb.data() + offset;
+            auto *CASCADE_RESTRICT r_lb_ptr = m_data->r_lb.data() + offset;
 
-            auto x_ub_ptr = m_data->x_ub.data() + offset;
-            auto y_ub_ptr = m_data->y_ub.data() + offset;
-            auto z_ub_ptr = m_data->z_ub.data() + offset;
-            auto r_ub_ptr = m_data->r_ub.data() + offset;
+            auto *CASCADE_RESTRICT x_ub_ptr = m_data->x_ub.data() + offset;
+            auto *CASCADE_RESTRICT y_ub_ptr = m_data->y_ub.data() + offset;
+            auto *CASCADE_RESTRICT z_ub_ptr = m_data->z_ub.data() + offset;
+            auto *CASCADE_RESTRICT r_ub_ptr = m_data->r_ub.data() + offset;
 
-            auto mcodes_ptr = m_data->mcodes.data() + offset;
+            auto *CASCADE_RESTRICT mcodes_ptr = m_data->mcodes.data() + offset;
 
-            auto srt_x_lb_ptr = m_data->srt_x_lb.data() + offset;
-            auto srt_y_lb_ptr = m_data->srt_y_lb.data() + offset;
-            auto srt_z_lb_ptr = m_data->srt_z_lb.data() + offset;
-            auto srt_r_lb_ptr = m_data->srt_r_lb.data() + offset;
+            auto *CASCADE_RESTRICT srt_x_lb_ptr = m_data->srt_x_lb.data() + offset;
+            auto *CASCADE_RESTRICT srt_y_lb_ptr = m_data->srt_y_lb.data() + offset;
+            auto *CASCADE_RESTRICT srt_z_lb_ptr = m_data->srt_z_lb.data() + offset;
+            auto *CASCADE_RESTRICT srt_r_lb_ptr = m_data->srt_r_lb.data() + offset;
 
-            auto srt_x_ub_ptr = m_data->srt_x_ub.data() + offset;
-            auto srt_y_ub_ptr = m_data->srt_y_ub.data() + offset;
-            auto srt_z_ub_ptr = m_data->srt_z_ub.data() + offset;
-            auto srt_r_ub_ptr = m_data->srt_r_ub.data() + offset;
+            auto *CASCADE_RESTRICT srt_x_ub_ptr = m_data->srt_x_ub.data() + offset;
+            auto *CASCADE_RESTRICT srt_y_ub_ptr = m_data->srt_y_ub.data() + offset;
+            auto *CASCADE_RESTRICT srt_z_ub_ptr = m_data->srt_z_ub.data() + offset;
+            auto *CASCADE_RESTRICT srt_r_ub_ptr = m_data->srt_r_ub.data() + offset;
 
-            auto srt_mcodes_ptr = m_data->srt_mcodes.data() + offset;
+            auto *CASCADE_RESTRICT srt_mcodes_ptr = m_data->srt_mcodes.data() + offset;
 
-            auto vidx_ptr = m_data->vidx.data() + offset;
+            auto *CASCADE_RESTRICT vidx_ptr = m_data->vidx.data() + offset;
 
             oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &r2) {
                 // NOTE: JIT optimisation opportunity here. Worth it?
@@ -315,16 +324,15 @@ void sim::propagate_for(double t)
         auto &s_data = m_data->s_data;
         const auto &ta_tc = ta.get_tc();
 
-        // The first step is the numerical integration and computation
-        // of the bounding boxes for all particles in the range and for
-        // all chunks.
+        // The first step is the numerical integration for all particles
+        // in range throughout the entire superstep.
         for (auto idx = range.begin(); idx != range.end(); ++idx) {
             // Particle indices corresponding to the current batch.
             const auto pidx_begin = idx * batch_size;
             const auto pidx_end = pidx_begin + batch_size;
 
             // Clear up the Taylor coefficients and the times
-            // of the substeps.
+            // of the substeps for the current particle.
             for (auto i = pidx_begin; i < pidx_end; ++i) {
                 s_data[i].tc_x.clear();
                 s_data[i].tc_y.clear();
@@ -352,7 +360,7 @@ void sim::propagate_for(double t)
             std::copy(m_vz.data() + pidx_begin, m_vz.data() + pidx_end, st_data + 5u * batch_size);
             std::copy(m_r.data() + pidx_begin, m_r.data() + pidx_end, st_data + 6u * batch_size);
 
-            // Setup the callback.
+            // Setup the propagate_for() callback.
             auto cb = [&](auto &) {
                 for (std::uint32_t i = 0; i < batch_size; ++i) {
                     if (ta.get_last_h()[i] == 0.) {
@@ -397,29 +405,43 @@ void sim::propagate_for(double t)
 
                 break;
             }
+        }
 
-            // Compute the bounding boxes for each particle in the batch within each chunk,
-            // using the Taylor coefficients which were recorded at each step
-            // of the propagate_for().
-            for (auto chunk_idx = 0u; chunk_idx < nchunks; ++chunk_idx) {
-                // Compute the output pointers.
-                const auto offset = nparts * chunk_idx;
+        // We can now proceed, for each chunk, to:
+        // - compute the bounding boxes of the trajectories of all particles
+        //   in range,
+        // - update the global bounding box.
+        for (auto chunk_idx = 0u; chunk_idx < nchunks; ++chunk_idx) {
+            // The global bounding box for the current chunk.
+            auto &glb = m_data->global_lb[chunk_idx];
+            auto &gub = m_data->global_ub[chunk_idx];
 
-                // TODO restrict pointers?
-                auto x_lb_ptr = m_data->x_lb.data() + offset;
-                auto y_lb_ptr = m_data->y_lb.data() + offset;
-                auto z_lb_ptr = m_data->z_lb.data() + offset;
-                auto r_lb_ptr = m_data->r_lb.data() + offset;
+            // Chunk-specific bounding box for the current particle range.
+            // This will eventually be used to update the global bounding box.
+            auto local_lb = std::array{finf, finf, finf, finf};
+            auto local_ub = std::array{-finf, -finf, -finf, -finf};
 
-                auto x_ub_ptr = m_data->x_ub.data() + offset;
-                auto y_ub_ptr = m_data->y_ub.data() + offset;
-                auto z_ub_ptr = m_data->z_ub.data() + offset;
-                auto r_ub_ptr = m_data->r_ub.data() + offset;
+            const auto offset = nparts * chunk_idx;
 
-                // The time coordinate, relative to init_time, of
-                // the chunk's begin/end.
-                const auto chunk_begin = hy::detail::dfloat<double>(chunk_size * chunk_idx);
-                const auto chunk_end = hy::detail::dfloat<double>(chunk_size * (chunk_idx + 1u));
+            auto *CASCADE_RESTRICT x_lb_ptr = m_data->x_lb.data() + offset;
+            auto *CASCADE_RESTRICT y_lb_ptr = m_data->y_lb.data() + offset;
+            auto *CASCADE_RESTRICT z_lb_ptr = m_data->z_lb.data() + offset;
+            auto *CASCADE_RESTRICT r_lb_ptr = m_data->r_lb.data() + offset;
+
+            auto *CASCADE_RESTRICT x_ub_ptr = m_data->x_ub.data() + offset;
+            auto *CASCADE_RESTRICT y_ub_ptr = m_data->y_ub.data() + offset;
+            auto *CASCADE_RESTRICT z_ub_ptr = m_data->z_ub.data() + offset;
+            auto *CASCADE_RESTRICT r_ub_ptr = m_data->r_ub.data() + offset;
+
+            // The time coordinate, relative to init_time, of
+            // the chunk's begin/end.
+            const auto chunk_begin = hy::detail::dfloat<double>(chunk_size * chunk_idx);
+            const auto chunk_end = hy::detail::dfloat<double>(chunk_size * (chunk_idx + 1u));
+
+            for (auto idx = range.begin(); idx != range.end(); ++idx) {
+                // Particle indices corresponding to the current batch.
+                const auto pidx_begin = idx * batch_size;
+                const auto pidx_end = pidx_begin + batch_size;
 
                 for (std::uint32_t i = 0; i < batch_size; ++i) {
                     // Setup the initial values for the bounding box
@@ -527,42 +549,7 @@ void sim::propagate_for(double t)
                         r_ub_ptr[pidx_begin + i]
                             = std::max(r_ub_ptr[pidx_begin + i], std::nextafter(static_cast<float>(r_int.upper), finf));
                     }
-                }
-            }
-        }
 
-        // We can now update the global AABB for each chunk.
-        // NOTE: the reason we do it here, instead of the previous
-        // loop, is to minimise contention on the updates to the
-        // global AABBs.
-        for (auto chunk_idx = 0u; chunk_idx < nchunks; ++chunk_idx) {
-            // The global bounding box for the current chunk.
-            auto &glb = m_data->global_lb[chunk_idx];
-            auto &gub = m_data->global_ub[chunk_idx];
-
-            // Chunk-specific bounding box for the current particle range.
-            auto local_lb = std::array{finf, finf, finf, finf};
-            auto local_ub = std::array{-finf, -finf, -finf, -finf};
-
-            const auto offset = nparts * chunk_idx;
-
-            // TODO restrict pointers?
-            auto x_lb_ptr = m_data->x_lb.data() + offset;
-            auto y_lb_ptr = m_data->y_lb.data() + offset;
-            auto z_lb_ptr = m_data->z_lb.data() + offset;
-            auto r_lb_ptr = m_data->r_lb.data() + offset;
-
-            auto x_ub_ptr = m_data->x_ub.data() + offset;
-            auto y_ub_ptr = m_data->y_ub.data() + offset;
-            auto z_ub_ptr = m_data->z_ub.data() + offset;
-            auto r_ub_ptr = m_data->r_ub.data() + offset;
-
-            for (auto idx = range.begin(); idx != range.end(); ++idx) {
-                // Particle indices corresponding to the current batch.
-                const auto pidx_begin = idx * batch_size;
-                const auto pidx_end = pidx_begin + batch_size;
-
-                for (std::uint32_t i = 0; i < batch_size; ++i) {
                     // Update the local AABB with the bounding box for the current particle.
                     // TODO: min/max usage?
                     local_lb[0] = std::min(local_lb[0], x_lb_ptr[pidx_begin + i]);
