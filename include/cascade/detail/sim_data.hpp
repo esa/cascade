@@ -27,11 +27,11 @@ namespace cascade
 {
 
 struct sim::sim_data {
+    static constexpr auto finf = std::numeric_limits<float>::infinity();
+
     // Data structures for storing the lower/upper bounds of a 4D AABB
     // in atomic variables.
     struct lb_atomic {
-        static constexpr auto finf = std::numeric_limits<float>::infinity();
-
         // NOTE: both default construction
         // and copy construction init all
         // values to +inf.
@@ -45,8 +45,6 @@ struct sim::sim_data {
     };
 
     struct ub_atomic {
-        static constexpr auto finf = std::numeric_limits<float>::infinity();
-
         // NOTE: both default construction
         // and copy construction init all
         // values to -inf.
