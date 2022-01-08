@@ -122,6 +122,128 @@ std::uint64_t disc_single_coord(float x, float min, float max)
 
 } // namespace detail
 
+// Perform the Morton encoding of the centres of the AABBs of the particles
+// and sort the AABB data according to the codes.
+void sim::morton_encode_sort()
+{
+    spdlog::stopwatch sw;
+
+    auto *logger = detail::get_logger();
+
+    // Fetch the number of particles and chunks from m_data.
+    const auto nparts = get_nparts();
+    const auto nchunks = static_cast<unsigned>(m_data->global_lb.size());
+
+    constexpr auto morton_enc = mortonnd::MortonNDLutEncoder<4, 16, 8>();
+
+    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
+        for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
+            auto &glb = m_data->global_lb[chunk_idx];
+            auto &gub = m_data->global_ub[chunk_idx];
+
+            // Load the atomic global AABB data into the non-atomic counterpart.
+            const auto &glb_at = m_data->global_lb_atomic[chunk_idx];
+            const auto &gub_at = m_data->global_ub_atomic[chunk_idx];
+
+            glb[0] = glb_at.x.load(std::memory_order_relaxed);
+            glb[1] = glb_at.y.load(std::memory_order_relaxed);
+            glb[2] = glb_at.z.load(std::memory_order_relaxed);
+            glb[3] = glb_at.r.load(std::memory_order_relaxed);
+
+            // TODO:
+            // - bump up UB in order to ensure it's always > lb, as requested by the spatial
+            //   discretisation function;
+            // - check finiteness and the disc_single_coord requirements, before adjusting;
+            gub[0] = gub_at.x.load(std::memory_order_relaxed);
+            gub[1] = gub_at.y.load(std::memory_order_relaxed);
+            gub[2] = gub_at.z.load(std::memory_order_relaxed);
+            gub[3] = gub_at.r.load(std::memory_order_relaxed);
+            // TODO: run a second check here to verify the new upper bound is not +inf.
+
+            // Computation of the Morton codes.
+            const auto offset = nparts * chunk_idx;
+
+            // TODO restrict pointers?
+            auto x_lb_ptr = m_data->x_lb.data() + offset;
+            auto y_lb_ptr = m_data->y_lb.data() + offset;
+            auto z_lb_ptr = m_data->z_lb.data() + offset;
+            auto r_lb_ptr = m_data->r_lb.data() + offset;
+
+            auto x_ub_ptr = m_data->x_ub.data() + offset;
+            auto y_ub_ptr = m_data->y_ub.data() + offset;
+            auto z_ub_ptr = m_data->z_ub.data() + offset;
+            auto r_ub_ptr = m_data->r_ub.data() + offset;
+
+            auto mcodes_ptr = m_data->mcodes.data() + offset;
+
+            auto srt_x_lb_ptr = m_data->srt_x_lb.data() + offset;
+            auto srt_y_lb_ptr = m_data->srt_y_lb.data() + offset;
+            auto srt_z_lb_ptr = m_data->srt_z_lb.data() + offset;
+            auto srt_r_lb_ptr = m_data->srt_r_lb.data() + offset;
+
+            auto srt_x_ub_ptr = m_data->srt_x_ub.data() + offset;
+            auto srt_y_ub_ptr = m_data->srt_y_ub.data() + offset;
+            auto srt_z_ub_ptr = m_data->srt_z_ub.data() + offset;
+            auto srt_r_ub_ptr = m_data->srt_r_ub.data() + offset;
+
+            auto srt_mcodes_ptr = m_data->srt_mcodes.data() + offset;
+
+            auto vidx_ptr = m_data->vidx.data() + offset;
+
+            oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &r2) {
+                // NOTE: JIT optimisation opportunity here. Worth it?
+                for (auto pidx = r2.begin(); pidx != r2.end(); ++pidx) {
+                    // Compute the centre of the AABB.
+                    const auto x_ctr = x_lb_ptr[pidx] / 2 + x_ub_ptr[pidx] / 2;
+                    const auto y_ctr = y_lb_ptr[pidx] / 2 + y_ub_ptr[pidx] / 2;
+                    const auto z_ctr = z_lb_ptr[pidx] / 2 + z_ub_ptr[pidx] / 2;
+                    const auto r_ctr = r_lb_ptr[pidx] / 2 + r_ub_ptr[pidx] / 2;
+
+                    const auto n0 = detail::disc_single_coord(x_ctr, glb[0], gub[0]);
+                    const auto n1 = detail::disc_single_coord(y_ctr, glb[1], gub[1]);
+                    const auto n2 = detail::disc_single_coord(z_ctr, glb[2], gub[2]);
+                    const auto n3 = detail::disc_single_coord(r_ctr, glb[3], gub[3]);
+
+                    mcodes_ptr[pidx] = morton_enc.Encode(n0, n1, n2, n3);
+                }
+            });
+
+            // Indirect sorting of the indices for the current chunk
+            // according to the Morton codes.
+            oneapi::tbb::parallel_sort(vidx_ptr, vidx_ptr + nparts, [mcodes_ptr](auto idx1, auto idx2) {
+                return mcodes_ptr[idx1] < mcodes_ptr[idx2];
+            });
+
+            // Helper to apply the indirect sorting defined in vidx to the data in src.
+            // The sorted data will be written into out.
+            auto isort_apply = [vidx_ptr, nparts](auto *out, const auto *src) {
+                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &range) {
+                    for (auto i = range.begin(); i != range.end(); ++i) {
+                        out[i] = src[vidx_ptr[i]];
+                    }
+                });
+            };
+
+            // NOTE: can do all of these in parallel in principle, but performance
+            // is bottlenecked by RAM speed anyway. Perhaps revisit on machines
+            // with larger core counts during performance tuning.
+            isort_apply(srt_x_lb_ptr, x_lb_ptr);
+            isort_apply(srt_y_lb_ptr, y_lb_ptr);
+            isort_apply(srt_z_lb_ptr, z_lb_ptr);
+            isort_apply(srt_r_lb_ptr, r_lb_ptr);
+
+            isort_apply(srt_x_ub_ptr, x_ub_ptr);
+            isort_apply(srt_y_ub_ptr, y_ub_ptr);
+            isort_apply(srt_z_ub_ptr, z_ub_ptr);
+            isort_apply(srt_r_ub_ptr, r_ub_ptr);
+
+            isort_apply(srt_mcodes_ptr, mcodes_ptr);
+        }
+    });
+
+    logger->trace("Morton encoding and sorting time: {}s", sw);
+}
+
 void sim::propagate_for(double t)
 {
     namespace hy = heyoka;
@@ -541,116 +663,7 @@ void sim::propagate_for(double t)
     }
 
     // Computation of the Morton codes and sorting.
-    sw.reset();
-
-    constexpr auto morton_enc = mortonnd::MortonNDLutEncoder<4, 16, 8>();
-
-    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
-        for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
-            auto &glb = m_data->global_lb[chunk_idx];
-            auto &gub = m_data->global_ub[chunk_idx];
-
-            // Load the atomic global AABB data into the non-atomic counterpart.
-            const auto &glb_at = m_data->global_lb_atomic[chunk_idx];
-            const auto &gub_at = m_data->global_ub_atomic[chunk_idx];
-
-            glb[0] = glb_at.x.load(std::memory_order_relaxed);
-            glb[1] = glb_at.y.load(std::memory_order_relaxed);
-            glb[2] = glb_at.z.load(std::memory_order_relaxed);
-            glb[3] = glb_at.r.load(std::memory_order_relaxed);
-
-            // TODO:
-            // - bump up UB in order to ensure it's always > lb, as requested by the spatial
-            //   discretisation function;
-            // - check finiteness and the disc_single_coord requirements, before adjusting;
-            gub[0] = gub_at.x.load(std::memory_order_relaxed);
-            gub[1] = gub_at.y.load(std::memory_order_relaxed);
-            gub[2] = gub_at.z.load(std::memory_order_relaxed);
-            gub[3] = gub_at.r.load(std::memory_order_relaxed);
-            // TODO: run a second check here to verify the new upper bound is not +inf.
-
-            // Computation of the Morton codes.
-            const auto offset = nparts * chunk_idx;
-
-            // TODO restrict pointers?
-            auto x_lb_ptr = m_data->x_lb.data() + offset;
-            auto y_lb_ptr = m_data->y_lb.data() + offset;
-            auto z_lb_ptr = m_data->z_lb.data() + offset;
-            auto r_lb_ptr = m_data->r_lb.data() + offset;
-
-            auto x_ub_ptr = m_data->x_ub.data() + offset;
-            auto y_ub_ptr = m_data->y_ub.data() + offset;
-            auto z_ub_ptr = m_data->z_ub.data() + offset;
-            auto r_ub_ptr = m_data->r_ub.data() + offset;
-
-            auto mcodes_ptr = m_data->mcodes.data() + offset;
-
-            auto srt_x_lb_ptr = m_data->srt_x_lb.data() + offset;
-            auto srt_y_lb_ptr = m_data->srt_y_lb.data() + offset;
-            auto srt_z_lb_ptr = m_data->srt_z_lb.data() + offset;
-            auto srt_r_lb_ptr = m_data->srt_r_lb.data() + offset;
-
-            auto srt_x_ub_ptr = m_data->srt_x_ub.data() + offset;
-            auto srt_y_ub_ptr = m_data->srt_y_ub.data() + offset;
-            auto srt_z_ub_ptr = m_data->srt_z_ub.data() + offset;
-            auto srt_r_ub_ptr = m_data->srt_r_ub.data() + offset;
-
-            auto srt_mcodes_ptr = m_data->srt_mcodes.data() + offset;
-
-            auto vidx_ptr = m_data->vidx.data() + offset;
-
-            oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &r2) {
-                // NOTE: JIT optimisation opportunity here. Worth it?
-                for (auto pidx = r2.begin(); pidx != r2.end(); ++pidx) {
-                    // Compute the centre of the AABB.
-                    const auto x_ctr = x_lb_ptr[pidx] / 2 + x_ub_ptr[pidx] / 2;
-                    const auto y_ctr = y_lb_ptr[pidx] / 2 + y_ub_ptr[pidx] / 2;
-                    const auto z_ctr = z_lb_ptr[pidx] / 2 + z_ub_ptr[pidx] / 2;
-                    const auto r_ctr = r_lb_ptr[pidx] / 2 + r_ub_ptr[pidx] / 2;
-
-                    const auto n0 = detail::disc_single_coord(x_ctr, glb[0], gub[0]);
-                    const auto n1 = detail::disc_single_coord(y_ctr, glb[1], gub[1]);
-                    const auto n2 = detail::disc_single_coord(z_ctr, glb[2], gub[2]);
-                    const auto n3 = detail::disc_single_coord(r_ctr, glb[3], gub[3]);
-
-                    mcodes_ptr[pidx] = morton_enc.Encode(n0, n1, n2, n3);
-                }
-            });
-
-            // Indirect sorting of the indices for the current chunk
-            // according to the Morton codes.
-            oneapi::tbb::parallel_sort(vidx_ptr, vidx_ptr + nparts, [mcodes_ptr](auto idx1, auto idx2) {
-                return mcodes_ptr[idx1] < mcodes_ptr[idx2];
-            });
-
-            // Helper to apply the indirect sorting defined in vidx to the data in src.
-            // The sorted data will be written into out.
-            auto isort_apply = [vidx_ptr, nparts](auto *out, const auto *src) {
-                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &range) {
-                    for (auto i = range.begin(); i != range.end(); ++i) {
-                        out[i] = src[vidx_ptr[i]];
-                    }
-                });
-            };
-
-            // NOTE: can do all of these in parallel in principle, but performance
-            // is bottlenecked by RAM speed anyway. Perhaps revisit on machines
-            // with larger core counts during performance tuning.
-            isort_apply(srt_x_lb_ptr, x_lb_ptr);
-            isort_apply(srt_y_lb_ptr, y_lb_ptr);
-            isort_apply(srt_z_lb_ptr, z_lb_ptr);
-            isort_apply(srt_r_lb_ptr, r_lb_ptr);
-
-            isort_apply(srt_x_ub_ptr, x_ub_ptr);
-            isort_apply(srt_y_ub_ptr, y_ub_ptr);
-            isort_apply(srt_z_ub_ptr, z_ub_ptr);
-            isort_apply(srt_r_ub_ptr, r_ub_ptr);
-
-            isort_apply(srt_mcodes_ptr, mcodes_ptr);
-        }
-    });
-
-    logger->trace("Morton encoding and sorting time: {}s", sw);
+    morton_encode_sort();
 }
 
 } // namespace cascade

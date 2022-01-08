@@ -38,6 +38,7 @@ class CASCADE_DLL_PUBLIC sim
     sim_data *m_data = nullptr;
 
     void finalise_ctor();
+    CASCADE_DLL_LOCAL void morton_encode_sort();
 
 public:
     using size_type = std::vector<double>::size_type;
