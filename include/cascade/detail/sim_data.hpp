@@ -10,8 +10,11 @@
 #define CASCADE_DETAIL_SIM_DATA_HPP
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include <oneapi/tbb/concurrent_queue.h>
@@ -23,6 +26,62 @@
 
 namespace cascade
 {
+
+namespace detail
+{
+
+// Minimal allocator that avoids value-init
+// in standard containers. Copies the interface of
+// std::allocator and uses it internally:
+// https://en.cppreference.com/w/cpp/memory/allocator
+template <typename T>
+struct no_init_alloc {
+    using value_type = T;
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
+    using propagate_on_container_move_assignment = std::true_type;
+    using is_always_equal = std::true_type;
+
+    constexpr no_init_alloc() noexcept = default;
+    constexpr no_init_alloc(const no_init_alloc &) noexcept = default;
+    template <class U>
+    constexpr no_init_alloc(const no_init_alloc<U> &) noexcept : no_init_alloc()
+    {
+    }
+
+    [[nodiscard]] constexpr T *allocate(std::size_t n)
+    {
+        return std::allocator<T>{}.allocate(n);
+    }
+    constexpr void deallocate(T *p, std::size_t n)
+    {
+        std::allocator<T>{}.deallocate(p, n);
+    }
+
+    template <class U, class... Args>
+    void construct(U *p, Args &&...args)
+    {
+        if constexpr (sizeof...(Args) > 0u) {
+            ::new ((void *)p) U(std::forward<Args>(args)...);
+        } else {
+            ::new ((void *)p) U;
+        }
+    }
+};
+
+template <typename T, typename U>
+inline bool operator==(const no_init_alloc<T> &, const no_init_alloc<U> &)
+{
+    return true;
+}
+
+template <typename T, typename U>
+inline bool operator!=(const no_init_alloc<T> &, const no_init_alloc<U> &)
+{
+    return false;
+}
+
+} // namespace detail
 
 struct sim::sim_data {
     // The adaptive integrators.
@@ -80,16 +139,12 @@ struct sim::sim_data {
     };
 
     // The BVH trees, one for each chunk.
-    using bvh_tree_t = std::vector<bvh_node>;
+    using bvh_tree_t = std::vector<bvh_node, detail::no_init_alloc<bvh_node>>;
     std::vector<bvh_tree_t> bvh_trees;
     // Temporary buffer used in the construction of the BVH trees.
-    template <typename T>
-    struct uninit {
-        T val;
-    };
-    std::vector<std::vector<uninit<bvh_tree_t::size_type>>> nc_buffer;
-    std::vector<std::vector<uninit<bvh_tree_t::size_type>>> ps_buffer;
-    std::vector<std::vector<uninit<size_type>>> nplc_buffer;
+    std::vector<std::vector<bvh_tree_t::size_type, detail::no_init_alloc<bvh_tree_t::size_type>>> nc_buffer;
+    std::vector<std::vector<bvh_tree_t::size_type, detail::no_init_alloc<bvh_tree_t::size_type>>> ps_buffer;
+    std::vector<std::vector<size_type, detail::no_init_alloc<size_type>>> nplc_buffer;
 };
 
 } // namespace cascade

@@ -144,18 +144,18 @@ void sim::construct_bvh_trees()
 
                         if (is_leaf_node) {
                             // A leaf node has no children.
-                            nc_buf[node_idx - n_begin].val = 0;
-                            nplc_buf[node_idx - n_begin].val = 0;
+                            nc_buf[node_idx - n_begin] = 0;
+                            nplc_buf[node_idx - n_begin] = 0;
 
                             // Update the leaf nodes counter.
                             ++n_leaf_nodes;
                         } else {
                             // An internal node has 2 children.
-                            nc_buf[node_idx - n_begin].val = 2;
+                            nc_buf[node_idx - n_begin] = 2;
                             // NOTE: if we are here, it means that is_leaf_node is false,
                             // which implies that split_ptr was written to at least once.
                             // TODO overflow check.
-                            nplc_buf[node_idx - n_begin].val = split_ptr - mcodes_begin;
+                            nplc_buf[node_idx - n_begin] = split_ptr - mcodes_begin;
                         }
                     }
 
@@ -176,7 +176,7 @@ void sim::construct_bvh_trees()
                         // Fetch the number of children.
                         const auto nc = nc_buf[node_idx - n_begin];
 
-                        if (nc.val == 0u) {
+                        if (nc == 0u) {
                             // Leaf node.
                             // TODO AABB computation and update AABBs of ancestors, and ensure
                             // all node properties are set up in cur_node (only the children
@@ -189,7 +189,7 @@ void sim::construct_bvh_trees()
                             // be stored.
                             // NOTE: this computation is safe because we checked earlier
                             // that cur_tree_size + next_n_nodes can be computed safely.
-                            const auto lc_idx = cur_tree_size + ps_buf[node_idx - n_begin].val - 2u;
+                            const auto lc_idx = cur_tree_size + ps_buf[node_idx - n_begin] - 2u;
 
                             // Assign the children indices for the current node.
                             // TODO numeric casts.
@@ -201,7 +201,7 @@ void sim::construct_bvh_trees()
                             auto &rc = tree[lc_idx + 1u];
 
                             lc.begin = cur_node.begin;
-                            lc.end = cur_node.begin + lsize.val;
+                            lc.end = cur_node.begin + lsize;
                             lc.parent = node_idx;
                             lc.left = -1;
                             lc.right = -1;
@@ -209,7 +209,7 @@ void sim::construct_bvh_trees()
                             lc.ub = default_ub;
                             lc.split_idx = cur_node.split_idx + 1;
 
-                            rc.begin = cur_node.begin + lsize.val;
+                            rc.begin = cur_node.begin + lsize;
                             rc.end = cur_node.end;
                             rc.parent = node_idx;
                             rc.left = -1;
@@ -235,24 +235,21 @@ void sim::construct_bvh_trees()
                 // Step 3: prefix sum over the number of children for each
                 // node in the range.
                 oneapi::tbb::parallel_scan(
-                    oneapi::tbb::blocked_range<decltype(nc_buf.size())>(0, nc_buf.size()),
-                    sim_data::uninit<bvh_tree_t::size_type>{0},
+                    oneapi::tbb::blocked_range<decltype(nc_buf.size())>(0, nc_buf.size()), bvh_tree_t::size_type(0),
                     [&](const auto &r, auto sum, bool is_final_scan) {
                         auto temp = sum;
 
                         for (auto i = r.begin(); i < r.end(); ++i) {
-                            temp.val = temp.val + nc_buf[i].val;
+                            temp = temp + nc_buf[i];
 
                             if (is_final_scan) {
-                                ps_buf[i].val = temp.val;
+                                ps_buf[i] = temp;
                             }
                         }
 
                         return temp;
                     },
-                    [](auto left, auto right) {
-                        return sim_data::uninit<bvh_tree_t::size_type>{left.val + right.val};
-                    });
+                    [](auto left, auto right) { return left + right; });
 
                 // Step 4: finalise the nodes in the range with the children pointers,
                 // and perform the initial setup of the children nodes.
