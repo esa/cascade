@@ -63,7 +63,7 @@ using namespace cascade;
 
 int main()
 {
-    oneapi::tbb::global_control gc(oneapi::tbb::global_control::max_allowed_parallelism, 1);
+    // oneapi::tbb::global_control gc(oneapi::tbb::global_control::max_allowed_parallelism, 1);
 
     create_logger();
 
@@ -74,7 +74,7 @@ int main()
 
     std::vector<double> x, y, z, vx, vy, vz;
 
-    const auto nparts = 8192ull;
+    const auto nparts = 8192ull * 100u;
 
     for (auto i = 0ull; i < nparts; ++i) {
         const auto a = a_dist(rng);

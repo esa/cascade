@@ -618,6 +618,8 @@ void sim::propagate_for(double t)
 
     // Construction of the BVH trees.
     construct_bvh_trees();
+
+    logger->trace("Total propagation time: {}s", sw);
 }
 
 } // namespace cascade
