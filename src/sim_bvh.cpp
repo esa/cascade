@@ -228,7 +228,8 @@ void sim::construct_bvh_trees()
                 };
 
                 // NOTE: tweakable parameter.
-                if (cur_n_nodes < 8000u) {
+                // TODO worth it the serial part?
+                if (cur_n_nodes < 8000u && false) {
                     // Serial mode.
                     node_split(n_begin, n_end, std::false_type{});
 
