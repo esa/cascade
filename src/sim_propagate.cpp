@@ -304,6 +304,13 @@ void sim::propagate_for(double t)
     std::ranges::fill(m_data->global_lb, std::array{finf, finf, finf, finf});
     std::ranges::fill(m_data->global_ub, std::array{-finf, -finf, -finf, -finf});
 
+    // Setup the BVH trees.
+    // TODO numeric cast.
+    m_data->bvh_trees.resize(nchunks);
+    m_data->nc_buffer.resize(nchunks);
+    m_data->ps_buffer.resize(nchunks);
+    m_data->nplc_buffer.resize(nchunks);
+
     std::atomic<bool> int_error{false};
 
     // Batch integration and computation of the AABBs for all particles.
@@ -608,6 +615,9 @@ void sim::propagate_for(double t)
 
     // Computation of the Morton codes and sorting.
     morton_encode_sort();
+
+    // Construction of the BVH trees.
+    construct_bvh_trees();
 }
 
 } // namespace cascade

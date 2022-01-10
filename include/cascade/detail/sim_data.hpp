@@ -69,6 +69,26 @@ struct sim::sim_data {
     std::vector<float> srt_x_lb, srt_y_lb, srt_z_lb, srt_r_lb;
     std::vector<float> srt_x_ub, srt_y_ub, srt_z_ub, srt_r_ub;
     std::vector<std::uint64_t> srt_mcodes;
+
+    // The BVH node struct.
+    struct bvh_node {
+        size_type begin, end;
+        int split_idx;
+        std::int64_t parent, left, right;
+        std::array<float, 4> lb, ub;
+    };
+
+    // The BVH trees, one for each chunk.
+    using bvh_tree_t = std::vector<bvh_node>;
+    std::vector<bvh_tree_t> bvh_trees;
+    // Temporary buffer used in the construction of the BVH trees.
+    template <typename T>
+    struct uninit {
+        T val;
+    };
+    std::vector<std::vector<uninit<bvh_tree_t::size_type>>> nc_buffer;
+    std::vector<std::vector<uninit<bvh_tree_t::size_type>>> ps_buffer;
+    std::vector<std::vector<uninit<size_type>>> nplc_buffer;
 };
 
 } // namespace cascade

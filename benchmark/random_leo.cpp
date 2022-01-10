@@ -63,7 +63,7 @@ using namespace cascade;
 
 int main()
 {
-    // oneapi::tbb::global_control gc(oneapi::tbb::global_control::max_allowed_parallelism, 1);
+    oneapi::tbb::global_control gc(oneapi::tbb::global_control::max_allowed_parallelism, 1);
 
     create_logger();
 
@@ -96,6 +96,10 @@ int main()
     }
 
     sim s(x, y, z, vx, vy, vz);
+
+    s.propagate_for(86400.);
+    s.propagate_for(86400.);
+    s.propagate_for(86400.);
 
     s.propagate_for(86400.);
     s.propagate_for(86400.);
