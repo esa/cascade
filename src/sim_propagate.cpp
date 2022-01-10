@@ -251,7 +251,7 @@ void sim::propagate_for(double t)
     // Cache a few quantities.
     const auto batch_size = m_data->b_ta.get_batch_size();
     const auto nparts = get_nparts();
-    const auto order = m_data->b_ta.get_order();
+    const auto order = m_data->s_ta.get_order();
     // Number of regular batches.
     const auto n_batches = nparts / batch_size;
     // Scalar remainder.
@@ -270,7 +270,7 @@ void sim::propagate_for(double t)
     const auto nchunks = 8u;
     const auto chunk_size = delta_t / nchunks;
 
-    // Ensure the vectors in m_data are set up with the correct size.
+    // Ensure the vectors in m_data are set up with the correct sizes.
     m_data->s_data.resize(boost::numeric_cast<decltype(m_data->s_data.size())>(nparts));
     // TODO overflow checks/numeric cast.
     m_data->x_lb.resize(nparts * nchunks);
@@ -299,12 +299,12 @@ void sim::propagate_for(double t)
     // TODO numeric casts.
     m_data->global_lb.resize(nchunks);
     m_data->global_ub.resize(nchunks);
-    // NOTE: the global AABBs need to be setup before
-    // the integration step.
+    // NOTE: the global AABBs need to be set up with
+    // initial values.
     std::ranges::fill(m_data->global_lb, std::array{finf, finf, finf, finf});
     std::ranges::fill(m_data->global_ub, std::array{-finf, -finf, -finf, -finf});
 
-    // Setup the BVH trees.
+    // Setup the BVH data.
     // TODO numeric cast.
     m_data->bvh_trees.resize(nchunks);
     m_data->nc_buffer.resize(nchunks);
