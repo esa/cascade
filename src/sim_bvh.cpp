@@ -65,7 +65,7 @@ void sim::construct_bvh_trees()
             nplc_buf.clear();
 
             // Insert the root node.
-            tree.emplace_back(0, nparts, 0, -1, -1, -1, default_lb, default_ub);
+            tree.emplace_back(0, nparts, -1, -1, -1, default_lb, default_ub, 0);
 
             // The number of nodes at the current level.
             bvh_tree_t::size_type cur_n_nodes = 1;
@@ -208,21 +208,21 @@ void sim::construct_bvh_trees()
 
                             lc.begin = cur_node.begin;
                             lc.end = cur_node.begin + lsize.val;
-                            lc.split_idx = cur_node.split_idx + 1;
                             lc.parent = node_idx;
                             lc.left = -1;
                             lc.right = -1;
                             lc.lb = default_lb;
                             lc.ub = default_ub;
+                            lc.split_idx = cur_node.split_idx + 1;
 
                             rc.begin = cur_node.begin + lsize.val;
                             rc.end = cur_node.end;
-                            rc.split_idx = cur_node.split_idx + 1;
                             rc.parent = node_idx;
                             rc.left = -1;
                             rc.right = -1;
                             rc.lb = default_lb;
                             rc.ub = default_ub;
+                            rc.split_idx = cur_node.split_idx + 1;
                         }
                     }
                 };

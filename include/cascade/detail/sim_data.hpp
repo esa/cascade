@@ -73,9 +73,11 @@ struct sim::sim_data {
     // The BVH node struct.
     struct bvh_node {
         size_type begin, end;
-        int split_idx;
         std::int64_t parent, left, right;
         std::array<float, 4> lb, ub;
+        // NOTE: the following quantities
+        // are only used during tree construction.
+        int split_idx;
     };
 
     // The BVH trees, one for each chunk.
