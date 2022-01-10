@@ -75,8 +75,7 @@ struct sim::sim_data {
         size_type begin, end;
         std::int64_t parent, left, right;
         std::array<float, 4> lb, ub;
-        // NOTE: the following quantities
-        // are only used during tree construction.
+        // NOTE: split_idx is used only during tree construction.
         int split_idx;
     };
 

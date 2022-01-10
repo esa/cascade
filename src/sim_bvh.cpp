@@ -10,10 +10,8 @@
 #include <array>
 #include <atomic>
 #include <chrono>
-#include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <type_traits>
 
 #include <spdlog/stopwatch.h>
 
@@ -58,16 +56,16 @@ void sim::construct_bvh_trees()
             // Fetch references to the temp buffers and
             // clear them out.
             auto &nc_buf = m_data->nc_buffer[chunk_idx];
-            nc_buf.clear();
             auto &ps_buf = m_data->ps_buffer[chunk_idx];
-            ps_buf.clear();
             auto &nplc_buf = m_data->nplc_buffer[chunk_idx];
+            nc_buf.clear();
+            ps_buf.clear();
             nplc_buf.clear();
 
             // Insert the root node.
             tree.emplace_back(0, nparts, -1, -1, -1, default_lb, default_ub, 0);
 
-            // The number of nodes at the current level.
+            // The number of nodes at the current tree level.
             bvh_tree_t::size_type cur_n_nodes = 1;
 
             while (cur_n_nodes != 0u) {
@@ -94,8 +92,9 @@ void sim::construct_bvh_trees()
                 // - determine if the node is a leaf, and
                 // - if it is *not* a leaf, how many particles
                 //   are in the left child.
-                auto node_split = [&](auto rbegin, auto rend, auto parallel) {
-                    // Local accumulator for the number of leaf nodes.
+                auto node_split = [&](auto rbegin, auto rend) {
+                    // Local accumulator for the number of leaf nodes
+                    // detected in the range.
                     bvh_tree_t::size_type n_leaf_nodes = 0;
 
                     for (auto node_idx = rbegin; node_idx != rend; ++node_idx) {
@@ -160,21 +159,16 @@ void sim::construct_bvh_trees()
                         }
                     }
 
-                    // Decrease next_n_nodes by n_leaf_nodes * 2.
-                    // NOTE: the operation must be atomic if we are in parallel mode.
-                    using par_t = decltype(parallel);
-                    if constexpr (par_t::value) {
-                        std::atomic_ref<bvh_tree_t::size_type> next_n_nodes_at(next_n_nodes);
-                        next_n_nodes_at.fetch_sub(n_leaf_nodes * 2u, std::memory_order::relaxed);
-                    } else {
-                        next_n_nodes -= n_leaf_nodes * 2u;
-                    }
+                    // Atomically decrease next_n_nodes by n_leaf_nodes * 2.
+                    std::atomic_ref<bvh_tree_t::size_type> next_n_nodes_at(next_n_nodes);
+                    next_n_nodes_at.fetch_sub(n_leaf_nodes * 2u, std::memory_order::relaxed);
                 };
 
-                // For each node in a range, this function will compute:
+                // For each node in a range, and using the
+                // data gathered in the temp buffers,
+                // this function will compute:
                 // - the pointers to the children, if any, and
-                // - the children's properties, using the
-                //   data gathered in the temp buffers.
+                // - the children's initial properties.
                 auto node_writer = [&](auto rbegin, auto rend) {
                     for (auto node_idx = rbegin; node_idx != rend; ++node_idx) {
                         auto &cur_node = tree[node_idx];
@@ -227,60 +221,43 @@ void sim::construct_bvh_trees()
                     }
                 };
 
-                // NOTE: tweakable parameter.
-                // TODO worth it the serial part?
-                if (cur_n_nodes < 8000u && false) {
-                    // Serial mode.
-                    node_split(n_begin, n_end, std::false_type{});
+                // Step 1: determine, for each node in the range,
+                // if the node is a leaf or not, and, if so, the number
+                // of particles in the left child.
+                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(n_begin, n_end),
+                                          [&](const auto &range) { node_split(range.begin(), range.end()); });
 
-                    // Prepare the tree for the new nodes.
-                    // TODO numeric cast, overflow check.
-                    tree.resize(cur_tree_size + next_n_nodes);
+                // Step 2: prepare the tree for the new nodes.
+                // NOTE: next_n_nodes was computed in the previous step.
+                // TODO numeric cast, overflow check.
+                tree.resize(cur_tree_size + next_n_nodes);
 
-                    // Do the prefix sum.
-                    for (decltype(nc_buf.size()) i = 0; i < nc_buf.size(); ++i) {
-                        if (i == 0u) {
-                            ps_buf[i].val = nc_buf[i].val;
-                        } else {
-                            ps_buf[i].val = nc_buf[i].val + ps_buf[i - 1u].val;
+                // Step 3: prefix sum over the number of children for each
+                // node in the range.
+                oneapi::tbb::parallel_scan(
+                    oneapi::tbb::blocked_range<decltype(nc_buf.size())>(0, nc_buf.size()),
+                    sim_data::uninit<bvh_tree_t::size_type>{0},
+                    [&](const auto &r, auto sum, bool is_final_scan) {
+                        auto temp = sum;
+
+                        for (auto i = r.begin(); i < r.end(); ++i) {
+                            temp.val = temp.val + nc_buf[i].val;
+
+                            if (is_final_scan) {
+                                ps_buf[i].val = temp.val;
+                            }
                         }
-                    }
 
-                    node_writer(n_begin, n_end);
-                } else {
-                    // Parallel mode.
-                    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(n_begin, n_end), [&](const auto &range) {
-                        node_split(range.begin(), range.end(), std::true_type{});
+                        return temp;
+                    },
+                    [](auto left, auto right) {
+                        return sim_data::uninit<bvh_tree_t::size_type>{left.val + right.val};
                     });
 
-                    // Prepare the tree for the new nodes.
-                    // TODO numeric cast, overflow check.
-                    tree.resize(cur_tree_size + next_n_nodes);
-
-                    oneapi::tbb::parallel_scan(
-                        oneapi::tbb::blocked_range<decltype(nc_buf.size())>(0, nc_buf.size()),
-                        sim_data::uninit<bvh_tree_t::size_type>{0},
-                        [&](const auto &r, auto sum, bool is_final_scan) {
-                            auto temp = sum;
-
-                            for (auto i = r.begin(); i < r.end(); ++i) {
-                                temp.val = temp.val + nc_buf[i].val;
-
-                                if (is_final_scan) {
-                                    ps_buf[i].val = temp.val;
-                                }
-                            }
-
-                            return temp;
-                        },
-                        [](auto left, auto right) {
-                            return sim_data::uninit<bvh_tree_t::size_type>{left.val + right.val};
-                        });
-
-                    // Write the new nodes.
-                    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(n_begin, n_end),
-                                              [&](const auto &range) { node_writer(range.begin(), range.end()); });
-                }
+                // Step 4: finalise the nodes in the range with the children pointers,
+                // and perform the initial setup of the children nodes.
+                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(n_begin, n_end),
+                                          [&](const auto &range) { node_writer(range.begin(), range.end()); });
 
                 // Assign the next value for cur_n_nodes.
                 // If next_n_nodes is zero, this means that
