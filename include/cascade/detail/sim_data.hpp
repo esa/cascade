@@ -131,9 +131,14 @@ struct sim::sim_data {
 
     // The BVH node struct.
     struct bvh_node {
+        // Particle range.
         size_type begin, end;
+        // Pointers to parent and children nodes.
         std::int64_t parent, left, right;
+        // AABB.
         std::array<float, 4> lb, ub;
+        // Number of nodes in the current level.
+        std::uint32_t nn_level;
         // NOTE: split_idx is used only during tree construction.
         int split_idx;
     };
