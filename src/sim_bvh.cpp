@@ -10,8 +10,13 @@
 #include <array>
 #include <atomic>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <stdexcept>
+#include <type_traits>
+
+#include <boost/numeric/conversion/cast.hpp>
 
 #include <spdlog/stopwatch.h>
 
@@ -36,10 +41,9 @@
 namespace cascade
 {
 
+// Construct the BVH tree for each chunk.
 void sim::construct_bvh_trees()
 {
-    using bvh_tree_t = sim_data::bvh_tree_t;
-
     spdlog::stopwatch sw;
 
     auto *logger = detail::get_logger();
@@ -48,10 +52,19 @@ void sim::construct_bvh_trees()
     const auto nparts = get_nparts();
     const auto nchunks = static_cast<unsigned>(m_data->global_lb.size());
 
-    // Setup the initial values for the nodes' bounding boxes.
+    // Initial values for the nodes' bounding boxes.
     constexpr auto finf = std::numeric_limits<float>::infinity();
     constexpr std::array<float, 4> default_lb = {finf, finf, finf, finf};
     constexpr std::array<float, 4> default_ub = {-finf, -finf, -finf, -finf};
+
+    // Overflow check: we need to be able to represent all pointer differences
+    // in the Morton codes vector.
+    constexpr auto overflow_err_msg = "Overflow detected during the construction of a BVH tree";
+
+    if (m_data->srt_mcodes.size()
+        > static_cast<std::make_unsigned_t<std::ptrdiff_t>>(std::numeric_limits<std::ptrdiff_t>::max())) {
+        throw std::overflow_error(overflow_err_msg);
+    }
 
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
@@ -84,10 +97,13 @@ void sim::construct_bvh_trees()
 
             // Insert the root node.
             // NOTE: nn_level is inited to zero, even if we already know it is 1.
-            tree.emplace_back(0, nparts, -1, -1, -1, default_lb, default_ub, 0, 0);
+            tree.emplace_back(0, boost::numeric_cast<std::uint32_t>(nparts), -1, -1, -1, default_lb, default_ub, 0, 0);
 
             // The number of nodes at the current tree level.
-            bvh_tree_t::size_type cur_n_nodes = 1;
+            std::uint32_t cur_n_nodes = 1;
+
+            // The total number of levels and nodes.
+            std::uint32_t n_levels = 0, n_nodes = 0;
 
             while (cur_n_nodes != 0u) {
                 // Fetch the current tree size.
@@ -100,14 +116,15 @@ void sim::construct_bvh_trees()
 
                 // Number of nodes at the next level, inited
                 // with the maximum possible value.
-                // TODO overflow check?
+                if (cur_n_nodes > std::numeric_limits<std::uint32_t>::max() / 2u) {
+                    throw std::overflow_error(overflow_err_msg);
+                }
                 auto nn_next_level = cur_n_nodes * 2u;
 
                 // Prepare the temp buffers.
-                // TODO numeric casts.
-                nc_buf.resize(cur_n_nodes);
-                ps_buf.resize(cur_n_nodes);
-                nplc_buf.resize(cur_n_nodes);
+                nc_buf.resize(boost::numeric_cast<decltype(nc_buf.size())>(cur_n_nodes));
+                ps_buf.resize(boost::numeric_cast<decltype(ps_buf.size())>(cur_n_nodes));
+                nplc_buf.resize(boost::numeric_cast<decltype(nplc_buf.size())>(cur_n_nodes));
 
                 // For each node in a range, this function will:
                 // - determine if the node is a leaf, and
@@ -116,7 +133,7 @@ void sim::construct_bvh_trees()
                 auto node_split = [&](auto rbegin, auto rend) {
                     // Local accumulator for the number of leaf nodes
                     // detected in the range.
-                    bvh_tree_t::size_type n_leaf_nodes = 0;
+                    std::uint32_t n_leaf_nodes = 0;
 
                     for (auto node_idx = rbegin; node_idx != rend; ++node_idx) {
                         auto &cur_node = tree[node_idx];
@@ -175,13 +192,12 @@ void sim::construct_bvh_trees()
                             nc_buf[node_idx - n_begin] = 2;
                             // NOTE: if we are here, it means that is_leaf_node is false,
                             // which implies that split_ptr was written to at least once.
-                            // TODO overflow check.
-                            nplc_buf[node_idx - n_begin] = split_ptr - mcodes_begin;
+                            nplc_buf[node_idx - n_begin] = boost::numeric_cast<std::uint32_t>(split_ptr - mcodes_begin);
                         }
                     }
 
                     // Atomically decrease nn_next_level by n_leaf_nodes * 2.
-                    std::atomic_ref<bvh_tree_t::size_type> nn_next_level_at(nn_next_level);
+                    std::atomic_ref nn_next_level_at(nn_next_level);
                     nn_next_level_at.fetch_sub(n_leaf_nodes * 2u, std::memory_order::relaxed);
                 };
 
@@ -199,7 +215,6 @@ void sim::construct_bvh_trees()
 
                         // Set the nn_level member. This needs to be done
                         // regardless of whether the node is internal or a leaf.
-                        // TODO numeric cast.
                         cur_node.nn_level = cur_n_nodes;
 
                         // NOTE: for a leaf node, the left/right indices are already set to -1:
@@ -221,17 +236,19 @@ void sim::construct_bvh_trees()
                             const auto lc_idx = cur_tree_size + ps_buf[node_idx - n_begin] - 2u;
 
                             // Assign the children indices for the current node.
-                            // TODO numeric casts.
-                            cur_node.left = lc_idx;
-                            cur_node.right = lc_idx + 1u;
+                            cur_node.left = boost::numeric_cast<decltype(cur_node.left)>(lc_idx);
+                            cur_node.right = boost::numeric_cast<decltype(cur_node.right)>(lc_idx + 1u);
 
                             // Set up the children's initial properties.
                             auto &lc = tree[lc_idx];
                             auto &rc = tree[lc_idx + 1u];
 
                             lc.begin = cur_node.begin;
+                            // NOTE: the computation is safe
+                            // because we know we can represent nparts
+                            // as a std::uint32_t.
                             lc.end = cur_node.begin + lsize;
-                            lc.parent = node_idx;
+                            lc.parent = boost::numeric_cast<std::int32_t>(node_idx);
                             lc.left = -1;
                             lc.right = -1;
                             lc.lb = default_lb;
@@ -241,7 +258,7 @@ void sim::construct_bvh_trees()
 
                             rc.begin = cur_node.begin + lsize;
                             rc.end = cur_node.end;
-                            rc.parent = node_idx;
+                            rc.parent = boost::numeric_cast<std::int32_t>(node_idx);
                             rc.left = -1;
                             rc.right = -1;
                             rc.lb = default_lb;
@@ -260,13 +277,15 @@ void sim::construct_bvh_trees()
 
                 // Step 2: prepare the tree for the new nodes.
                 // NOTE: nn_next_level was computed in the previous step.
-                // TODO numeric cast, overflow check.
+                if (nn_next_level > std::numeric_limits<decltype(cur_tree_size)>::max() - cur_tree_size) {
+                    throw std::overflow_error(overflow_err_msg);
+                }
                 tree.resize(cur_tree_size + nn_next_level);
 
                 // Step 3: prefix sum over the number of children for each
                 // node in the range.
                 oneapi::tbb::parallel_scan(
-                    oneapi::tbb::blocked_range<decltype(nc_buf.size())>(0, nc_buf.size()), bvh_tree_t::size_type(0),
+                    oneapi::tbb::blocked_range<decltype(nc_buf.size())>(0, nc_buf.size()), std::uint32_t(0),
                     [&](const auto &r, auto sum, bool is_final_scan) {
                         auto temp = sum;
 
@@ -293,6 +312,9 @@ void sim::construct_bvh_trees()
                 // were leaves, and this signals the end of the
                 // construction of the tree.
                 cur_n_nodes = nn_next_level;
+
+                ++n_levels;
+                n_nodes += cur_n_nodes;
             }
 
             // Perform a backwards pass on the tree to compute the AABBs
@@ -310,7 +332,8 @@ void sim::construct_bvh_trees()
                         if (cur_node.left == -1) {
                             // Leaf node, compute the bounding box.
                             for (auto pidx = cur_node.begin; pidx != cur_node.end; ++pidx) {
-                                // TODO min max usage?
+                                // NOTE: min/max is fine here, we already checked
+                                // that all AABBs are finite.
                                 cur_node.lb[0] = std::min(cur_node.lb[0], x_lb_ptr[pidx]);
                                 cur_node.lb[1] = std::min(cur_node.lb[1], y_lb_ptr[pidx]);
                                 cur_node.lb[2] = std::min(cur_node.lb[2], z_lb_ptr[pidx]);
@@ -323,11 +346,12 @@ void sim::construct_bvh_trees()
                             }
                         } else {
                             // Internal node, compute its AABB from the children.
-                            auto &lc = tree[static_cast<bvh_tree_t::size_type>(cur_node.left)];
-                            auto &rc = tree[static_cast<bvh_tree_t::size_type>(cur_node.right)];
+                            auto &lc = tree[static_cast<decltype(tree.size())>(cur_node.left)];
+                            auto &rc = tree[static_cast<decltype(tree.size())>(cur_node.right)];
 
                             for (auto j = 0u; j < 4u; ++j) {
-                                // TODO min/max usage?
+                                // NOTE: min/max is fine here, we already checked
+                                // that all AABBs are finite.
                                 cur_node.lb[j] = std::min(lc.lb[j], rc.lb[j]);
                                 cur_node.ub[j] = std::max(lc.ub[j], rc.ub[j]);
                             }
@@ -343,6 +367,8 @@ void sim::construct_bvh_trees()
                     n_end = new_n_end;
                 }
             }
+
+            logger->debug("Tree levels/nodes for chunk {}: {}/{}", chunk_idx, n_levels, n_nodes);
         }
     });
 

@@ -132,14 +132,17 @@ struct sim::sim_data {
     // The BVH node struct.
     struct bvh_node {
         // Particle range.
-        size_type begin, end;
+        std::uint32_t begin, end;
         // Pointers to parent and children nodes.
-        std::int64_t parent, left, right;
+        std::int32_t parent, left, right;
         // AABB.
         std::array<float, 4> lb, ub;
         // Number of nodes in the current level.
         std::uint32_t nn_level;
         // NOTE: split_idx is used only during tree construction.
+        // NOTE: perhaps it's worth it to store it in a separate
+        // vector in order to improve performance during
+        // tree traversal? Same goes for nn_level.
         int split_idx;
     };
 
@@ -147,9 +150,9 @@ struct sim::sim_data {
     using bvh_tree_t = std::vector<bvh_node, detail::no_init_alloc<bvh_node>>;
     std::vector<bvh_tree_t> bvh_trees;
     // Temporary buffer used in the construction of the BVH trees.
-    std::vector<std::vector<bvh_tree_t::size_type, detail::no_init_alloc<bvh_tree_t::size_type>>> nc_buffer;
-    std::vector<std::vector<bvh_tree_t::size_type, detail::no_init_alloc<bvh_tree_t::size_type>>> ps_buffer;
-    std::vector<std::vector<size_type, detail::no_init_alloc<size_type>>> nplc_buffer;
+    std::vector<std::vector<std::uint32_t, detail::no_init_alloc<std::uint32_t>>> nc_buffer;
+    std::vector<std::vector<std::uint32_t, detail::no_init_alloc<std::uint32_t>>> ps_buffer;
+    std::vector<std::vector<std::uint32_t, detail::no_init_alloc<std::uint32_t>>> nplc_buffer;
 };
 
 } // namespace cascade

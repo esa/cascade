@@ -240,6 +240,7 @@ void sim::morton_encode_sort()
     logger->trace("Morton encoding and sorting time: {}s", sw);
 }
 
+// TODO clarify behaviour in case of exceptions.
 void sim::propagate_for(double t)
 {
     namespace hy = heyoka;
