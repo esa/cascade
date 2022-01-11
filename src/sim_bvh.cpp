@@ -135,6 +135,8 @@ void sim::construct_bvh_trees()
                     // detected in the range.
                     std::uint32_t n_leaf_nodes = 0;
 
+                    // NOTE: this for loop can *probably* be written in a vectorised
+                    // fashion, using the gather primitives as done in heyoka.
                     for (auto node_idx = rbegin; node_idx != rend; ++node_idx) {
                         auto &cur_node = tree[node_idx];
 
