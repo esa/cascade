@@ -385,7 +385,9 @@ void sim::propagate_for(double t)
                     }
 
                     // Copy over the Taylor coefficients.
-                    // TODO resize + copy, instead of push back?
+                    // TODO resize + copy, instead of push back? In such
+                    // a case, we should probably use the no init allocator
+                    // for the tc vectors.
                     for (std::uint32_t o = 0; o <= order; ++o) {
                         s_data[pidx_begin + i].tc_x.push_back(ta_tc[o * batch_size + i]);
                         s_data[pidx_begin + i].tc_y.push_back(ta_tc[(order + 1u) * batch_size + o * batch_size + i]);
@@ -410,6 +412,7 @@ void sim::propagate_for(double t)
                 // TODO distinguish various error codes?
                 int_error.store(true, std::memory_order_relaxed);
 
+                // TODO return instead of break here?
                 break;
             }
         }
