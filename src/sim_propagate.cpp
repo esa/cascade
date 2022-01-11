@@ -34,9 +34,23 @@
 
 #include <cascade/detail/atomic_utils.hpp>
 #include <cascade/detail/logging_impl.hpp>
-#include <cascade/detail/mortonND_LUT.h>
 #include <cascade/detail/sim_data.hpp>
 #include <cascade/sim.hpp>
+
+#if defined(__clang__) || defined(__GNUC__)
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+
+#endif
+
+#include <cascade/detail/mortonND_LUT.h>
+
+#if defined(__clang__) || defined(__GNUC__)
+
+#pragma GCC diagnostic pop
+
+#endif
 
 #if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
 
@@ -97,7 +111,7 @@ ival operator*(ival a, ival b)
 // conceivably in some corner cases FP computations necessary to
 // calculate x outside this function could lead to a value slightly outside
 // the allowed range. In such case, we will clamp the result.
-std::uint64_t disc_single_coord(float x, float min, float max)
+inline std::uint64_t disc_single_coord(float x, float min, float max)
 {
     assert(std::isfinite(min));
     assert(std::isfinite(max));
@@ -452,7 +466,6 @@ void sim::propagate_for(double t)
             for (auto idx = range.begin(); idx != range.end(); ++idx) {
                 // Particle indices corresponding to the current batch.
                 const auto pidx_begin = idx * batch_size;
-                const auto pidx_end = pidx_begin + batch_size;
 
                 for (std::uint32_t i = 0; i < batch_size; ++i) {
                     // Setup the initial values for the bounding box

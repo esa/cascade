@@ -62,9 +62,9 @@ struct no_init_alloc {
     void construct(U *p, Args &&...args)
     {
         if constexpr (sizeof...(Args) > 0u) {
-            ::new ((void *)p) U(std::forward<Args>(args)...);
+            ::new (static_cast<void *>(p)) U(std::forward<Args>(args)...);
         } else {
-            ::new ((void *)p) U;
+            ::new (static_cast<void *>(p)) U;
         }
     }
 };
