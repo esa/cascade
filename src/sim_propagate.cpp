@@ -282,7 +282,7 @@ void sim::propagate_for(double t)
 
     // TODO fix.
     // TODO enforce power of 2?
-    const auto nchunks = 16u;
+    const auto nchunks = 8u;
     const auto chunk_size = delta_t / nchunks;
 
     // Ensure the vectors in m_data are set up with the correct sizes.

@@ -7,7 +7,10 @@
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include <atomic>
+#include <cassert>
 #include <chrono>
+#include <initializer_list>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -33,6 +36,8 @@
 namespace cascade
 {
 
+// Broad phase collision detection - i.e., collision
+// detection between the AABBs of the particles' trajectories.
 void sim::broad_phase()
 {
     spdlog::stopwatch sw;
@@ -127,9 +132,12 @@ void sim::broad_phase()
                         if (overlap) {
                             if (cur_node.left == -1) {
                                 // Leaf node: mark pidx as colliding with
-                                // all particles in the node, except for itself.
+                                // all particles in the node, unless either:
+                                // - pidx is colliding with itself (pidx == i), or
+                                // - pidx > i, in order to avoid counting twice
+                                //   the collisions (pidx, i) and (i, pidx).
                                 for (auto i = cur_node.begin; i != cur_node.end; ++i) {
-                                    if (pidx != i) {
+                                    if (pidx < i) {
                                         local_bp.emplace_back(pidx, i);
                                     }
                                 }
@@ -161,6 +169,96 @@ void sim::broad_phase()
     logger->debug("Average number of collisions per particle per chunk: {}",
                   static_cast<double>(tot_n_bp.load(std::memory_order::relaxed)) / static_cast<double>(nchunks)
                       / static_cast<double>(nparts));
+
+#if !defined(NDEBUG)
+    verify_broad_phase();
+#endif
+}
+
+// Debug checks on the broad phase collision detection.
+void sim::verify_broad_phase()
+{
+    const auto nparts = get_nparts();
+    const auto nchunks = static_cast<unsigned>(m_data->global_lb.size());
+
+    // Don't run the check if there's too many particles.
+    if (nparts > 10000u) {
+        return;
+    }
+
+    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
+        for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
+            const auto offset = nparts * chunk_idx;
+
+            const auto *CASCADE_RESTRICT x_lb_ptr = m_data->srt_x_lb.data() + offset;
+            const auto *CASCADE_RESTRICT y_lb_ptr = m_data->srt_y_lb.data() + offset;
+            const auto *CASCADE_RESTRICT z_lb_ptr = m_data->srt_z_lb.data() + offset;
+            const auto *CASCADE_RESTRICT r_lb_ptr = m_data->srt_r_lb.data() + offset;
+
+            const auto *CASCADE_RESTRICT x_ub_ptr = m_data->srt_x_ub.data() + offset;
+            const auto *CASCADE_RESTRICT y_ub_ptr = m_data->srt_y_ub.data() + offset;
+            const auto *CASCADE_RESTRICT z_ub_ptr = m_data->srt_z_ub.data() + offset;
+            const auto *CASCADE_RESTRICT r_ub_ptr = m_data->srt_r_ub.data() + offset;
+
+            // Build a set version of the collision list
+            // for fast checking.
+            const auto &cur_bp_coll = m_data->bp_coll[chunk_idx];
+            std::set<std::pair<size_type, size_type>> coll_set(cur_bp_coll.begin(), cur_bp_coll.end());
+
+            // Check that, for all collisions (i, j), i is always < j.
+            for (const auto &p : cur_bp_coll) {
+                assert(p.first < p.second);
+            }
+
+            std::atomic<decltype(coll_set.size())> coll_counter(0);
+
+            oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &ri) {
+                for (auto i = ri.begin(); i != ri.end(); ++i) {
+                    const auto xi_lb = x_lb_ptr[i];
+                    const auto yi_lb = y_lb_ptr[i];
+                    const auto zi_lb = z_lb_ptr[i];
+                    const auto ri_lb = r_lb_ptr[i];
+
+                    const auto xi_ub = x_ub_ptr[i];
+                    const auto yi_ub = y_ub_ptr[i];
+                    const auto zi_ub = z_ub_ptr[i];
+                    const auto ri_ub = r_ub_ptr[i];
+
+                    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(i + 1u, nparts),
+                                              [&](const auto &rj) {
+                                                  decltype(coll_set.size()) loc_ncoll = 0;
+
+                                                  for (auto j = rj.begin(); j != rj.end(); ++j) {
+                                                      const auto xj_lb = x_lb_ptr[j];
+                                                      const auto yj_lb = y_lb_ptr[j];
+                                                      const auto zj_lb = z_lb_ptr[j];
+                                                      const auto rj_lb = r_lb_ptr[j];
+
+                                                      const auto xj_ub = x_ub_ptr[j];
+                                                      const auto yj_ub = y_ub_ptr[j];
+                                                      const auto zj_ub = z_ub_ptr[j];
+                                                      const auto rj_ub = r_ub_ptr[j];
+
+                                                      const bool overlap = (xi_ub >= xj_lb && xi_lb <= xj_ub)
+                                                                           && (yi_ub >= yj_lb && yi_lb <= yj_ub)
+                                                                           && (zi_ub >= zj_lb && zi_lb <= zj_ub)
+                                                                           && (ri_ub >= rj_lb && ri_lb <= rj_ub);
+
+                                                      const auto it = coll_set.find({i, j});
+
+                                                      assert(overlap == (it != coll_set.end()));
+
+                                                      loc_ncoll += overlap;
+                                                  }
+
+                                                  coll_counter.fetch_add(loc_ncoll, std::memory_order::relaxed);
+                                              });
+                }
+            });
+
+            assert(coll_counter.load() == coll_set.size());
+        }
+    });
 }
 
 } // namespace cascade
