@@ -40,6 +40,7 @@ class CASCADE_DLL_PUBLIC sim
     void finalise_ctor();
     CASCADE_DLL_LOCAL void morton_encode_sort();
     CASCADE_DLL_LOCAL void construct_bvh_trees();
+    CASCADE_DLL_LOCAL void verify_bvh_trees();
 
 public:
     using size_type = std::vector<double>::size_type;

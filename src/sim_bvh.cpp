@@ -9,10 +9,12 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cassert>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <set>
 #include <stdexcept>
 #include <type_traits>
 
@@ -40,6 +42,45 @@
 
 namespace cascade
 {
+
+namespace detail
+{
+
+namespace
+{
+
+#if !defined(NDEBUG) && (defined(__GNUC__) || defined(__clang__))
+
+// Debug helper to compute the index of the first different
+// bit between n1 and n2, starting from the MSB.
+template <typename T>
+int first_diff_bit(T n1, T n2)
+{
+    static_assert(std::is_integral_v<T> && std::is_unsigned_v<T>);
+
+    const auto res_xor = n1 ^ n2;
+
+    if (res_xor == 0u) {
+        return std::numeric_limits<T>::digits;
+    } else {
+        if constexpr (std::is_same_v<T, unsigned>) {
+            return __builtin_clz(res_xor);
+        } else if constexpr (std::is_same_v<T, unsigned long>) {
+            return __builtin_clzl(res_xor);
+        } else if constexpr (std::is_same_v<T, unsigned long long>) {
+            return __builtin_clzll(res_xor);
+        } else {
+            assert(false);
+            throw;
+        }
+    }
+}
+
+#endif
+
+} // namespace
+
+} // namespace detail
 
 // Construct the BVH tree for each chunk.
 void sim::construct_bvh_trees()
@@ -138,6 +179,8 @@ void sim::construct_bvh_trees()
                     // NOTE: this for loop can *probably* be written in a vectorised
                     // fashion, using the gather primitives as done in heyoka.
                     for (auto node_idx = rbegin; node_idx != rend; ++node_idx) {
+                        assert(node_idx - n_begin < cur_n_nodes);
+
                         auto &cur_node = tree[node_idx];
 
                         // Flag to signal that this is a leaf node.
@@ -210,6 +253,8 @@ void sim::construct_bvh_trees()
                 // - the children's initial properties.
                 auto node_writer = [&](auto rbegin, auto rend) {
                     for (auto node_idx = rbegin; node_idx != rend; ++node_idx) {
+                        assert(node_idx - n_begin < cur_n_nodes);
+
                         auto &cur_node = tree[node_idx];
 
                         // Fetch the number of children.
@@ -236,6 +281,10 @@ void sim::construct_bvh_trees()
                             // NOTE: this computation is safe because we checked earlier
                             // that cur_tree_size + nn_next_level can be computed safely.
                             const auto lc_idx = cur_tree_size + ps_buf[node_idx - n_begin] - 2u;
+                            assert(lc_idx >= cur_tree_size);
+                            assert(lc_idx < tree.size());
+                            assert(lc_idx + 1u > cur_tree_size);
+                            assert(lc_idx + 1u < tree.size());
 
                             // Assign the children indices for the current node.
                             cur_node.left = boost::numeric_cast<decltype(cur_node.left)>(lc_idx);
@@ -275,7 +324,7 @@ void sim::construct_bvh_trees()
                 // if the node is a leaf or not, and, if so, the number
                 // of particles in the left child.
                 oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(n_begin, n_end),
-                                          [&](const auto &range) { node_split(range.begin(), range.end()); });
+                                          [&](const auto &rn) { node_split(rn.begin(), rn.end()); });
 
                 // Step 2: prepare the tree for the new nodes.
                 // NOTE: nn_next_level was computed in the previous step.
@@ -306,7 +355,7 @@ void sim::construct_bvh_trees()
                 // Step 4: finalise the nodes in the range with the children pointers,
                 // and perform the initial setup of the children nodes.
                 oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(n_begin, n_end),
-                                          [&](const auto &range) { node_writer(range.begin(), range.end()); });
+                                          [&](const auto &rn) { node_writer(rn.begin(), rn.end()); });
 
                 // Assign the next value for cur_n_nodes.
                 // If nn_next_level is zero, this means that
@@ -327,8 +376,8 @@ void sim::construct_bvh_trees()
             auto n_end = tree.size();
 
             while (true) {
-                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(n_begin, n_end), [&](const auto &range) {
-                    for (auto node_idx = range.begin(); node_idx != range.end(); ++node_idx) {
+                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(n_begin, n_end), [&](const auto &rn) {
+                    for (auto node_idx = rn.begin(); node_idx != rn.end(); ++node_idx) {
                         auto &cur_node = tree[node_idx];
 
                         if (cur_node.left == -1) {
@@ -375,6 +424,173 @@ void sim::construct_bvh_trees()
     });
 
     logger->trace("BVH construction time: {}s", sw);
+
+#if !defined(NDEBUG)
+    verify_bvh_trees();
+#endif
+}
+
+void sim::verify_bvh_trees()
+{
+    const auto nparts = get_nparts();
+    const auto nchunks = static_cast<unsigned>(m_data->global_lb.size());
+
+    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
+        for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
+            const auto offset = nparts * chunk_idx;
+
+            const auto *CASCADE_RESTRICT x_lb_ptr = m_data->srt_x_lb.data() + offset;
+            const auto *CASCADE_RESTRICT y_lb_ptr = m_data->srt_y_lb.data() + offset;
+            const auto *CASCADE_RESTRICT z_lb_ptr = m_data->srt_z_lb.data() + offset;
+            const auto *CASCADE_RESTRICT r_lb_ptr = m_data->srt_r_lb.data() + offset;
+
+            const auto *CASCADE_RESTRICT ux_lb_ptr = m_data->x_lb.data() + offset;
+            const auto *CASCADE_RESTRICT uy_lb_ptr = m_data->y_lb.data() + offset;
+            const auto *CASCADE_RESTRICT uz_lb_ptr = m_data->z_lb.data() + offset;
+            const auto *CASCADE_RESTRICT ur_lb_ptr = m_data->r_lb.data() + offset;
+
+            const auto *CASCADE_RESTRICT x_ub_ptr = m_data->srt_x_ub.data() + offset;
+            const auto *CASCADE_RESTRICT y_ub_ptr = m_data->srt_y_ub.data() + offset;
+            const auto *CASCADE_RESTRICT z_ub_ptr = m_data->srt_z_ub.data() + offset;
+            const auto *CASCADE_RESTRICT r_ub_ptr = m_data->srt_r_ub.data() + offset;
+
+            const auto *CASCADE_RESTRICT ux_ub_ptr = m_data->x_ub.data() + offset;
+            const auto *CASCADE_RESTRICT uy_ub_ptr = m_data->y_ub.data() + offset;
+            const auto *CASCADE_RESTRICT uz_ub_ptr = m_data->z_ub.data() + offset;
+            const auto *CASCADE_RESTRICT ur_ub_ptr = m_data->r_ub.data() + offset;
+
+            const auto *CASCADE_RESTRICT mcodes_ptr = m_data->srt_mcodes.data() + offset;
+            const auto *CASCADE_RESTRICT umcodes_ptr = m_data->mcodes.data() + offset;
+
+            const auto *CASCADE_RESTRICT vidx_ptr = m_data->vidx.data() + offset;
+
+            const auto &bvh_tree = m_data->bvh_trees[chunk_idx];
+
+            std::set<size_type> pset;
+
+            for (decltype(bvh_tree.size()) i = 0; i < bvh_tree.size(); ++i) {
+                const auto &cur_node = bvh_tree[i];
+
+                // The node must contain 1 or more particles.
+                assert(cur_node.end > cur_node.begin);
+
+                // The node must have either 0 or 2 children.
+                if (cur_node.left == -1) {
+                    assert(cur_node.right == -1);
+                } else {
+                    assert(cur_node.left > 0);
+                    assert(cur_node.right > 0);
+                }
+
+                if (cur_node.end - cur_node.begin == 1u) {
+                    // A node with a single particle is a leaf and must have no children.
+                    assert(cur_node.left == -1);
+                    assert(cur_node.right == -1);
+
+                    // Add the particle to the global particle set,
+                    // ensuring the particle has not been added to pset yet.
+                    assert(pset.find(boost::numeric_cast<size_type>(cur_node.begin)) == pset.end());
+                    pset.insert(boost::numeric_cast<size_type>(cur_node.begin));
+                } else if (cur_node.left == -1) {
+                    // A leaf with multiple particles.
+                    assert(cur_node.right == -1);
+
+                    // All particles must have the same Morton code.
+                    const auto mc = mcodes_ptr[cur_node.begin];
+
+                    // Make also sure that all particles are accounted
+                    // for in pset.
+                    assert(pset.find(boost::numeric_cast<size_type>(cur_node.begin)) == pset.end());
+                    pset.insert(boost::numeric_cast<size_type>(cur_node.begin));
+
+                    for (auto j = cur_node.begin + 1u; j < cur_node.end; ++j) {
+                        assert(mcodes_ptr[j] == mc);
+
+                        assert(pset.find(boost::numeric_cast<size_type>(cur_node.begin)) == pset.end());
+                        pset.insert(boost::numeric_cast<size_type>(cur_node.begin));
+                    }
+                }
+
+                if (cur_node.left != -1) {
+                    // A node with children.
+                    assert(cur_node.left > 0);
+                    assert(cur_node.right > 0);
+
+                    const auto uleft = static_cast<std::uint32_t>(cur_node.left);
+                    const auto uright = static_cast<std::uint32_t>(cur_node.right);
+
+                    // The children indices must be greater than the current node's
+                    // index and within the tree.
+                    assert(uleft > i && uleft < bvh_tree.size());
+                    assert(uright > i && uright < bvh_tree.size());
+
+                    // Check that the ranges of the children are consistent with
+                    // the range of the current node.
+                    assert(bvh_tree[uleft].begin == cur_node.begin);
+                    assert(bvh_tree[uleft].end < cur_node.end);
+                    assert(bvh_tree[uright].begin == bvh_tree[uleft].end);
+                    assert(bvh_tree[uright].end == cur_node.end);
+
+#if defined(__GNUC__) || defined(__clang__)
+                    // Check that a node with children was split correctly (i.e.,
+                    // cur_node.split_idx corresponds to the index of the first
+                    // different bit at the boundary between first and second child).
+                    const auto split_idx = bvh_tree[uleft].end - 1u;
+                    assert(detail::first_diff_bit(mcodes_ptr[split_idx], mcodes_ptr[split_idx + 1u])
+                           == cur_node.split_idx);
+                    assert(mcodes_ptr[split_idx] == umcodes_ptr[vidx_ptr[split_idx]]);
+#endif
+                }
+
+                // Check the parent info.
+                if (i == 0u) {
+                    assert(cur_node.parent == -1);
+                } else {
+                    assert(cur_node.parent >= 0);
+
+                    const auto upar = static_cast<std::uint32_t>(cur_node.parent);
+
+                    assert(upar < i);
+                    assert(cur_node.begin >= bvh_tree[upar].begin);
+                    assert(cur_node.end <= bvh_tree[upar].end);
+                    assert(cur_node.begin == bvh_tree[upar].begin || cur_node.end == bvh_tree[upar].end);
+                }
+
+                // nn_level must alway be nonzero.
+                assert(cur_node.nn_level > 0u);
+
+                // Check that the AABB of the node is correct.
+                constexpr auto finf = std::numeric_limits<float>::infinity();
+                std::array<float, 4> lb = {finf, finf, finf, finf};
+                std::array<float, 4> ub = {-finf, -finf, -finf, -finf};
+
+                for (auto j = cur_node.begin; j < cur_node.end; ++j) {
+                    assert(x_lb_ptr[j] == ux_lb_ptr[vidx_ptr[j]]);
+                    assert(y_lb_ptr[j] == uy_lb_ptr[vidx_ptr[j]]);
+                    assert(z_lb_ptr[j] == uz_lb_ptr[vidx_ptr[j]]);
+                    assert(r_lb_ptr[j] == ur_lb_ptr[vidx_ptr[j]]);
+
+                    lb[0] = std::min(lb[0], x_lb_ptr[j]);
+                    lb[1] = std::min(lb[1], y_lb_ptr[j]);
+                    lb[2] = std::min(lb[2], z_lb_ptr[j]);
+                    lb[3] = std::min(lb[3], r_lb_ptr[j]);
+
+                    assert(x_ub_ptr[j] == ux_ub_ptr[vidx_ptr[j]]);
+                    assert(y_ub_ptr[j] == uy_ub_ptr[vidx_ptr[j]]);
+                    assert(z_ub_ptr[j] == uz_ub_ptr[vidx_ptr[j]]);
+                    assert(r_ub_ptr[j] == ur_ub_ptr[vidx_ptr[j]]);
+
+                    ub[0] = std::max(ub[0], x_ub_ptr[j]);
+                    ub[1] = std::max(ub[1], y_ub_ptr[j]);
+                    ub[2] = std::max(ub[2], z_ub_ptr[j]);
+                    ub[3] = std::max(ub[3], r_ub_ptr[j]);
+                }
+
+                assert(lb == cur_node.lb);
+                assert(ub == cur_node.ub);
+            }
+        }
+    });
 }
 
 } // namespace cascade

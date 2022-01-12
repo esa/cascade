@@ -111,7 +111,7 @@ ival operator*(ival a, ival b)
 // conceivably in some corner cases FP computations necessary to
 // calculate x outside this function could lead to a value slightly outside
 // the allowed range. In such case, we will clamp the result.
-inline std::uint64_t disc_single_coord(float x, float min, float max)
+std::uint64_t disc_single_coord(float x, float min, float max)
 {
     assert(std::isfinite(min));
     assert(std::isfinite(max));
@@ -227,8 +227,8 @@ void sim::morton_encode_sort()
             // Helper to apply the indirect sorting defined in vidx to the data in src.
             // The sorted data will be written into out.
             auto isort_apply = [vidx_ptr, nparts](auto *out, const auto *src) {
-                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &range) {
-                    for (auto i = range.begin(); i != range.end(); ++i) {
+                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &rn) {
+                    for (auto i = rn.begin(); i != rn.end(); ++i) {
                         out[i] = src[vidx_ptr[i]];
                     }
                 });
