@@ -57,7 +57,7 @@ inline std::pair<std::array<T, 3>, std::array<T, 3>> kep_to_cart(std::array<T, 6
     return std::pair{x, v};
 }
 
-std::mt19937 rng(std::random_device{}());
+std::mt19937 rng;
 
 using namespace cascade;
 
@@ -68,6 +68,10 @@ int main()
     create_logger();
 
     set_logger_level_trace();
+
+    const auto seed = std::random_device{}();
+    rng.seed(seed);
+    std::cout << "Seed set to: " << seed << '\n';
 
     std::uniform_real_distribution<double> a_dist(1.02, 1.3), e_dist(0., 0.02), i_dist(0., 0.05),
         ang_dist(0., 2 * boost::math::constants::pi<double>());
