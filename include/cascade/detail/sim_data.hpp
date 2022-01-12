@@ -18,6 +18,7 @@
 #include <vector>
 
 #include <oneapi/tbb/concurrent_queue.h>
+#include <oneapi/tbb/concurrent_vector.h>
 
 #include <heyoka/detail/dfloat.hpp>
 #include <heyoka/taylor.hpp>
@@ -153,6 +154,14 @@ struct sim::sim_data {
     std::vector<std::vector<std::uint32_t, detail::no_init_alloc<std::uint32_t>>> nc_buffer;
     std::vector<std::vector<std::uint32_t, detail::no_init_alloc<std::uint32_t>>> ps_buffer;
     std::vector<std::vector<std::uint32_t, detail::no_init_alloc<std::uint32_t>>> nplc_buffer;
+
+    // Vectors of broad phase collisions between AABBs.
+    std::vector<oneapi::tbb::concurrent_vector<std::pair<size_type, size_type>>> bp_coll;
+    // Caches of collision vectors between AABBs.
+    std::vector<oneapi::tbb::concurrent_queue<std::vector<std::pair<size_type, size_type>>>> bp_caches;
+    // Caches of stacks for the tree traversal during broad
+    // phase collision detection.
+    std::vector<oneapi::tbb::concurrent_queue<std::vector<std::int32_t>>> stack_caches;
 };
 
 } // namespace cascade

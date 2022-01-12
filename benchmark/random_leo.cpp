@@ -101,11 +101,7 @@ int main()
 
     sim s(x, y, z, vx, vy, vz);
 
-    s.propagate_for(86400.);
-    s.propagate_for(86400.);
-    s.propagate_for(86400.);
-
-    s.propagate_for(86400.);
-    s.propagate_for(86400.);
-    s.propagate_for(86400.);
+    for (auto i = 0; i < 100; ++i) {
+        s.propagate_for(86400.);
+    }
 }

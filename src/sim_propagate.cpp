@@ -278,11 +278,11 @@ void sim::propagate_for(double t)
     const auto init_time = m_data->time;
 
     // TODO fix.
-    const auto delta_t = 0.46 * 8u;
+    const auto delta_t = 0.46 * 4u;
 
     // TODO fix.
     // TODO enforce power of 2?
-    const auto nchunks = 8u;
+    const auto nchunks = 16u;
     const auto chunk_size = delta_t / nchunks;
 
     // Ensure the vectors in m_data are set up with the correct sizes.
@@ -325,6 +325,12 @@ void sim::propagate_for(double t)
     m_data->nc_buffer.resize(nchunks);
     m_data->ps_buffer.resize(nchunks);
     m_data->nplc_buffer.resize(nchunks);
+
+    // Setup the broad phase collision detection data.
+    // TODO numeric cast.
+    m_data->bp_coll.resize(nchunks);
+    m_data->bp_caches.resize(nchunks);
+    m_data->stack_caches.resize(nchunks);
 
     std::atomic<bool> int_error{false};
 
@@ -635,6 +641,9 @@ void sim::propagate_for(double t)
 
     // Construction of the BVH trees.
     construct_bvh_trees();
+
+    // Broad phase collision detection.
+    broad_phase();
 
     logger->trace("Total propagation time: {}s", sw);
 }
