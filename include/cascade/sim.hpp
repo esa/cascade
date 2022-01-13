@@ -10,12 +10,15 @@
 #define CASCADE_SIM_HPP
 
 #include <concepts>
+#include <cstddef>
+#include <functional>
 #include <ranges>
+#include <tuple>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include <boost/numeric/conversion/cast.hpp>
-
-#include <xtensor/xadapt.hpp>
 
 #include <cascade/detail/visibility.hpp>
 
@@ -25,8 +28,8 @@ namespace cascade
 #define CASCADE_CONCEPT_DECL concept
 
 template <typename T>
-CASCADE_CONCEPT_DECL di_range = std::ranges::input_range<T>
-    &&std::convertible_to<std::ranges::range_reference_t<T>, double> &&std::integral<std::ranges::range_size_t<T>>;
+CASCADE_CONCEPT_DECL di_range
+    = std::ranges::input_range<T> &&std::convertible_to<std::ranges::range_reference_t<T>, double>;
 
 #undef CASCADE_CONCEPT_DECL
 
@@ -34,7 +37,7 @@ class CASCADE_DLL_PUBLIC sim
 {
     struct sim_data;
 
-    std::vector<double> m_x, m_y, m_z, m_vx, m_vy, m_vz, m_r;
+    std::vector<double> m_x, m_y, m_z, m_vx, m_vy, m_vz, m_sizes;
     sim_data *m_data = nullptr;
 
     void finalise_ctor();
@@ -44,61 +47,54 @@ class CASCADE_DLL_PUBLIC sim
     CASCADE_DLL_LOCAL void broad_phase();
     CASCADE_DLL_LOCAL void verify_broad_phase();
 
+    template <typename InTup, typename OutTup, std::size_t... I>
+    void ctor_impl(const InTup &in_tup, const OutTup &out_tup, std::index_sequence<I...>)
+    {
+        auto func = [&](auto ic) {
+            constexpr auto Idx = decltype(ic)::value;
+
+            // The type of the input range.
+            using in_t = std::tuple_element_t<Idx, InTup>;
+
+            // The input/output vectors.
+            auto &in_vec = std::get<Idx>(in_tup);
+            auto &out_vec = std::get<Idx>(out_tup);
+
+            if constexpr (std::is_same_v<std::vector<double>, std::remove_cvref_t<in_t>>) {
+                // The input range is already a vector<double>: copy/move it in.
+                out_vec = std::forward<in_t>(in_vec);
+            } else {
+                if constexpr (std::ranges::sized_range<in_t>) {
+                    if constexpr (std::integral<std::ranges::range_size_t<in_t>>) {
+                        // The input range is sized and the size type is a C++ integral.
+                        // Prepare the internal vector.
+                        out_vec.reserve(boost::numeric_cast<decltype(out_vec.size())>(std::ranges::size(in_vec)));
+                    }
+                }
+
+                // Add the values.
+                for (auto &&val : in_vec) {
+                    out_vec.push_back(static_cast<double>(val));
+                }
+            }
+        };
+
+        (func(std::integral_constant<std::size_t, I>{}), ...);
+    }
+
 public:
     using size_type = std::vector<double>::size_type;
 
     sim();
-    // TODO optimise for input std::vector<double> rvalue.
-    explicit sim(di_range auto const &x, di_range auto const &y, di_range auto const &z, di_range auto const &vx,
-                 di_range auto const &vy, di_range auto const &vz)
+    template <di_range X, di_range Y, di_range Z, di_range VX, di_range VY, di_range VZ, di_range S>
+    explicit sim(X &&x, Y &&y, Z &&z, VX &&vx, VY &&vy, VZ &&vz, S &&s)
     {
-        if constexpr (std::ranges::sized_range<decltype(x)>) {
-            m_x.reserve(boost::numeric_cast<decltype(m_x.size())>(std::ranges::size(x)));
-        }
-
-        if constexpr (std::ranges::sized_range<decltype(y)>) {
-            m_y.reserve(boost::numeric_cast<decltype(m_y.size())>(std::ranges::size(y)));
-        }
-
-        if constexpr (std::ranges::sized_range<decltype(z)>) {
-            m_z.reserve(boost::numeric_cast<decltype(m_z.size())>(std::ranges::size(z)));
-        }
-
-        if constexpr (std::ranges::sized_range<decltype(vx)>) {
-            m_vx.reserve(boost::numeric_cast<decltype(m_vx.size())>(std::ranges::size(vx)));
-        }
-
-        if constexpr (std::ranges::sized_range<decltype(vy)>) {
-            m_vy.reserve(boost::numeric_cast<decltype(m_vy.size())>(std::ranges::size(vy)));
-        }
-
-        if constexpr (std::ranges::sized_range<decltype(vz)>) {
-            m_vz.reserve(boost::numeric_cast<decltype(m_vz.size())>(std::ranges::size(vz)));
-        }
-
-        for (auto &&val : x) {
-            m_x.push_back(static_cast<double>(val));
-        }
-
-        for (auto &&val : y) {
-            m_y.push_back(static_cast<double>(val));
-        }
-
-        for (auto &&val : z) {
-            m_z.push_back(static_cast<double>(val));
-        }
-
-        for (auto &&val : vx) {
-            m_vx.push_back(static_cast<double>(val));
-        }
-
-        for (auto &&val : vy) {
-            m_vy.push_back(static_cast<double>(val));
-        }
-
-        for (auto &&val : vz) {
-            m_vz.push_back(static_cast<double>(val));
-        }
+        auto in_tup
+            = std::forward_as_tuple(std::forward<X>(x), std::forward<Y>(y), std::forward<Z>(z), std::forward<VX>(vx),
+                                    std::forward<VY>(vy), std::forward<VZ>(vz), std::forward<S>(s));
+        auto out_tup = std::make_tuple(std::ref(m_x), std::ref(m_y), std::ref(m_z), std::ref(m_vx), std::ref(m_vy),
+                                       std::ref(m_vz), std::ref(m_sizes));
+        ctor_impl(in_tup, out_tup, std::make_index_sequence<std::tuple_size_v<decltype(out_tup)>>{});
 
         finalise_ctor();
     }
@@ -112,6 +108,11 @@ public:
     size_type get_nparts() const
     {
         return m_x.size();
+    }
+
+    const auto &get_x() const
+    {
+        return m_x;
     }
 
     void propagate_for(double);

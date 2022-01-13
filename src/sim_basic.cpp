@@ -52,7 +52,7 @@ namespace cascade
 
 sim::sim()
     : sim(std::vector<double>{}, std::vector<double>{}, std::vector<double>{}, std::vector<double>{},
-          std::vector<double>{}, std::vector<double>{})
+          std::vector<double>{}, std::vector<double>{}, std::vector<double>{})
 {
 }
 
@@ -98,6 +98,11 @@ void sim::finalise_ctor()
                                     "but the number of z velocities is {}"_format(nparts, m_vz.size()));
     }
 
+    if (m_sizes.size() != nparts) {
+        throw std::invalid_argument("Inconsistent number of particles detected: the number of x coordinates is {}, "
+                                    "but the number of particle sizes is {}"_format(nparts, m_sizes.size()));
+    }
+
     std::optional<hy::taylor_adaptive<double>> s_ta;
     std::optional<hy::taylor_adaptive_batch<double>> b_ta;
 
@@ -139,22 +144,7 @@ void sim::finalise_ctor()
         integrators_setup, [&finite_checker, this]() { finite_checker(m_x); },
         [&finite_checker, this]() { finite_checker(m_y); }, [&finite_checker, this]() { finite_checker(m_z); },
         [&finite_checker, this]() { finite_checker(m_vx); }, [&finite_checker, this]() { finite_checker(m_vy); },
-        [&finite_checker, this]() { finite_checker(m_vz); },
-        [this, nparts]() {
-            // Compute the initial values of the radiuses.
-            m_r.resize(nparts);
-
-            oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(size_type(0), nparts), [this](const auto &range) {
-                for (auto i = range.begin(); i != range.end(); ++i) {
-                    m_r[i] = std::sqrt(m_x[i] * m_x[i] + m_y[i] * m_y[i] + m_z[i] * m_z[i]);
-
-                    if (!std::isfinite(m_r[i])) {
-                        throw std::domain_error(
-                            "The non-finite value {} was detected in the particle states"_format(m_r[i]));
-                    }
-                }
-            });
-        });
+        [&finite_checker, this]() { finite_checker(m_vz); });
 
     logger->trace("Integrators setup time: {}s", sw);
 

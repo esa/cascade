@@ -9,6 +9,7 @@
 #include <array>
 #include <cmath>
 #include <initializer_list>
+#include <iostream>
 #include <random>
 #include <utility>
 #include <vector>
@@ -74,9 +75,9 @@ int main()
     std::cout << "Seed set to: " << seed << '\n';
 
     std::uniform_real_distribution<double> a_dist(1.02, 1.3), e_dist(0., 0.02), i_dist(0., 0.05),
-        ang_dist(0., 2 * boost::math::constants::pi<double>());
+        ang_dist(0., 2 * boost::math::constants::pi<double>()), size_dist(1.57e-8, 1.57e-7);
 
-    std::vector<double> x, y, z, vx, vy, vz;
+    std::vector<double> x, y, z, vx, vy, vz, size;
 
     const auto nparts = 8192ull * 1u;
 
@@ -97,11 +98,17 @@ int main()
         vx.push_back(v[0]);
         vy.push_back(v[1]);
         vz.push_back(v[2]);
+
+        size.push_back(size_dist(rng));
     }
 
-    sim s(x, y, z, vx, vy, vz);
+    auto x_data = x.data();
 
-    for (auto i = 0; i < 100; ++i) {
+    sim s(std::move(x), y, z, vx, vy, vz, size);
+
+    std::cout << "Moved in: " << (x_data == s.get_x().data()) << '\n';
+
+    for (auto i = 0; i < 10; ++i) {
         s.propagate_for(86400.);
     }
 }

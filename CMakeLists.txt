@@ -144,10 +144,6 @@ target_link_libraries(cascade PRIVATE TBB::tbb)
 find_package(Boost 1.60 REQUIRED)
 target_link_libraries(cascade PUBLIC Boost::boost)
 
-# xtensor.
-find_package(xtensor REQUIRED CONFIG)
-target_link_libraries(cascade PUBLIC xtensor)
-
 # fmt.
 find_package(fmt CONFIG REQUIRED)
 target_link_libraries(cascade PRIVATE fmt::fmt)

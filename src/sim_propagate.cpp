@@ -386,7 +386,13 @@ void sim::propagate_for(double t)
             std::copy(m_vx.data() + pidx_begin, m_vx.data() + pidx_end, st_data + 3u * batch_size);
             std::copy(m_vy.data() + pidx_begin, m_vy.data() + pidx_end, st_data + 4u * batch_size);
             std::copy(m_vz.data() + pidx_begin, m_vz.data() + pidx_end, st_data + 5u * batch_size);
-            std::copy(m_r.data() + pidx_begin, m_r.data() + pidx_end, st_data + 6u * batch_size);
+
+            // NOTE: compute the radius on the fly from the x/y/z coords.
+            for (std::uint32_t i = 0; i < batch_size; ++i) {
+                st_data[6u * batch_size + i]
+                    = std::sqrt(st_data[i] * st_data[i] + st_data[batch_size + i] * st_data[batch_size + i]
+                                + st_data[batch_size * 2u + i] * st_data[batch_size * 2u + i]);
+            }
 
             // Setup the propagate_for() callback.
             auto cb = [&](auto &) {
