@@ -210,16 +210,16 @@ void sim::verify_broad_phase()
 
             // Build a set version of the collision list
             // for fast lookup.
-            std::set<std::pair<size_type, size_type>> coll_set;
+            std::set<std::pair<size_type, size_type>> coll_tree;
             for (const auto &p : m_data->bp_coll[chunk_idx]) {
                 // Check that, for all collisions (i, j), i is always < j.
                 assert(p.first < p.second);
                 // Check that the collision pairs are unique.
-                assert(coll_set.emplace(p).second);
+                assert(coll_tree.emplace(p).second);
             }
 
             // A counter for the N**2 collision detection algorithm below.
-            std::atomic<decltype(coll_set.size())> coll_counter(0);
+            std::atomic<decltype(coll_tree.size())> coll_counter(0);
 
             oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &ri) {
                 for (auto i = ri.begin(); i != ri.end(); ++i) {
@@ -235,7 +235,7 @@ void sim::verify_broad_phase()
 
                     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(i + 1u, nparts),
                                               [&](const auto &rj) {
-                                                  decltype(coll_set.size()) loc_ncoll = 0;
+                                                  decltype(coll_tree.size()) loc_ncoll = 0;
 
                                                   for (auto j = rj.begin(); j != rj.end(); ++j) {
                                                       const auto xj_lb = x_lb_ptr[j];
@@ -253,9 +253,9 @@ void sim::verify_broad_phase()
                                                                            && (zi_ub >= zj_lb && zi_lb <= zj_ub)
                                                                            && (ri_ub >= rj_lb && ri_lb <= rj_ub);
 
-                                                      const auto it = coll_set.find({i, j});
+                                                      const auto it = coll_tree.find({i, j});
 
-                                                      assert(overlap == (it != coll_set.end()));
+                                                      assert(overlap == (it != coll_tree.end()));
 
                                                       loc_ncoll += overlap;
                                                   }
@@ -267,9 +267,9 @@ void sim::verify_broad_phase()
 
             // NOTE: in case of multi-particle leaves, we will have detected
             // non-existing AABBs overlaps. Thus, just require that the number
-            // of "true" collisions detected with the N**2 algorithm
-            // is not less than the number of collisions detected via the tree.
-            assert(coll_set.size() >= coll_counter.load());
+            // of collisions detected via the tree is at least as large
+            // as the number of "true" collisions detected with the N**2 algorithm.
+            assert(coll_tree.size() >= coll_counter.load());
         }
     });
 }
