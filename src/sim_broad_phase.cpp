@@ -114,7 +114,7 @@ void sim::broad_phase()
                     const auto z_ub = z_ub_ptr[pidx];
                     const auto r_ub = r_ub_ptr[pidx];
 
-                    while (!stack.empty()) {
+                    do {
                         // Pop a node.
                         const auto cur_node_idx = stack.back();
                         stack.pop_back();
@@ -136,6 +136,14 @@ void sim::broad_phase()
                                 // - pidx is colliding with itself (pidx == i), or
                                 // - pidx > i, in order to avoid counting twice
                                 //   the collisions (pidx, i) and (i, pidx).
+                                // NOTE: in case of a multi-particle leaf,
+                                // the node's AABB is the composition of the AABBs
+                                // of all particles in the node, and thus, in general,
+                                // it is not strictly true tha pidx will overlap with
+                                // *all* particles in the node. In other words, we will
+                                // be detecting AABB overlaps which are not actually there.
+                                // This is ok, as they will be filtered out in the
+                                // next stages of collision detection.
                                 for (auto i = cur_node.begin; i != cur_node.end; ++i) {
                                     if (pidx < i) {
                                         local_bp.emplace_back(pidx, i);
@@ -148,10 +156,10 @@ void sim::broad_phase()
                                 stack.push_back(cur_node.right);
                             }
                         }
-                    }
+                    } while (!stack.empty());
                 }
 
-                // Merge the local bp into the global one.
+                // Atomically merge the local bp into the global one.
                 coll_vec.grow_by(local_bp.begin(), local_bp.end());
 
                 // Put local_bp and the stack (back) into the caches.
@@ -201,15 +209,16 @@ void sim::verify_broad_phase()
             const auto *CASCADE_RESTRICT r_ub_ptr = m_data->srt_r_ub.data() + offset;
 
             // Build a set version of the collision list
-            // for fast checking.
-            const auto &cur_bp_coll = m_data->bp_coll[chunk_idx];
-            std::set<std::pair<size_type, size_type>> coll_set(cur_bp_coll.begin(), cur_bp_coll.end());
-
-            // Check that, for all collisions (i, j), i is always < j.
-            for (const auto &p : cur_bp_coll) {
+            // for fast lookup.
+            std::set<std::pair<size_type, size_type>> coll_set;
+            for (const auto &p : m_data->bp_coll[chunk_idx]) {
+                // Check that, for all collisions (i, j), i is always < j.
                 assert(p.first < p.second);
+                // Check that the collision pairs are unique.
+                assert(coll_set.emplace(p).second);
             }
 
+            // A counter for the N**2 collision detection algorithm below.
             std::atomic<decltype(coll_set.size())> coll_counter(0);
 
             oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &ri) {
@@ -256,7 +265,11 @@ void sim::verify_broad_phase()
                 }
             });
 
-            assert(coll_counter.load() == coll_set.size());
+            // NOTE: in case of multi-particle leaves, we will have detected
+            // non-existing AABBs overlaps. Thus, just require that the number
+            // of "true" collisions detected with the N**2 algorithm
+            // is not less than the number of collisions detected via the tree.
+            assert(coll_set.size() >= coll_counter.load());
         }
     });
 }
