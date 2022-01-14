@@ -504,7 +504,7 @@ void sim::propagate_for(double t)
                     // the current chunk.
                     // First we locate the first substep whose end is strictly
                     // *greater* than the lower bound of the chunk.
-                    auto ss_it_begin = std::upper_bound(tcoords_begin, tcoords_end, chunk_begin);
+                    const auto ss_it_begin = std::upper_bound(tcoords_begin, tcoords_end, chunk_begin);
                     // Then, we locate the first substep whose end is *greater than or
                     // equal to* the end of the chunk.
                     auto ss_it_end = std::lower_bound(ss_it_begin, tcoords_end, chunk_end);
