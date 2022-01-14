@@ -492,6 +492,10 @@ void sim::propagate_for(double t)
                     z_ub_ptr[pidx_begin + i] = -finf;
                     r_ub_ptr[pidx_begin + i] = -finf;
 
+                    // Fetch the particle radius.
+                    const auto p_radius = m_sizes[pidx_begin + i];
+
+                    // Cache the range of end times of the substeps.
                     const auto &tcoords = s_data[pidx_begin + i].tcoords;
                     const auto tcoords_begin = tcoords.begin();
                     const auto tcoords_end = tcoords.end();
@@ -547,7 +551,9 @@ void sim::propagate_for(double t)
                         const auto tc_ptr_r = s_data[pidx_begin + i].tc_r.data() + ss_idx * (order + 1u);
 
                         // Run the polynomial evaluations using interval arithmetic.
-                        // TODO jit for performance?
+                        // TODO jit for performance? If so, we can do all 4 coordinates
+                        // in a single JIT compiled function. Possibly also the update
+                        // with the particle radius?
                         auto horner_eval = [order, h_int = detail::ival(h_int_lb, h_int_ub)](const double *ptr) {
                             auto acc = detail::ival(ptr[order]);
                             for (auto o = 1u; o <= order; ++o) {
@@ -557,33 +563,43 @@ void sim::propagate_for(double t)
                             return acc;
                         };
 
-                        // TODO: particle size/cross section should be accounted for here, by enlarging
-                        // x/y/z/r_int as needed.
-                        const auto x_int = horner_eval(tc_ptr_x);
-                        const auto y_int = horner_eval(tc_ptr_y);
-                        const auto z_int = horner_eval(tc_ptr_z);
-                        const auto r_int = horner_eval(tc_ptr_r);
+                        auto x_int = horner_eval(tc_ptr_x);
+                        auto y_int = horner_eval(tc_ptr_y);
+                        auto z_int = horner_eval(tc_ptr_z);
+                        auto r_int = horner_eval(tc_ptr_r);
+
+                        // Adjust the intervals accounting for the particle radius.
+                        x_int.lower -= p_radius;
+                        x_int.upper += p_radius;
+
+                        y_int.lower -= p_radius;
+                        y_int.upper += p_radius;
+
+                        z_int.lower -= p_radius;
+                        z_int.upper += p_radius;
+
+                        r_int.lower -= p_radius;
+                        r_int.upper += p_radius;
+
+                        // A couple of helpers to cast lower/upper bounds from double to float. After
+                        // the cast, we will also move slightly the bounds to add a safety margin to account
+                        // for possible truncation in the conversion.
+                        // TODO: this looks like a good place for inf checking.
+                        auto lb_make_float = [&](double lb) { return std::nextafter(static_cast<float>(lb), -finf); };
+                        auto ub_make_float = [&](double ub) { return std::nextafter(static_cast<float>(ub), finf); };
 
                         // Update the bounding box for the current particle.
                         // TODO: min/max usage?
                         // TODO: inf checking? Here or when updating the global AABB?
-                        x_lb_ptr[pidx_begin + i] = std::min(x_lb_ptr[pidx_begin + i],
-                                                            std::nextafter(static_cast<float>(x_int.lower), -finf));
-                        y_lb_ptr[pidx_begin + i] = std::min(y_lb_ptr[pidx_begin + i],
-                                                            std::nextafter(static_cast<float>(y_int.lower), -finf));
-                        z_lb_ptr[pidx_begin + i] = std::min(z_lb_ptr[pidx_begin + i],
-                                                            std::nextafter(static_cast<float>(z_int.lower), -finf));
-                        r_lb_ptr[pidx_begin + i] = std::min(r_lb_ptr[pidx_begin + i],
-                                                            std::nextafter(static_cast<float>(r_int.lower), -finf));
+                        x_lb_ptr[pidx_begin + i] = std::min(x_lb_ptr[pidx_begin + i], lb_make_float(x_int.lower));
+                        y_lb_ptr[pidx_begin + i] = std::min(y_lb_ptr[pidx_begin + i], lb_make_float(y_int.lower));
+                        z_lb_ptr[pidx_begin + i] = std::min(z_lb_ptr[pidx_begin + i], lb_make_float(z_int.lower));
+                        r_lb_ptr[pidx_begin + i] = std::min(r_lb_ptr[pidx_begin + i], lb_make_float(r_int.lower));
 
-                        x_ub_ptr[pidx_begin + i]
-                            = std::max(x_ub_ptr[pidx_begin + i], std::nextafter(static_cast<float>(x_int.upper), finf));
-                        y_ub_ptr[pidx_begin + i]
-                            = std::max(y_ub_ptr[pidx_begin + i], std::nextafter(static_cast<float>(y_int.upper), finf));
-                        z_ub_ptr[pidx_begin + i]
-                            = std::max(z_ub_ptr[pidx_begin + i], std::nextafter(static_cast<float>(z_int.upper), finf));
-                        r_ub_ptr[pidx_begin + i]
-                            = std::max(r_ub_ptr[pidx_begin + i], std::nextafter(static_cast<float>(r_int.upper), finf));
+                        x_ub_ptr[pidx_begin + i] = std::max(x_ub_ptr[pidx_begin + i], ub_make_float(x_int.upper));
+                        y_ub_ptr[pidx_begin + i] = std::max(y_ub_ptr[pidx_begin + i], ub_make_float(y_int.upper));
+                        z_ub_ptr[pidx_begin + i] = std::max(z_ub_ptr[pidx_begin + i], ub_make_float(z_int.upper));
+                        r_ub_ptr[pidx_begin + i] = std::max(r_ub_ptr[pidx_begin + i], ub_make_float(r_int.upper));
                     }
 
                     // Update the local AABB with the bounding box for the current particle.

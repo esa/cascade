@@ -100,7 +100,7 @@ void sim::finalise_ctor()
 
     if (m_sizes.size() != nparts) {
         throw std::invalid_argument("Inconsistent number of particles detected: the number of x coordinates is {}, "
-                                    "but the number of particle sizes is {}"_format(nparts, m_sizes.size()));
+                                    "but the number of particle radiuses is {}"_format(nparts, m_sizes.size()));
     }
 
     std::optional<hy::taylor_adaptive<double>> s_ta;
@@ -144,7 +144,22 @@ void sim::finalise_ctor()
         integrators_setup, [&finite_checker, this]() { finite_checker(m_x); },
         [&finite_checker, this]() { finite_checker(m_y); }, [&finite_checker, this]() { finite_checker(m_z); },
         [&finite_checker, this]() { finite_checker(m_vx); }, [&finite_checker, this]() { finite_checker(m_vy); },
-        [&finite_checker, this]() { finite_checker(m_vz); });
+        [&finite_checker, this]() { finite_checker(m_vz); },
+        [this]() {
+            // NOTE: for the particle sizes, we also check that no size is negative.
+            oneapi::tbb::parallel_for(
+                oneapi::tbb::blocked_range(m_sizes.begin(), m_sizes.end()), [](const auto &range) {
+                    for (const auto &val : range) {
+                        if (!std::isfinite(val)) {
+                            throw std::domain_error("A non-finite particle radius of {} was detected"_format(val));
+                        }
+
+                        if (val < 0) {
+                            throw std::domain_error("A negative particle radius of {} was detected"_format(val));
+                        }
+                    }
+                });
+        });
 
     logger->trace("Integrators setup time: {}s", sw);
 
