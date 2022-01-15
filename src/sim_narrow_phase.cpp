@@ -101,7 +101,6 @@ void sim::narrow_phase(double chunk_size)
                 std::size_t local_n_ffex = 0;
 
                 // Try to fetch 6 polynomials from the cache.
-                // TODO unique_ptr perhaps performs better here?
                 std::array<std::vector<double>, 7> poly_temp;
                 auto &[xi_temp, yi_temp, zi_temp, xj_temp, yj_temp, zj_temp, ss_diff] = poly_temp;
 
