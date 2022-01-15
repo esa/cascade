@@ -332,6 +332,10 @@ void sim::propagate_for(double t)
     m_data->bp_caches.resize(nchunks);
     m_data->stack_caches.resize(nchunks);
 
+    // Setup the narrow phase collision detection data.
+    // TODO numeric cast.
+    m_data->poly_caches.resize(nchunks);
+
     std::atomic<bool> int_error{false};
 
     // Batch integration and computation of the AABBs for all particles.

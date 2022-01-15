@@ -79,7 +79,7 @@ int main()
 
     std::vector<double> x, y, z, vx, vy, vz, size;
 
-    const auto nparts = 8192ull * 1u;
+    const auto nparts = 8192ull * 10u;
 
     for (auto i = 0ull; i < nparts; ++i) {
         const auto a = a_dist(rng);
@@ -108,7 +108,7 @@ int main()
 
     std::cout << "Moved in: " << (x_data == s.get_x().data()) << '\n';
 
-    for (auto i = 0; i < 10; ++i) {
+    for (auto i = 0; i < 100; ++i) {
         s.propagate_for(86400.);
     }
 }

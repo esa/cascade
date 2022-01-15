@@ -41,6 +41,7 @@ class CASCADE_DLL_PUBLIC sim
     sim_data *m_data = nullptr;
 
     void finalise_ctor();
+    CASCADE_DLL_LOCAL void add_jit_functions();
     CASCADE_DLL_LOCAL void morton_encode_sort();
     CASCADE_DLL_LOCAL void construct_bvh_trees();
     CASCADE_DLL_LOCAL void verify_bvh_trees();

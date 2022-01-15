@@ -7,9 +7,13 @@
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <chrono>
 #include <cmath>
+#include <utility>
+
+#include <boost/numeric/conversion/cast.hpp>
 
 #include <spdlog/stopwatch.h>
 
@@ -24,6 +28,30 @@
 
 namespace cascade
 {
+
+namespace detail
+{
+
+namespace
+{
+
+// Evaluate polynomial.
+// Requires random-access iterator.
+template <typename InputIt, typename T>
+auto poly_eval(InputIt a, T x, std::uint32_t n)
+{
+    auto ret = a[n];
+
+    for (std::uint32_t i = 1; i <= n; ++i) {
+        ret = a[n - i] + ret * x;
+    }
+
+    return ret;
+}
+
+} // namespace
+
+} // namespace detail
 
 // Narrow phase collision detection: the trajectories
 // of the particle pairs identified during broad
@@ -40,15 +68,20 @@ void sim::narrow_phase(double chunk_size)
 
     auto *logger = detail::get_logger();
 
+    // Cache a few bits.
     const auto nchunks = static_cast<unsigned>(m_data->global_lb.size());
-
+    const auto order = m_data->s_ta.get_order();
     const auto &s_data = m_data->s_data;
+    const auto pta = m_data->pta;
 
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
             // Fetch a reference to the chunk-specific broad
             // phase collision vector.
             const auto &bpc = m_data->bp_coll[chunk_idx];
+
+            // Fetch references to the chunk-specific caches.
+            auto &pcache = m_data->poly_caches[chunk_idx];
 
             // The time coordinate, relative to init_time, of
             // the chunk's begin/end.
@@ -57,6 +90,23 @@ void sim::narrow_phase(double chunk_size)
 
             // Iterate over all collisions.
             oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(bpc.begin(), bpc.end()), [&](const auto &rn) {
+                // Try to fetch 6 polynomials from the cache.
+                // TODO unique_ptr perhaps performs better here?
+                std::array<std::vector<double>, 6> poly_temp;
+                auto &[xi_temp, yi_temp, zi_temp, xj_temp, yj_temp, zj_temp] = poly_temp;
+
+                if (!pcache.try_pop(poly_temp)) {
+                    logger->debug("Creating new local polynomials for narrow phase collision detection");
+
+                    xi_temp.resize(boost::numeric_cast<decltype(xi_temp.size())>(order + 1u));
+                    yi_temp.resize(boost::numeric_cast<decltype(yi_temp.size())>(order + 1u));
+                    zi_temp.resize(boost::numeric_cast<decltype(zi_temp.size())>(order + 1u));
+
+                    xj_temp.resize(boost::numeric_cast<decltype(xj_temp.size())>(order + 1u));
+                    yj_temp.resize(boost::numeric_cast<decltype(yj_temp.size())>(order + 1u));
+                    zj_temp.resize(boost::numeric_cast<decltype(zj_temp.size())>(order + 1u));
+                }
+
                 for (const auto &pc : rn) {
                     const auto [pi, pj] = pc;
 
@@ -111,21 +161,22 @@ void sim::narrow_phase(double chunk_size)
                         const auto lb = std::max(lb_i, lb_j);
                         const auto ub = std::min(ub_i, ub_j);
 
-                        // Refer lb/ub to the beginning of the two substeps,
-                        // and cast to double.
-                        const auto h_int_lb_i = static_cast<double>(lb - ss_start_i);
-                        const auto h_int_ub_i = static_cast<double>(ub - ss_start_i);
-                        const auto h_int_lb_j = static_cast<double>(lb - ss_start_j);
-                        const auto h_int_ub_j = static_cast<double>(ub - ss_start_j);
+                        // The Taylor polynomials for the two particles are time polynomials
+                        // in which time is counted from the beginning of the substep. In order to
+                        // create the polynomial representing the distance square, we need first to
+                        // translate the polynomials of both particles so that they refer to a
+                        // common time coordinate, the time elapsed from lb.
 
-                        // Run checks on the results before moving forward, since we used
-                        // FP arith and there could also be corner cases in which we end up
-                        // with empty and/or invalid intervals.
-                        auto lb_ub_check = [](double l, double u) {
-                            return std::isfinite(l) && std::isfinite(u) && l >= 0 && u > l;
-                        };
+                        // Compute the translation amount for the two particles.
+                        const auto delta_i = static_cast<double>(lb - ss_start_i);
+                        const auto delta_j = static_cast<double>(lb - ss_start_j);
 
-                        if (!lb_ub_check(h_int_lb_i, h_int_ub_i) || !lb_ub_check(h_int_lb_j, h_int_ub_j)) {
+                        // Compute the time interval within which we will be performing root finding.
+                        const auto rf_int = static_cast<double>(ub - lb);
+
+                        // Do some checking before moving on.
+                        if (!std::isfinite(delta_i) || !std::isfinite(delta_j) || !std::isfinite(rf_int) || delta_i < 0
+                            || delta_j < 0 || rf_int < 0) {
                             // Bail out in case of errors.
                             logger->warn("During the narrow-phase collision detection of particles {} and {}, "
                                          "an invalid time interval for polynomial root finding was generated - the "
@@ -135,7 +186,38 @@ void sim::narrow_phase(double chunk_size)
                             break;
                         }
 
-                        // TODO poly translation, root finding.
+                        // Fetch pointers to the original Taylor polynomials for the two particles.
+                        // NOTE: static_cast because overflow checking and numeric cast are already
+                        // done in sim_propagate_for.
+                        const auto ss_idx_i = static_cast<decltype(s_data[pi].tc_x.size())>(it_i - tcoords_begin_i);
+                        const auto ss_idx_j = static_cast<decltype(s_data[pj].tc_x.size())>(it_j - tcoords_begin_j);
+
+                        const auto *poly_xi = s_data[pi].tc_x.data() + ss_idx_i * (order + 1u);
+                        const auto *poly_yi = s_data[pi].tc_y.data() + ss_idx_i * (order + 1u);
+                        const auto *poly_zi = s_data[pi].tc_z.data() + ss_idx_i * (order + 1u);
+
+                        const auto *poly_xj = s_data[pj].tc_x.data() + ss_idx_j * (order + 1u);
+                        const auto *poly_yj = s_data[pj].tc_y.data() + ss_idx_j * (order + 1u);
+                        const auto *poly_zj = s_data[pj].tc_z.data() + ss_idx_j * (order + 1u);
+
+                        // Perform the translations, if needed.
+                        // NOTE: perhaps we can write a dedicated function
+                        // that does the translation for all 3 coordinates
+                        // at once, for better performance?
+                        if (delta_i != 0) {
+                            poly_xi = pta(xi_temp.data(), poly_xi, delta_i);
+                            poly_yi = pta(yi_temp.data(), poly_yi, delta_i);
+                            poly_zi = pta(zi_temp.data(), poly_zi, delta_i);
+                        }
+
+                        if (delta_j != 0) {
+                            poly_xj = pta(xj_temp.data(), poly_xj, delta_j);
+                            poly_yj = pta(yj_temp.data(), poly_yj, delta_j);
+                            poly_zj = pta(zj_temp.data(), poly_zj, delta_j);
+                        }
+
+                        // We can now construct the polynomial for the
+                        // square of the distance.
 
                         if (*it_i < *it_j) {
                             // The substep for particle i ends
@@ -155,6 +237,9 @@ void sim::narrow_phase(double chunk_size)
                         }
                     }
                 }
+
+                // Put the polynomials back into the cache.
+                pcache.push(std::move(poly_temp));
             });
         }
     });

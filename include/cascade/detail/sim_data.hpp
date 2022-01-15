@@ -21,6 +21,7 @@
 #include <oneapi/tbb/concurrent_vector.h>
 
 #include <heyoka/detail/dfloat.hpp>
+#include <heyoka/llvm_state.hpp>
 #include <heyoka/taylor.hpp>
 
 #include <cascade/sim.hpp>
@@ -162,6 +163,15 @@ struct sim::sim_data {
     // Caches of stacks for the tree traversal during broad
     // phase collision detection.
     std::vector<oneapi::tbb::concurrent_queue<std::vector<std::int32_t>>> stack_caches;
+
+    // Narrow phase collision data.
+    // Caches of polynomial buffers.
+    std::vector<oneapi::tbb::concurrent_queue<std::array<std::vector<double>, 6>>> poly_caches;
+
+    // The JIT data.
+    heyoka::llvm_state state;
+    using pta_t = double *(*)(double *, const double *, double) noexcept;
+    pta_t pta = nullptr;
 };
 
 } // namespace cascade

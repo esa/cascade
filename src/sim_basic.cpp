@@ -165,6 +165,12 @@ void sim::finalise_ctor()
 
     auto data_ptr = std::make_unique<sim_data>(std::move(*s_ta), std::move(*b_ta));
     m_data = data_ptr.release();
+
+    sw.reset();
+
+    add_jit_functions();
+
+    logger->trace("JIT functions setup time: {}s", sw);
 }
 
 } // namespace cascade
