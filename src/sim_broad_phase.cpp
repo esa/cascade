@@ -66,6 +66,8 @@ void sim::broad_phase()
             const auto *CASCADE_RESTRICT z_ub_ptr = m_data->srt_z_ub.data() + offset;
             const auto *CASCADE_RESTRICT r_ub_ptr = m_data->srt_r_ub.data() + offset;
 
+            const auto *CASCADE_RESTRICT vidx_ptr = m_data->vidx.data() + offset;
+
             // Fetch a reference to the tree.
             const auto &tree = m_data->bvh_trees[chunk_idx];
 
@@ -144,9 +146,12 @@ void sim::broad_phase()
                                 // be detecting AABB overlaps which are not actually there.
                                 // This is ok, as they will be filtered out in the
                                 // next stages of collision detection.
+                                // NOTE: we want to store the particle indices
+                                // in the *original* order, not in the Morton order,
+                                // hence the indirection via vidx_ptr.
                                 for (auto i = cur_node.begin; i != cur_node.end; ++i) {
-                                    if (pidx < i) {
-                                        local_bp.emplace_back(pidx, i);
+                                    if (vidx_ptr[pidx] < vidx_ptr[i]) {
+                                        local_bp.emplace_back(vidx_ptr[pidx], vidx_ptr[i]);
                                     }
                                 }
                             } else {
@@ -198,15 +203,15 @@ void sim::verify_broad_phase()
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
             const auto offset = nparts * chunk_idx;
 
-            const auto *CASCADE_RESTRICT x_lb_ptr = m_data->srt_x_lb.data() + offset;
-            const auto *CASCADE_RESTRICT y_lb_ptr = m_data->srt_y_lb.data() + offset;
-            const auto *CASCADE_RESTRICT z_lb_ptr = m_data->srt_z_lb.data() + offset;
-            const auto *CASCADE_RESTRICT r_lb_ptr = m_data->srt_r_lb.data() + offset;
+            const auto *CASCADE_RESTRICT x_lb_ptr = m_data->x_lb.data() + offset;
+            const auto *CASCADE_RESTRICT y_lb_ptr = m_data->y_lb.data() + offset;
+            const auto *CASCADE_RESTRICT z_lb_ptr = m_data->z_lb.data() + offset;
+            const auto *CASCADE_RESTRICT r_lb_ptr = m_data->r_lb.data() + offset;
 
-            const auto *CASCADE_RESTRICT x_ub_ptr = m_data->srt_x_ub.data() + offset;
-            const auto *CASCADE_RESTRICT y_ub_ptr = m_data->srt_y_ub.data() + offset;
-            const auto *CASCADE_RESTRICT z_ub_ptr = m_data->srt_z_ub.data() + offset;
-            const auto *CASCADE_RESTRICT r_ub_ptr = m_data->srt_r_ub.data() + offset;
+            const auto *CASCADE_RESTRICT x_ub_ptr = m_data->x_ub.data() + offset;
+            const auto *CASCADE_RESTRICT y_ub_ptr = m_data->y_ub.data() + offset;
+            const auto *CASCADE_RESTRICT z_ub_ptr = m_data->z_ub.data() + offset;
+            const auto *CASCADE_RESTRICT r_ub_ptr = m_data->r_ub.data() + offset;
 
             // Build a set version of the collision list
             // for fast lookup.
