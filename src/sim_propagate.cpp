@@ -667,6 +667,9 @@ void sim::propagate_for(double t)
     // Broad phase collision detection.
     broad_phase();
 
+    // Narrow phase collision detection.
+    narrow_phase(chunk_size);
+
     logger->trace("Total propagation time: {}s", sw);
 }
 

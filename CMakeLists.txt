@@ -102,12 +102,32 @@ if(YACMA_COMPILER_IS_MSVC)
   unset(_CASCADE_MSVC_SUPPORTS_STRICT_CONFORMANCE)
 endif()
 
+# Mandatory dependency on LLVM.
+# NOTE: do it early so that we can set up
+# compiler flags based on the LLVM version
+# if needed.
+find_package(LLVM REQUIRED CONFIG)
+
+if(${LLVM_VERSION_MAJOR} LESS 10)
+  message(FATAL_ERROR "LLVM >= 10 is required.")
+endif()
+
+# NOTE: LLVM >= 13 introduces various deprecations. We will have to
+# sort through them eventually.
+if(${LLVM_VERSION_MAJOR} GREATER_EQUAL 13)
+    if(YACMA_COMPILER_IS_GNUCXX OR YACMA_COMPILER_IS_CLANGXX)
+        list(APPEND CASCADE_CXX_FLAGS_DEBUG "-Wno-deprecated-declarations")
+        list(APPEND CASCADE_CXX_FLAGS_RELEASE "-Wno-deprecated-declarations")
+    endif()
+endif()
+
 # List of source files.
 set(CASCADE_SRC_FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/sim_basic.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/sim_propagate.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/sim_bvh.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/sim_broad_phase.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/sim_narrow_phase.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/detail/logging_impl.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/logging.cpp"
 )
@@ -159,6 +179,55 @@ endif()
 # spdlog.
 find_package(spdlog CONFIG REQUIRED)
 target_link_libraries(cascade PRIVATE spdlog::spdlog)
+
+# Check this is the same LLVM version used to build heyoka.
+if(NOT ${LLVM_VERSION_MAJOR} EQUAL ${heyoka_LLVM_VERSION_MAJOR})
+  message(FATAL_ERROR "LLVM version mismatch: heyoka was compiled with LLVM ${heyoka_LLVM_VERSION_MAJOR}, but cascade is being compiled with LLVM ${LLVM_VERSION_MAJOR}")
+endif()
+
+message(STATUS "LLVM definitions: ${LLVM_DEFINITIONS}")
+message(STATUS "LLVM include dirs: ${LLVM_INCLUDE_DIRS}")
+
+# Define an interface target for linking to the LLVM bits.
+add_library(cascade_llvm_internal INTERFACE)
+# Add the definitions required by LLVM.
+target_compile_definitions(cascade_llvm_internal INTERFACE ${LLVM_DEFINITIONS})
+# On MSVC, silence std::iterator warnings coming from the LLVM headers.
+if(MSVC)
+    target_compile_definitions(cascade_llvm_internal INTERFACE _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING)
+endif()
+
+# Add the LLVM include dirs.
+target_include_directories(cascade_llvm_internal SYSTEM INTERFACE ${LLVM_INCLUDE_DIRS})
+
+if(TARGET LLVM)
+    # On some platforms, LLVM is built as a single library,
+    # which is exported by LLVM's CMake config-file package as
+    # a target called LLVM.
+    target_link_libraries(cascade_llvm_internal INTERFACE LLVM)
+else()
+    # Otherwise, LLVM is built as a collection of
+    # separate libraries/components.
+
+    # NOTE: these components have been determined heuristically.
+    set(_CASCADE_LLVM_COMPONENTS native orcjit)
+    # NOTE: not sure what these two do, I copied from symengine's CMakeLists.txt.
+    llvm_map_components_to_libnames(_CASCADE_LLVM_LIBS_DIRECT ${_CASCADE_LLVM_COMPONENTS})
+    llvm_expand_dependencies(_CASCADE_LLVM_LIBS ${_CASCADE_LLVM_LIBS_DIRECT})
+    target_link_libraries(cascade_llvm_internal INTERFACE ${_CASCADE_LLVM_LIBS})
+
+    unset(_CASCADE_LLVM_COMPONENTS)
+    unset(_CASCADE_LLVM_LIBS_DIRECT)
+    unset(_CASCADE_LLVM_LIBS)
+endif()
+
+# Link to LLVM privately.
+# NOTE: the BUILD_INTERFACE bit is a workaround needed when building
+# cascade as a static library: in this configuration, CMake would complain
+# that cascade_llvm_internal needs to be in the export set, even if it is just
+# an interface library. See the discussion here:
+# https://gitlab.kitware.com/cmake/cmake/-/issues/15415
+target_link_libraries(cascade PRIVATE "$<BUILD_INTERFACE:cascade_llvm_internal>")
 
 if(CASCADE_BUILD_BENCHMARKS)
     add_subdirectory(benchmark)
