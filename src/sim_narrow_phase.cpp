@@ -8,9 +8,11 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cassert>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <utility>
 
 #include <boost/numeric/conversion/cast.hpp>
@@ -73,6 +75,8 @@ void sim::narrow_phase(double chunk_size)
     const auto order = m_data->s_ta.get_order();
     const auto &s_data = m_data->s_data;
     const auto pta = m_data->pta;
+    const auto pssdiff3 = m_data->pssdiff3;
+    const auto fex_check = m_data->fex_check;
 
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
@@ -88,12 +92,18 @@ void sim::narrow_phase(double chunk_size)
             const auto chunk_begin = hy::detail::dfloat<double>(chunk_size * chunk_idx);
             const auto chunk_end = hy::detail::dfloat<double>(chunk_size * (chunk_idx + 1u));
 
+            // Counter for the number of failed fast exclusion checks.
+            std::atomic<std::size_t> n_ffex(0);
+
             // Iterate over all collisions.
             oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(bpc.begin(), bpc.end()), [&](const auto &rn) {
+                // Local version of n_ffex.
+                std::size_t local_n_ffex = 0;
+
                 // Try to fetch 6 polynomials from the cache.
                 // TODO unique_ptr perhaps performs better here?
-                std::array<std::vector<double>, 6> poly_temp;
-                auto &[xi_temp, yi_temp, zi_temp, xj_temp, yj_temp, zj_temp] = poly_temp;
+                std::array<std::vector<double>, 7> poly_temp;
+                auto &[xi_temp, yi_temp, zi_temp, xj_temp, yj_temp, zj_temp, ss_diff] = poly_temp;
 
                 if (!pcache.try_pop(poly_temp)) {
                     logger->debug("Creating new local polynomials for narrow phase collision detection");
@@ -105,6 +115,8 @@ void sim::narrow_phase(double chunk_size)
                     xj_temp.resize(boost::numeric_cast<decltype(xj_temp.size())>(order + 1u));
                     yj_temp.resize(boost::numeric_cast<decltype(yj_temp.size())>(order + 1u));
                     zj_temp.resize(boost::numeric_cast<decltype(zj_temp.size())>(order + 1u));
+
+                    ss_diff.resize(boost::numeric_cast<decltype(ss_diff.size())>(order + 1u));
                 }
 
                 for (const auto &pc : rn) {
@@ -116,6 +128,10 @@ void sim::narrow_phase(double chunk_size)
                     // for the two particles.
                     const auto &sd_i = s_data[pi];
                     const auto &sd_j = s_data[pj];
+
+                    // Load the particle radiuses.
+                    const auto p_rad_i = m_sizes[pi];
+                    const auto p_rad_j = m_sizes[pj];
 
                     // Cache the range of end times of the substeps.
                     const auto tcoords_begin_i = sd_i.tcoords.begin();
@@ -218,6 +234,18 @@ void sim::narrow_phase(double chunk_size)
 
                         // We can now construct the polynomial for the
                         // square of the distance.
+                        pssdiff3(ss_diff.data(), poly_xi, poly_yi, poly_zi, poly_xj, poly_yj, poly_zj);
+
+                        // Modify the constant term of the polynomial to account for
+                        // particle sizes.
+                        ss_diff[0] -= (p_rad_i + p_rad_j) * (p_rad_i + p_rad_j);
+
+                        // Run the fast exclusion check.
+                        std::uint32_t fex_check_res, back_flag = 0;
+                        fex_check(ss_diff.data(), &rf_int, &back_flag, &fex_check_res);
+                        if (!fex_check_res) {
+                            ++local_n_ffex;
+                        }
 
                         if (*it_i < *it_j) {
                             // The substep for particle i ends
@@ -240,7 +268,13 @@ void sim::narrow_phase(double chunk_size)
 
                 // Put the polynomials back into the cache.
                 pcache.push(std::move(poly_temp));
+
+                // Update n_ffex.
+                n_ffex.fetch_add(local_n_ffex, std::memory_order::relaxed);
             });
+
+            logger->debug("Number of failed fast exclusion checks for chunk {}: {} vs {} broad phase collisions",
+                          chunk_idx, n_ffex.load(std::memory_order::relaxed), bpc.size());
         }
     });
 

@@ -166,12 +166,17 @@ struct sim::sim_data {
 
     // Narrow phase collision data.
     // Caches of polynomial buffers.
-    std::vector<oneapi::tbb::concurrent_queue<std::array<std::vector<double>, 6>>> poly_caches;
+    std::vector<oneapi::tbb::concurrent_queue<std::array<std::vector<double>, 7>>> poly_caches;
 
     // The JIT data.
     heyoka::llvm_state state;
     using pta_t = double *(*)(double *, const double *, double) noexcept;
     pta_t pta = nullptr;
+    using pssdiff3_t = void (*)(double *, const double *, const double *, const double *, const double *,
+                                const double *, const double *) noexcept;
+    pssdiff3_t pssdiff3 = nullptr;
+    using fex_check_t = void (*)(const double *, const double *, const std::uint32_t *, std::uint32_t *) noexcept;
+    fex_check_t fex_check = nullptr;
 };
 
 } // namespace cascade
