@@ -79,7 +79,7 @@ int main()
 
     std::vector<double> x, y, z, vx, vy, vz, size;
 
-    const auto nparts = 8192ull * 2u;
+    const auto nparts = 17378ull;
 
     for (auto i = 0ull; i < nparts; ++i) {
         const auto a = a_dist(rng);
