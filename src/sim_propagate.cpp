@@ -334,7 +334,9 @@ void sim::propagate_for(double t)
 
     // Setup the narrow phase collision detection data.
     // TODO numeric cast.
-    m_data->poly_caches.resize(nchunks);
+    m_data->np_caches.resize(nchunks);
+
+    logger->trace("Initial buffer setup time: {}s", sw);
 
     std::atomic<bool> int_error{false};
 
@@ -671,8 +673,19 @@ void sim::propagate_for(double t)
     // Broad phase collision detection.
     broad_phase();
 
+    // Record the original size of the global
+    // collision vector before running narrow phase.
+    const auto orig_cv_size = m_data->coll_vec.size();
+
     // Narrow phase collision detection.
     narrow_phase(chunk_size);
+
+    // Sort the detected collisions by time.
+    // NOTE: this can of course become a parallel sort if needed.
+    std::sort(m_data->coll_vec.data() + orig_cv_size, m_data->coll_vec.data() + m_data->coll_vec.size(),
+              [](const auto &tup1, const auto &tup2) { return std::get<2>(tup1) < std::get<2>(tup2); });
+
+    logger->debug("Total number of collisions detected: {}", m_data->coll_vec.size() - orig_cv_size);
 
     logger->trace("Total propagation time: {}s", sw);
 }

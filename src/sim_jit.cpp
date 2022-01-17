@@ -301,6 +301,7 @@ void sim::add_jit_functions()
     detail::add_poly_translator_a(state, m_data->s_ta.get_order());
     detail::add_poly_ssdiff3(state, m_data->s_ta.get_order());
     heyoka::detail::llvm_add_fex_check<double>(state, m_data->s_ta.get_order(), 1);
+    heyoka::detail::llvm_add_poly_rtscc<double>(state, m_data->s_ta.get_order(), 1);
 
     state.optimise();
 
@@ -309,6 +310,9 @@ void sim::add_jit_functions()
     m_data->pta = reinterpret_cast<decltype(m_data->pta)>(state.jit_lookup("poly_translate_a"));
     m_data->pssdiff3 = reinterpret_cast<decltype(m_data->pssdiff3)>(state.jit_lookup("poly_ssdiff3"));
     m_data->fex_check = reinterpret_cast<decltype(m_data->fex_check)>(state.jit_lookup("fex_check"));
+    m_data->rtscc = reinterpret_cast<decltype(m_data->rtscc)>(state.jit_lookup("poly_rtscc"));
+    // NOTE: this is implicitly added by llvm_add_poly_rtscc().
+    m_data->pt1 = reinterpret_cast<decltype(m_data->pt1)>(state.jit_lookup("poly_translate_1"));
 }
 
 } // namespace cascade

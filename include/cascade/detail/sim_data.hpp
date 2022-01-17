@@ -13,6 +13,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <mutex>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -164,9 +166,60 @@ struct sim::sim_data {
     // phase collision detection.
     std::vector<oneapi::tbb::concurrent_queue<std::vector<std::int32_t>>> stack_caches;
 
-    // Narrow phase collision data.
-    // Caches of polynomial buffers.
-    std::vector<oneapi::tbb::concurrent_queue<std::array<std::vector<double>, 7>>> poly_caches;
+    // Struct for holding polynomial caches used during
+    // narrow phase collision detection.
+    struct np_data {
+        // A RAII helper to extract polys from a cache and
+        // return them to the cache upon destruction.
+        struct pwrap {
+            std::vector<std::vector<double>> &pc;
+            std::vector<double> v;
+
+            void back_to_cache();
+            std::vector<double> get_poly_from_cache(std::uint32_t);
+
+            explicit pwrap(std::vector<std::vector<double>> &, std::uint32_t);
+            pwrap(pwrap &&) noexcept;
+            pwrap &operator=(pwrap &&) noexcept;
+
+            // Delete copy semantics.
+            pwrap(const pwrap &) = delete;
+            pwrap &operator=(const pwrap &) = delete;
+
+            ~pwrap();
+        };
+
+        // The working list type used during real root isolation.
+        using wlist_t = std::vector<std::tuple<double, double, pwrap>>;
+        // The type used to store the list of isolating intervals.
+        using isol_t = std::vector<std::tuple<double, double>>;
+
+        // Polynomial buffers used in the construction
+        // of the dist square polynomial.
+        std::array<std::vector<double>, 7> dist2;
+        // Polynomial cache for use during real root isolation.
+        // NOTE: it is *really* important that this is declared
+        // *before* wlist, because wlist will contain references
+        // to and interact with r_iso_cache during destruction,
+        // and we must be sure that m_wlist is destroyed *before*
+        // r_iso_cache.
+        std::vector<std::vector<double>> r_iso_cache;
+        // The working list.
+        wlist_t wlist;
+        // The list of isolating intervals.
+        isol_t isol;
+    };
+    // NOTE: indirect through a unique_ptr, because for some reason a std::vector of
+    // concurrent_queue requires copy ctability of np_data, which is not available due to
+    // pwrap semantics.
+    std::vector<std::unique_ptr<oneapi::tbb::concurrent_queue<std::unique_ptr<np_data>>>> np_caches;
+    // The global vector of collisions.
+    // NOTE: protect with a mutex for the time being,
+    // in the assumption that collisions are infrequent.
+    // We can later consider solutions with better concurrency
+    // if needed (e.g., chunk local concurrent queues of collision vectors).
+    std::mutex coll_mutex;
+    std::vector<std::tuple<size_type, size_type, double>> coll_vec;
 
     // The JIT data.
     heyoka::llvm_state state;
@@ -177,6 +230,10 @@ struct sim::sim_data {
     pssdiff3_t pssdiff3 = nullptr;
     using fex_check_t = void (*)(const double *, const double *, const std::uint32_t *, std::uint32_t *) noexcept;
     fex_check_t fex_check = nullptr;
+    using rtscc_t = void (*)(double *, double *, std::uint32_t *, const double *) noexcept;
+    rtscc_t rtscc = nullptr;
+    using pt1_t = void (*)(double *, const double *) noexcept;
+    pt1_t pt1 = nullptr;
 };
 
 } // namespace cascade
