@@ -218,7 +218,7 @@ struct sim::sim_data {
         // NOTE: it is *really* important that this is declared
         // *before* wlist, because wlist will contain references
         // to and interact with r_iso_cache during destruction,
-        // and we must be sure that m_wlist is destroyed *before*
+        // and we must be sure that wlist is destroyed *before*
         // r_iso_cache.
         std::vector<std::vector<double>> r_iso_cache;
         // The working list.
