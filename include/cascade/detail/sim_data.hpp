@@ -95,6 +95,23 @@ struct sim::sim_data {
     heyoka::taylor_adaptive<double> s_ta;
     heyoka::taylor_adaptive_batch<double> b_ta;
 
+    // The JIT data.
+    heyoka::llvm_state state;
+    using pta_t = double *(*)(double *, const double *, double) noexcept;
+    pta_t pta = nullptr;
+    using pssdiff3_t = void (*)(double *, const double *, const double *, const double *, const double *,
+                                const double *, const double *) noexcept;
+    pssdiff3_t pssdiff3 = nullptr;
+    using fex_check_t = void (*)(const double *, const double *, const std::uint32_t *, std::uint32_t *) noexcept;
+    fex_check_t fex_check = nullptr;
+    using rtscc_t = void (*)(double *, double *, std::uint32_t *, const double *) noexcept;
+    rtscc_t rtscc = nullptr;
+    using pt1_t = void (*)(double *, const double *) noexcept;
+    pt1_t pt1 = nullptr;
+
+    // Buffers that will contain the state at the end of a superstep.
+    std::vector<double> final_x, final_y, final_z, final_vx, final_vy, final_vz;
+
     // The integrator caches.
     // NOTE: the integrators in the caches are those
     // actually used in numerical propagations.
@@ -220,20 +237,6 @@ struct sim::sim_data {
     // if needed (e.g., chunk local concurrent queues of collision vectors).
     std::mutex coll_mutex;
     std::vector<std::tuple<size_type, size_type, double>> coll_vec;
-
-    // The JIT data.
-    heyoka::llvm_state state;
-    using pta_t = double *(*)(double *, const double *, double) noexcept;
-    pta_t pta = nullptr;
-    using pssdiff3_t = void (*)(double *, const double *, const double *, const double *, const double *,
-                                const double *, const double *) noexcept;
-    pssdiff3_t pssdiff3 = nullptr;
-    using fex_check_t = void (*)(const double *, const double *, const std::uint32_t *, std::uint32_t *) noexcept;
-    fex_check_t fex_check = nullptr;
-    using rtscc_t = void (*)(double *, double *, std::uint32_t *, const double *) noexcept;
-    rtscc_t rtscc = nullptr;
-    using pt1_t = void (*)(double *, const double *) noexcept;
-    pt1_t pt1 = nullptr;
 };
 
 } // namespace cascade

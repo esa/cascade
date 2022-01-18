@@ -275,12 +275,12 @@ void sim::propagate_for(double t)
     // the superstep.
     const auto init_time = m_data->time;
 
+    // Superstep size and number of chunks.
     // TODO fix.
     const auto delta_t = 0.46 * 4u;
-
-    // TODO fix.
     // TODO enforce power of 2?
     const auto nchunks = 8u;
+
     const auto chunk_size = delta_t / nchunks;
 
     // Ensure the vectors in m_data are set up with the correct sizes.
@@ -305,6 +305,15 @@ void sim::propagate_for(double t)
     m_data->srt_z_ub.resize(nparts * nchunks);
     m_data->srt_r_ub.resize(nparts * nchunks);
     m_data->srt_mcodes.resize(nparts * nchunks);
+
+    // The vectors containing the state at the
+    // end of a superstep.
+    m_data->final_x.resize(nparts);
+    m_data->final_y.resize(nparts);
+    m_data->final_z.resize(nparts);
+    m_data->final_vx.resize(nparts);
+    m_data->final_vy.resize(nparts);
+    m_data->final_vz.resize(nparts);
 
     constexpr auto finf = std::numeric_limits<float>::infinity();
 
@@ -445,6 +454,14 @@ void sim::propagate_for(double t)
                 // TODO return instead of break here?
                 break;
             }
+
+            // Fill in the state at the end of the superstep.
+            std::copy(st_data, st_data + batch_size, m_data->final_x.data() + pidx_begin);
+            std::copy(st_data + batch_size, st_data + 2u * batch_size, m_data->final_y.data() + pidx_begin);
+            std::copy(st_data + 2u * batch_size, st_data + 3u * batch_size, m_data->final_z.data() + pidx_begin);
+            std::copy(st_data + 3u * batch_size, st_data + 4u * batch_size, m_data->final_vx.data() + pidx_begin);
+            std::copy(st_data + 4u * batch_size, st_data + 5u * batch_size, m_data->final_vy.data() + pidx_begin);
+            std::copy(st_data + 5u * batch_size, st_data + 6u * batch_size, m_data->final_vz.data() + pidx_begin);
         }
 
         // We can now proceed, for each chunk, to:
@@ -719,6 +736,14 @@ void sim::propagate_for(double t)
                 // TODO return instead of break here?
                 break;
             }
+
+            // Fill in the state at the end of the superstep.
+            m_data->final_x[pidx] = st_data[0];
+            m_data->final_y[pidx] = st_data[1];
+            m_data->final_z[pidx] = st_data[2];
+            m_data->final_vx[pidx] = st_data[3];
+            m_data->final_vy[pidx] = st_data[4];
+            m_data->final_vz[pidx] = st_data[5];
         }
 
         // We can now proceed, for each chunk, to:
