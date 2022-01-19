@@ -508,67 +508,66 @@ void sim::step(double dt)
     // the superstep.
     const auto init_time = m_data->time;
 
-    // Ensure the vectors in m_data are set up with the correct sizes.
-    m_data->s_data.resize(boost::numeric_cast<decltype(m_data->s_data.size())>(nparts));
-    // TODO overflow checks/numeric cast.
-    m_data->x_lb.resize(nparts * nchunks);
-    m_data->y_lb.resize(nparts * nchunks);
-    m_data->z_lb.resize(nparts * nchunks);
-    m_data->r_lb.resize(nparts * nchunks);
-    m_data->x_ub.resize(nparts * nchunks);
-    m_data->y_ub.resize(nparts * nchunks);
-    m_data->z_ub.resize(nparts * nchunks);
-    m_data->r_ub.resize(nparts * nchunks);
-    m_data->mcodes.resize(nparts * nchunks);
-    m_data->vidx.resize(nparts * nchunks);
-    m_data->srt_x_lb.resize(nparts * nchunks);
-    m_data->srt_y_lb.resize(nparts * nchunks);
-    m_data->srt_z_lb.resize(nparts * nchunks);
-    m_data->srt_r_lb.resize(nparts * nchunks);
-    m_data->srt_x_ub.resize(nparts * nchunks);
-    m_data->srt_y_ub.resize(nparts * nchunks);
-    m_data->srt_z_ub.resize(nparts * nchunks);
-    m_data->srt_r_ub.resize(nparts * nchunks);
-    m_data->srt_mcodes.resize(nparts * nchunks);
+    // Prepare the s_data buffers with the correct sizes.
 
-    // The vectors containing the state at the
-    // end of a superstep.
-    m_data->final_x.resize(nparts);
-    m_data->final_y.resize(nparts);
-    m_data->final_z.resize(nparts);
-    m_data->final_vx.resize(nparts);
-    m_data->final_vy.resize(nparts);
-    m_data->final_vz.resize(nparts);
+    // NOTE: this is a helper that resizes vec to new_size
+    // only if vec is currently smaller than new_size.
+    // The idea here is that we don't want to downsize the
+    // vector if not necessary.
+    auto resize_if_needed = [](auto new_size, auto &...vecs) {
+        auto apply = [new_size](auto &vec) {
+            if (vec.size() < new_size) {
+                vec.resize(boost::numeric_cast<decltype(vec.size())>(new_size));
+            }
+        };
 
-    constexpr auto finf = std::numeric_limits<float>::infinity();
+        (apply(vecs), ...);
+    };
 
-    // Setup the global lb/ub for each chunk.
-    // TODO numeric casts.
-    m_data->global_lb.resize(nchunks);
-    m_data->global_ub.resize(nchunks);
+    // Many of the buffers need to be of size nparts * nchunks. Do
+    // an overflow check.
+    if (nparts > std::numeric_limits<size_type>::max() / nchunks) {
+        throw std::overflow_error("An overflow condition was detected in the step() function");
+    }
+    const auto npnc = nparts * nchunks;
+
+    // The substep data.
+    resize_if_needed(nparts, m_data->s_data);
+
+    // The AABBs data.
+    resize_if_needed(npnc, m_data->x_lb, m_data->y_lb, m_data->z_lb, m_data->r_lb);
+    resize_if_needed(npnc, m_data->x_ub, m_data->y_ub, m_data->z_ub, m_data->r_ub);
+
+    // Morton encoding/ordering.
+    resize_if_needed(npnc, m_data->mcodes, m_data->vidx);
+
+    // Morton-sorted AABBs data.
+    resize_if_needed(npnc, m_data->srt_x_lb, m_data->srt_y_lb, m_data->srt_z_lb, m_data->srt_r_lb);
+    resize_if_needed(npnc, m_data->srt_x_ub, m_data->srt_y_ub, m_data->srt_z_ub, m_data->srt_r_ub);
+    resize_if_needed(npnc, m_data->srt_mcodes);
+
+    // Final state vectors.
+    resize_if_needed(nparts, m_data->final_x, m_data->final_y, m_data->final_z, m_data->final_vx, m_data->final_vy,
+                     m_data->final_vz);
+
+    // Global AABBs data.
+    resize_if_needed(nchunks, m_data->global_lb, m_data->global_ub);
     // NOTE: the global AABBs need to be set up with
     // initial values.
     // TODO once we compute the global AABBs with accumulate,
     // these can probably go.
+    constexpr auto finf = std::numeric_limits<float>::infinity();
     std::ranges::fill(m_data->global_lb, std::array{finf, finf, finf, finf});
     std::ranges::fill(m_data->global_ub, std::array{-finf, -finf, -finf, -finf});
 
-    // Setup the BVH data.
-    // TODO numeric cast.
-    m_data->bvh_trees.resize(nchunks);
-    m_data->nc_buffer.resize(nchunks);
-    m_data->ps_buffer.resize(nchunks);
-    m_data->nplc_buffer.resize(nchunks);
+    // BVH data.
+    resize_if_needed(nchunks, m_data->bvh_trees, m_data->nc_buffer, m_data->ps_buffer, m_data->nplc_buffer);
 
-    // Setup the broad phase collision detection data.
-    // TODO numeric cast.
-    m_data->bp_coll.resize(nchunks);
-    m_data->bp_caches.resize(nchunks);
-    m_data->stack_caches.resize(nchunks);
+    // Broad-phase data.
+    resize_if_needed(nchunks, m_data->bp_coll, m_data->bp_caches, m_data->stack_caches);
 
-    // Setup the narrow phase collision detection data.
-    // TODO numeric cast.
-    m_data->np_caches.resize(nchunks);
+    // Narrow phase data.
+    resize_if_needed(nchunks, m_data->np_caches);
 
     logger->trace("Initial buffer setup time: {}s", sw);
 
@@ -630,7 +629,7 @@ void sim::step(double dt)
                     }
 
                     // Copy over the Taylor coefficients.
-                    // TODO resize + copy, instead of push back? In such
+                    // NOTE: resize + copy, instead of push back? In such
                     // a case, we should probably use the no init allocator
                     // for the tc vectors.
                     for (std::uint32_t o = 0; o <= order; ++o) {
@@ -781,7 +780,7 @@ void sim::step(double dt)
                 }
 
                 // Copy over the Taylor coefficients.
-                // TODO resize + copy, instead of push back? In such
+                // NOTE: resize + copy, instead of push back? In such
                 // a case, we should probably use the no init allocator
                 // for the tc vectors.
                 for (std::uint32_t o = 0; o <= order; ++o) {
