@@ -104,11 +104,11 @@ int main()
 
     auto x_data = x.data();
 
-    sim s(std::move(x), y, z, vx, vy, vz, size);
+    sim s(std::move(x), y, z, vx, vy, vz, size, 0.23);
 
     std::cout << "Moved in: " << (x_data == s.get_x().data()) << '\n';
 
     for (auto i = 0; i < 100; ++i) {
-        s.propagate_for(86400.);
+        s.step();
     }
 }

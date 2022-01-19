@@ -267,6 +267,9 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
     const auto ss_it_begin = std::upper_bound(tcoords_begin, tcoords_end, chunk_begin);
     // Then, we locate the first substep whose end is *greater than or
     // equal to* the end of the chunk.
+    // NOTE: instead of this, perhaps we can just iterate below until
+    // t_coords_end or until the first substep whose end is *greater than or
+    // equal to* the end of the chunk, whichever comes first.
     auto ss_it_end = std::lower_bound(ss_it_begin, tcoords_end, chunk_end);
     // Bump it up by one to define a half-open range.
     // NOTE: don't bump it if it is already at the end.
@@ -470,15 +473,32 @@ void sim::morton_encode_sort()
 }
 
 // TODO clarify behaviour in case of exceptions.
-void sim::propagate_for(double t)
+void sim::step(double dt)
 {
     namespace hy = heyoka;
+    using dfloat = hy::detail::dfloat<double>;
 
     spdlog::stopwatch sw;
 
     auto *logger = detail::get_logger();
 
+    if (!std::isfinite(dt)) {
+        throw std::invalid_argument("The superstep size must be finite");
+    }
+
+    // Setup the superstep size.
+    m_data->delta_t = dt <= 0 ? infer_superstep() : dt;
+
+    // Setup the number of chunks.
+    m_data->nchunks = boost::numeric_cast<unsigned>(std::ceil(m_data->delta_t / m_ct));
+    if (m_data->nchunks == 0u) {
+        throw std::invalid_argument("The number of chunks cannot be zero");
+    }
+    logger->debug("Number of chunks: {}", m_data->nchunks);
+
     // Cache a few quantities.
+    const auto delta_t = m_data->delta_t;
+    const auto nchunks = m_data->nchunks;
     const auto batch_size = m_data->b_ta.get_batch_size();
     const auto nparts = get_nparts();
     const auto order = m_data->s_ta.get_order();
@@ -487,17 +507,6 @@ void sim::propagate_for(double t)
     // The time coordinate at the beginning of
     // the superstep.
     const auto init_time = m_data->time;
-
-    // Superstep size and number of chunks.
-    // TODO fix.
-    const auto delta_t = 0.46 * 4u;
-    // TODO enforce power of 2?
-    const auto nchunks = 8u;
-
-    // Assign the number of chunks.
-    m_data->nchunks = nchunks;
-
-    const auto chunk_size = delta_t / nchunks;
 
     // Ensure the vectors in m_data are set up with the correct sizes.
     m_data->s_data.resize(boost::numeric_cast<decltype(m_data->s_data.size())>(nparts));
@@ -539,6 +548,8 @@ void sim::propagate_for(double t)
     m_data->global_ub.resize(nchunks);
     // NOTE: the global AABBs need to be set up with
     // initial values.
+    // TODO once we compute the global AABBs with accumulate,
+    // these can probably go.
     std::ranges::fill(m_data->global_lb, std::array{finf, finf, finf, finf});
     std::ranges::fill(m_data->global_ub, std::array{-finf, -finf, -finf, -finf});
 
@@ -560,8 +571,6 @@ void sim::propagate_for(double t)
     m_data->np_caches.resize(nchunks);
 
     logger->trace("Initial buffer setup time: {}s", sw);
-
-    logger->debug("Inferred superstep size: {}", infer_superstep());
 
     std::atomic<bool> int_error{false};
 
@@ -689,8 +698,7 @@ void sim::propagate_for(double t)
 
             // The time coordinate, relative to init_time, of
             // the chunk's begin/end.
-            const auto chunk_begin = hy::detail::dfloat<double>(chunk_size * chunk_idx);
-            const auto chunk_end = hy::detail::dfloat<double>(chunk_size * (chunk_idx + 1u));
+            const auto [chunk_begin, chunk_end] = m_data->get_chunk_begin_end(chunk_idx, m_ct);
 
             for (auto idx = range.begin(); idx != range.end(); ++idx) {
                 // Particle indices corresponding to the current batch.
@@ -698,7 +706,7 @@ void sim::propagate_for(double t)
 
                 for (std::uint32_t i = 0; i < batch_size; ++i) {
                     // Compute the AABB for the current particle.
-                    compute_particle_aabb(chunk_idx, chunk_begin, chunk_end, pidx_begin + i);
+                    compute_particle_aabb(chunk_idx, dfloat(chunk_begin), dfloat(chunk_end), pidx_begin + i);
 
                     // Update the local AABB with the bounding box for the current particle.
                     // TODO: min/max usage?
@@ -836,12 +844,11 @@ void sim::propagate_for(double t)
 
             // The time coordinate, relative to init_time, of
             // the chunk's begin/end.
-            const auto chunk_begin = hy::detail::dfloat<double>(chunk_size * chunk_idx);
-            const auto chunk_end = hy::detail::dfloat<double>(chunk_size * (chunk_idx + 1u));
+            const auto [chunk_begin, chunk_end] = m_data->get_chunk_begin_end(chunk_idx, m_ct);
 
             for (auto pidx = range.begin(); pidx != range.end(); ++pidx) {
                 // Compute the AABB for the current particle.
-                compute_particle_aabb(chunk_idx, chunk_begin, chunk_end, pidx);
+                compute_particle_aabb(chunk_idx, dfloat(chunk_begin), dfloat(chunk_end), pidx);
 
                 // Update the local AABB with the bounding box for the current particle.
                 // TODO: min/max usage?
@@ -920,7 +927,7 @@ void sim::propagate_for(double t)
     const auto orig_cv_size = m_data->coll_vec.size();
 
     // Narrow phase collision detection.
-    narrow_phase(chunk_size);
+    narrow_phase();
 
     // Sort the detected collisions by time.
     // NOTE: this can of course become a parallel sort if needed.
@@ -998,7 +1005,7 @@ double sim::infer_superstep()
                         // Integrate a single step.
                         ta.step();
 
-                        // Check for errors and accumulate into partial sum.
+                        // Check for errors and accumulate into partial_sum.
                         for (const auto &[oc, h] : ta.get_step_res()) {
                             if (oc != hy::taylor_outcome::success) {
                                 // TODO here we should distinguish the following cases:
@@ -1054,7 +1061,7 @@ double sim::infer_superstep()
                         // Integrate for a single step
                         const auto [oc, h] = ta.step();
 
-                        // Check for errors and accumulate into partial sum.
+                        // Check for errors and accumulate into partial_sum.
                         if (oc != hy::taylor_outcome::success) {
                             // TODO here we should distinguish the following cases:
                             // - nf_error (throw?),
@@ -1105,6 +1112,7 @@ double sim::infer_superstep()
     }
 
     logger->trace("Timestep deduction time: {}s", sw);
+    logger->debug("Inferred superstep size: {}", res);
     logger->debug("Number of particles considered for timestep deduction: {}", n_part_acc);
 
     return res;

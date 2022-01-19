@@ -248,12 +248,10 @@ sim::sim_data::np_data::pwrap::~pwrap()
 // of the particle pairs identified during broad
 // phase collision detection are tested for intersection
 // using polynomial root finding.
-void sim::narrow_phase(double chunk_size)
+void sim::narrow_phase()
 {
     namespace hy = heyoka;
-
-    assert(std::isfinite(chunk_size));
-    assert(chunk_size > 0);
+    using dfloat = hy::detail::dfloat<double>;
 
     spdlog::stopwatch sw;
 
@@ -287,8 +285,9 @@ void sim::narrow_phase(double chunk_size)
 
             // The time coordinate, relative to init_time, of
             // the chunk's begin/end.
-            const auto chunk_begin = hy::detail::dfloat<double>(chunk_size * chunk_idx);
-            const auto chunk_end = hy::detail::dfloat<double>(chunk_size * (chunk_idx + 1u));
+            const auto [c_begin, c_end] = m_data->get_chunk_begin_end(chunk_idx, m_ct);
+            const auto chunk_begin = dfloat(c_begin);
+            const auto chunk_end = dfloat(c_end);
 
             // Counter for the number of failed fast exclusion checks.
             std::atomic<std::size_t> n_ffex(0);

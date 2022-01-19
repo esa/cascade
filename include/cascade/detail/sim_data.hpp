@@ -109,9 +109,13 @@ struct sim::sim_data {
     using pt1_t = void (*)(double *, const double *) noexcept;
     pt1_t pt1 = nullptr;
 
-    // The number of chunks.
-    // NOTE: this is set up at the beginning of each superstep.
+    // The superstep size and the number of chunks.
+    // NOTE: these are set up at the beginning of each superstep.
+    double delta_t = 0;
     unsigned nchunks = 0;
+    // Helper to compute the begin and end of a chunk within
+    // a superstep for a given collisional timestep.
+    std::array<double, 2> get_chunk_begin_end(unsigned, double) const;
 
     // Buffers that will contain the state at the end of a superstep.
     std::vector<double> final_x, final_y, final_z, final_vx, final_vy, final_vz;

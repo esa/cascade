@@ -38,6 +38,7 @@ class CASCADE_DLL_PUBLIC sim
     struct sim_data;
 
     std::vector<double> m_x, m_y, m_z, m_vx, m_vy, m_vz, m_sizes;
+    double m_ct;
     sim_data *m_data = nullptr;
 
     void finalise_ctor();
@@ -47,7 +48,7 @@ class CASCADE_DLL_PUBLIC sim
     CASCADE_DLL_LOCAL void verify_bvh_trees() const;
     CASCADE_DLL_LOCAL void broad_phase();
     CASCADE_DLL_LOCAL void verify_broad_phase() const;
-    CASCADE_DLL_LOCAL void narrow_phase(double);
+    CASCADE_DLL_LOCAL void narrow_phase();
     CASCADE_DLL_LOCAL double infer_superstep();
     CASCADE_DLL_LOCAL void verify_global_aabbs() const;
 
@@ -91,7 +92,7 @@ public:
 
     sim();
     template <di_range X, di_range Y, di_range Z, di_range VX, di_range VY, di_range VZ, di_range S>
-    explicit sim(X &&x, Y &&y, Z &&z, VX &&vx, VY &&vy, VZ &&vz, S &&s)
+    explicit sim(X &&x, Y &&y, Z &&z, VX &&vx, VY &&vy, VZ &&vz, S &&s, double ct) : m_ct(ct)
     {
         auto in_tup
             = std::forward_as_tuple(std::forward<X>(x), std::forward<Y>(y), std::forward<Z>(z), std::forward<VX>(vx),
@@ -119,7 +120,7 @@ public:
         return m_x;
     }
 
-    void propagate_for(double);
+    void step(double = 0);
 
 private:
     template <typename T>

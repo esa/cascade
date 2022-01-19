@@ -6,6 +6,8 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#include <array>
+#include <cassert>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -50,9 +52,29 @@ using fmt::literals::operator""_format;
 namespace cascade
 {
 
+// Helper to compute the begin and end of a chunk within
+// a superstep for a given collisional timestep.
+std::array<double, 2> sim::sim_data::get_chunk_begin_end(unsigned chunk_idx, double ct) const
+{
+    assert(nchunks > 0u);
+    assert(std::isfinite(delta_t) && delta_t > 0);
+    assert(std::isfinite(ct) && ct > 0);
+
+    auto cbegin = ct * chunk_idx;
+    // NOTE: for the last chunk we force the ending
+    // at delta_t.
+    auto cend = (chunk_idx == nchunks - 1u) ? delta_t : (ct * (chunk_idx + 1u));
+
+    if (!std::isfinite(cbegin) || !std::isfinite(cend) || !(cend > cbegin) || cbegin < 0 || cend > delta_t) {
+        throw std::invalid_argument(fmt::format("Invalid chunk range [{}, {})", cbegin, cend));
+    }
+
+    return {cbegin, cend};
+}
+
 sim::sim()
     : sim(std::vector<double>{}, std::vector<double>{}, std::vector<double>{}, std::vector<double>{},
-          std::vector<double>{}, std::vector<double>{}, std::vector<double>{})
+          std::vector<double>{}, std::vector<double>{}, std::vector<double>{}, 1)
 {
 }
 
@@ -101,6 +123,11 @@ void sim::finalise_ctor()
     if (m_sizes.size() != nparts) {
         throw std::invalid_argument("Inconsistent number of particles detected: the number of x coordinates is {}, "
                                     "but the number of particle radiuses is {}"_format(nparts, m_sizes.size()));
+    }
+
+    if (!std::isfinite(m_ct) || m_ct <= 0) {
+        throw std::invalid_argument(
+            fmt::format("The collisional timestep must be finite and positive, but it is {} instead", m_ct));
     }
 
     std::optional<hy::taylor_adaptive<double>> s_ta;
