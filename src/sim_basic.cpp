@@ -200,4 +200,9 @@ void sim::finalise_ctor()
     logger->trace("JIT functions setup time: {}s", sw);
 }
 
+double sim::get_time() const
+{
+    return static_cast<double>(m_data->time);
+}
+
 } // namespace cascade

@@ -935,6 +935,17 @@ void sim::step(double dt)
 
     logger->debug("Total number of collisions detected: {}", m_data->coll_vec.size() - orig_cv_size);
 
+    // Update the time coordinate.
+    m_data->time += delta_t;
+
+    // Swap in the updated state.
+    m_x.swap(m_data->final_x);
+    m_y.swap(m_data->final_y);
+    m_z.swap(m_data->final_z);
+    m_vx.swap(m_data->final_vx);
+    m_vy.swap(m_data->final_vy);
+    m_vz.swap(m_data->final_vz);
+
     logger->trace("Total propagation time: {}s", sw);
 }
 

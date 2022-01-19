@@ -114,11 +114,11 @@ public:
     {
         return m_x.size();
     }
-
     const auto &get_x() const
     {
         return m_x;
     }
+    double get_time() const;
 
     void step(double = 0);
 
