@@ -27,6 +27,7 @@
 #include <oneapi/tbb/blocked_range.h>
 #include <oneapi/tbb/parallel_for.h>
 #include <oneapi/tbb/parallel_invoke.h>
+#include <oneapi/tbb/parallel_reduce.h>
 #include <oneapi/tbb/parallel_sort.h>
 
 #include <heyoka/detail/dfloat.hpp>
@@ -344,6 +345,8 @@ void sim::propagate_for(double t)
     m_data->np_caches.resize(nchunks);
 
     logger->trace("Initial buffer setup time: {}s", sw);
+
+    logger->debug("Inferred superstep size: {}", infer_superstep());
 
     std::atomic<bool> int_error{false};
 
@@ -982,6 +985,226 @@ void sim::propagate_for(double t)
     logger->debug("Total number of collisions detected: {}", m_data->coll_vec.size() - orig_cv_size);
 
     logger->trace("Total propagation time: {}s", sw);
+}
+
+// Helper for the automatic determination
+// of the superstep size.
+double sim::infer_superstep()
+{
+    namespace hy = heyoka;
+
+    spdlog::stopwatch sw;
+
+    auto *logger = detail::get_logger();
+
+    // Cache a few quantities.
+    const auto batch_size = m_data->b_ta.get_batch_size();
+    const auto nparts = get_nparts();
+    const auto n_batches = nparts / batch_size;
+    const auto with_events = m_data->s_ta.with_events();
+    const auto init_time = m_data->time;
+
+    // For the superstep determination, we won't
+    // iterate over all particles, but (roughly)
+    // every 'stride' particles.
+    constexpr auto stride = 10u;
+
+    // Overflow check: we will need to iterate
+    // possibly up to index nparts + stride.
+    if (stride > std::numeric_limits<size_type>::max() - nparts) {
+        throw std::overflow_error("Overflow detected during the automatic determination of the superstep size");
+    }
+
+    // Helper to perform the element-wise addition
+    // of pairs.
+    auto pair_plus = [](const auto &p1, const auto &p2) -> std::pair<double, size_type> {
+        return {p1.first + p2.first, p1.second + p2.second};
+    };
+
+    // Global variables to compute the mean
+    // dynamical timestep.
+    double acc = 0;
+    size_type n_part_acc = 0;
+
+    // NOTE: as usual, run in parallel the batch and scalar computations.
+    oneapi::tbb::parallel_invoke(
+        [&]() {
+            const auto batch_res = oneapi::tbb::parallel_deterministic_reduce(
+                oneapi::tbb::blocked_range<size_type>(0, n_batches, 100), std::pair{0., size_type(0)},
+                [&](const auto &range, auto partial_sum) {
+                    // Fetch an integrator from the cache, or create it.
+                    std::unique_ptr<hy::taylor_adaptive_batch<double>> ta_ptr;
+
+                    if (!m_data->b_ta_cache.try_pop(ta_ptr)) {
+                        logger->debug("Creating new batch integrator");
+
+                        ta_ptr = std::make_unique<hy::taylor_adaptive_batch<double>>(m_data->b_ta);
+                    }
+
+                    // Cache a few variables.
+                    auto &ta = *ta_ptr;
+                    auto *st_data = ta.get_state_data();
+
+                    for (auto idx = range.begin(); idx < range.end(); idx += stride) {
+                        // Particle indices corresponding to the current batch.
+                        const auto pidx_begin = idx * batch_size;
+                        const auto pidx_end = pidx_begin + batch_size;
+
+                        // Reset cooldowns and set up the times.
+                        if (with_events) {
+                            ta.reset_cooldowns();
+                        }
+                        ta.set_dtime(init_time.hi, init_time.lo);
+
+                        // Copy over the state.
+                        // NOTE: would need to take care of synching up the
+                        // runtime parameters too.
+                        std::copy(m_x.data() + pidx_begin, m_x.data() + pidx_end, st_data);
+                        std::copy(m_y.data() + pidx_begin, m_y.data() + pidx_end, st_data + batch_size);
+                        std::copy(m_z.data() + pidx_begin, m_z.data() + pidx_end, st_data + 2u * batch_size);
+
+                        std::copy(m_vx.data() + pidx_begin, m_vx.data() + pidx_end, st_data + 3u * batch_size);
+                        std::copy(m_vy.data() + pidx_begin, m_vy.data() + pidx_end, st_data + 4u * batch_size);
+                        std::copy(m_vz.data() + pidx_begin, m_vz.data() + pidx_end, st_data + 5u * batch_size);
+
+                        // NOTE: compute the radius on the fly from the x/y/z coords.
+                        for (std::uint32_t i = 0; i < batch_size; ++i) {
+                            st_data[6u * batch_size + i]
+                                = std::sqrt(st_data[i] * st_data[i] + st_data[batch_size + i] * st_data[batch_size + i]
+                                            + st_data[batch_size * 2u + i] * st_data[batch_size * 2u + i]);
+                        }
+
+                        // Integrate a single step.
+                        ta.step();
+
+                        // Check for errors and accumulate into partial sum.
+                        for (const auto &[oc, h] : ta.get_step_res()) {
+                            if (oc != hy::taylor_outcome::success) {
+                                // TODO here we should distinguish the following cases:
+                                // - nf_error (throw?),
+                                // - stopped by event -> ignore for timestep determination
+                                //   purposes.
+                                throw;
+                            }
+
+                            partial_sum.first += h;
+                            ++partial_sum.second;
+                        }
+                    }
+
+                    // Put the integrator (back) into the cache.
+                    m_data->b_ta_cache.push(std::move(ta_ptr));
+
+                    return partial_sum;
+                },
+                pair_plus);
+
+            // Update the global values.
+            {
+                std::atomic_ref acc_at(acc);
+                acc_at.fetch_add(batch_res.first, std::memory_order::relaxed);
+            }
+
+            {
+                std::atomic_ref n_part_acc_at(n_part_acc);
+                n_part_acc_at.fetch_add(batch_res.second, std::memory_order::relaxed);
+            }
+        },
+        [&]() {
+            const auto scal_res = oneapi::tbb::parallel_deterministic_reduce(
+                oneapi::tbb::blocked_range<size_type>(n_batches * batch_size, nparts, 100), std::pair{0., size_type(0)},
+                [&](const auto &range, auto partial_sum) {
+                    // Fetch an integrator from the cache, or create it.
+                    std::unique_ptr<hy::taylor_adaptive<double>> ta_ptr;
+
+                    if (!m_data->s_ta_cache.try_pop(ta_ptr)) {
+                        logger->debug("Creating new integrator");
+
+                        ta_ptr = std::make_unique<hy::taylor_adaptive<double>>(m_data->s_ta);
+                    }
+
+                    // Cache a few variables.
+                    auto &ta = *ta_ptr;
+                    auto *st_data = ta.get_state_data();
+
+                    for (auto pidx = range.begin(); pidx < range.end(); pidx += stride) {
+                        // Reset cooldowns and set up the times.
+                        if (with_events) {
+                            ta.reset_cooldowns();
+                        }
+                        ta.set_dtime(init_time.hi, init_time.lo);
+
+                        // Copy over the state.
+                        // NOTE: would need to take care of synching up the
+                        // runtime parameters too.
+                        st_data[0] = m_x[pidx];
+                        st_data[1] = m_y[pidx];
+                        st_data[2] = m_z[pidx];
+                        st_data[3] = m_vx[pidx];
+                        st_data[4] = m_vy[pidx];
+                        st_data[5] = m_vz[pidx];
+
+                        // NOTE: compute the radius on the fly from the x/y/z coords.
+                        st_data[6]
+                            = std::sqrt(st_data[0] * st_data[0] + st_data[1] * st_data[1] + st_data[2] * st_data[2]);
+
+                        // Integrate for a single step
+                        const auto [oc, h] = ta.step();
+
+                        // Check for errors and accumulate into partial sum.
+                        if (oc != hy::taylor_outcome::success) {
+                            // TODO here we should distinguish the following cases:
+                            // - nf_error (throw?),
+                            // - stopped by event -> ignore for timestep determination
+                            //   purposes.
+                            throw;
+                        }
+
+                        partial_sum.first += h;
+                        ++partial_sum.second;
+                    }
+
+                    // Put the integrator (back) into the cache.
+                    m_data->s_ta_cache.push(std::move(ta_ptr));
+
+                    return partial_sum;
+                },
+                pair_plus);
+
+            // Update the global values.
+            {
+                std::atomic_ref acc_at(acc);
+                acc_at.fetch_add(scal_res.first, std::memory_order::relaxed);
+            }
+
+            {
+                std::atomic_ref n_part_acc_at(n_part_acc);
+                n_part_acc_at.fetch_add(scal_res.second, std::memory_order::relaxed);
+            }
+        });
+
+    // NOTE: this can happen only if the simulation has zero particles.
+    if (n_part_acc == 0u) {
+        throw std::invalid_argument(
+            "Cannot automatically determine the superstep size if there are no particles in the simulation");
+    }
+
+    // Compute the final result: average step size multiplied by
+    // a small constant.
+    const auto res = acc / static_cast<double>(n_part_acc) * 3;
+
+    if (!std::isfinite(res)) {
+        throw std::invalid_argument("The automatic determination of the superstep size yielded a non-finite value");
+    }
+
+    if (res == 0) {
+        throw std::invalid_argument("The automatic determination of the superstep size yielded a value of zero");
+    }
+
+    logger->trace("Timestep deduction time: {}s", sw);
+    logger->debug("Number of particles considered for timestep deduction: {}", n_part_acc);
+
+    return res;
 }
 
 } // namespace cascade

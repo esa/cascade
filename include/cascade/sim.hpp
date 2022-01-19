@@ -48,6 +48,7 @@ class CASCADE_DLL_PUBLIC sim
     CASCADE_DLL_LOCAL void broad_phase();
     CASCADE_DLL_LOCAL void verify_broad_phase();
     CASCADE_DLL_LOCAL void narrow_phase(double);
+    CASCADE_DLL_LOCAL double infer_superstep();
 
     template <typename InTup, typename OutTup, std::size_t... I>
     void ctor_impl(const InTup &in_tup, const OutTup &out_tup, std::index_sequence<I...>)
