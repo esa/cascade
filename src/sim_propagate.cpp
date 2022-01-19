@@ -509,6 +509,7 @@ void sim::step(double dt)
     const auto init_time = m_data->time;
 
     // Prepare the s_data buffers with the correct sizes.
+    spdlog::stopwatch sw_buf;
 
     // NOTE: this is a helper that resizes vec to new_size
     // only if vec is currently smaller than new_size.
@@ -569,7 +570,7 @@ void sim::step(double dt)
     // Narrow phase data.
     resize_if_needed(nchunks, m_data->np_caches);
 
-    logger->trace("Initial buffer setup time: {}s", sw);
+    logger->trace("Initial buffer setup time: {}s", sw_buf);
 
     std::atomic<bool> int_error{false};
 
