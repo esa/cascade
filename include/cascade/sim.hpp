@@ -119,6 +119,12 @@ public:
     }
 
     void propagate_for(double);
+
+private:
+    template <typename T>
+    CASCADE_DLL_LOCAL void init_scalar_ta(T &, size_type) const;
+    template <typename T>
+    CASCADE_DLL_LOCAL void init_batch_ta(T &, size_type, size_type) const;
 };
 
 } // namespace cascade

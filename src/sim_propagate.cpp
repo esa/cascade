@@ -148,6 +148,75 @@ std::uint64_t disc_single_coord(float x, float min, float max)
 
 } // namespace detail
 
+// Setup the scalar integrator ta to integrate the trajectory for the particle
+// at index pidx. Time and state are taken from the current values in the
+// global sim data.
+template <typename T>
+void sim::init_scalar_ta(T &ta, size_type pidx) const
+{
+    assert(pidx < m_x.size());
+
+    auto *st_data = ta.get_state_data();
+
+    // Reset cooldowns and set up the times.
+    if (ta.with_events()) {
+        ta.reset_cooldowns();
+    }
+    ta.set_dtime(m_data->time.hi, m_data->time.lo);
+
+    // Copy over the state.
+    // NOTE: would need to take care of synching up the
+    // runtime parameters too.
+    st_data[0] = m_x[pidx];
+    st_data[1] = m_y[pidx];
+    st_data[2] = m_z[pidx];
+    st_data[3] = m_vx[pidx];
+    st_data[4] = m_vy[pidx];
+    st_data[5] = m_vz[pidx];
+
+    // NOTE: compute the radius on the fly from the x/y/z coords.
+    st_data[6] = std::sqrt(st_data[0] * st_data[0] + st_data[1] * st_data[1] + st_data[2] * st_data[2]);
+}
+
+// Setup the batch integrator ta to integrate the trajectory for the particles
+// in the index range [pidx_begin, pidx_end). Time and states are taken from
+// the current values in the global sim data.
+template <typename T>
+void sim::init_batch_ta(T &ta, size_type pidx_begin, size_type pidx_end) const
+{
+    const auto batch_size = ta.get_batch_size();
+
+    assert(pidx_end > pidx_begin);
+    assert(pidx_end - pidx_begin == batch_size);
+    assert(pidx_end <= m_x.size());
+
+    auto *st_data = ta.get_state_data();
+
+    // Reset cooldowns and set up the times.
+    if (ta.with_events()) {
+        ta.reset_cooldowns();
+    }
+    ta.set_dtime(m_data->time.hi, m_data->time.lo);
+
+    // Copy over the state.
+    // NOTE: would need to take care of synching up the
+    // runtime parameters too.
+    std::copy(m_x.data() + pidx_begin, m_x.data() + pidx_end, st_data);
+    std::copy(m_y.data() + pidx_begin, m_y.data() + pidx_end, st_data + batch_size);
+    std::copy(m_z.data() + pidx_begin, m_z.data() + pidx_end, st_data + 2u * batch_size);
+
+    std::copy(m_vx.data() + pidx_begin, m_vx.data() + pidx_end, st_data + 3u * batch_size);
+    std::copy(m_vy.data() + pidx_begin, m_vy.data() + pidx_end, st_data + 4u * batch_size);
+    std::copy(m_vz.data() + pidx_begin, m_vz.data() + pidx_end, st_data + 5u * batch_size);
+
+    // NOTE: compute the radius on the fly from the x/y/z coords.
+    for (std::uint32_t i = 0; i < batch_size; ++i) {
+        st_data[6u * batch_size + i]
+            = std::sqrt(st_data[i] * st_data[i] + st_data[batch_size + i] * st_data[batch_size + i]
+                        + st_data[batch_size * 2u + i] * st_data[batch_size * 2u + i]);
+    }
+}
+
 // Perform the Morton encoding of the centres of the AABBs of the particles
 // and sort the AABB data according to the codes.
 void sim::morton_encode_sort()
@@ -270,8 +339,6 @@ void sim::propagate_for(double t)
     const auto order = m_data->s_ta.get_order();
     // Number of regular batches.
     const auto n_batches = nparts / batch_size;
-    // Do we have events in the numerical integration?
-    const auto with_events = m_data->s_ta.with_events();
     // The time coordinate at the beginning of
     // the superstep.
     const auto init_time = m_data->time;
@@ -385,29 +452,8 @@ void sim::propagate_for(double t)
                 s_data[i].tcoords.clear();
             }
 
-            // Reset cooldowns and set up the times.
-            if (with_events) {
-                ta.reset_cooldowns();
-            }
-            ta.set_dtime(init_time.hi, init_time.lo);
-
-            // Copy over the state.
-            // NOTE: would need to take care of synching up the
-            // runtime parameters too.
-            std::copy(m_x.data() + pidx_begin, m_x.data() + pidx_end, st_data);
-            std::copy(m_y.data() + pidx_begin, m_y.data() + pidx_end, st_data + batch_size);
-            std::copy(m_z.data() + pidx_begin, m_z.data() + pidx_end, st_data + 2u * batch_size);
-
-            std::copy(m_vx.data() + pidx_begin, m_vx.data() + pidx_end, st_data + 3u * batch_size);
-            std::copy(m_vy.data() + pidx_begin, m_vy.data() + pidx_end, st_data + 4u * batch_size);
-            std::copy(m_vz.data() + pidx_begin, m_vz.data() + pidx_end, st_data + 5u * batch_size);
-
-            // NOTE: compute the radius on the fly from the x/y/z coords.
-            for (std::uint32_t i = 0; i < batch_size; ++i) {
-                st_data[6u * batch_size + i]
-                    = std::sqrt(st_data[i] * st_data[i] + st_data[batch_size + i] * st_data[batch_size + i]
-                                + st_data[batch_size * 2u + i] * st_data[batch_size * 2u + i]);
-            }
+            // Setup the integrator.
+            init_batch_ta(ta, pidx_begin, pidx_end);
 
             // Setup the propagate_for() callback.
             auto cb = [&](auto &) {
@@ -684,24 +730,8 @@ void sim::propagate_for(double t)
 
             s_data[pidx].tcoords.clear();
 
-            // Reset cooldowns and set up the times.
-            if (with_events) {
-                ta.reset_cooldowns();
-            }
-            ta.set_dtime(init_time.hi, init_time.lo);
-
-            // Copy over the state.
-            // NOTE: would need to take care of synching up the
-            // runtime parameters too.
-            st_data[0] = m_x[pidx];
-            st_data[1] = m_y[pidx];
-            st_data[2] = m_z[pidx];
-            st_data[3] = m_vx[pidx];
-            st_data[4] = m_vy[pidx];
-            st_data[5] = m_vz[pidx];
-
-            // NOTE: compute the radius on the fly from the x/y/z coords.
-            st_data[6] = std::sqrt(st_data[0] * st_data[0] + st_data[1] * st_data[1] + st_data[2] * st_data[2]);
+            // Setup the integrator.
+            init_scalar_ta(ta, pidx);
 
             // Setup the propagate_for() callback.
             auto cb = [&](auto &) {
@@ -1001,8 +1031,6 @@ double sim::infer_superstep()
     const auto batch_size = m_data->b_ta.get_batch_size();
     const auto nparts = get_nparts();
     const auto n_batches = nparts / batch_size;
-    const auto with_events = m_data->s_ta.with_events();
-    const auto init_time = m_data->time;
 
     // For the superstep determination, we won't
     // iterate over all particles, but (roughly)
@@ -1043,36 +1071,14 @@ double sim::infer_superstep()
 
                     // Cache a few variables.
                     auto &ta = *ta_ptr;
-                    auto *st_data = ta.get_state_data();
 
                     for (auto idx = range.begin(); idx < range.end(); idx += stride) {
                         // Particle indices corresponding to the current batch.
                         const auto pidx_begin = idx * batch_size;
                         const auto pidx_end = pidx_begin + batch_size;
 
-                        // Reset cooldowns and set up the times.
-                        if (with_events) {
-                            ta.reset_cooldowns();
-                        }
-                        ta.set_dtime(init_time.hi, init_time.lo);
-
-                        // Copy over the state.
-                        // NOTE: would need to take care of synching up the
-                        // runtime parameters too.
-                        std::copy(m_x.data() + pidx_begin, m_x.data() + pidx_end, st_data);
-                        std::copy(m_y.data() + pidx_begin, m_y.data() + pidx_end, st_data + batch_size);
-                        std::copy(m_z.data() + pidx_begin, m_z.data() + pidx_end, st_data + 2u * batch_size);
-
-                        std::copy(m_vx.data() + pidx_begin, m_vx.data() + pidx_end, st_data + 3u * batch_size);
-                        std::copy(m_vy.data() + pidx_begin, m_vy.data() + pidx_end, st_data + 4u * batch_size);
-                        std::copy(m_vz.data() + pidx_begin, m_vz.data() + pidx_end, st_data + 5u * batch_size);
-
-                        // NOTE: compute the radius on the fly from the x/y/z coords.
-                        for (std::uint32_t i = 0; i < batch_size; ++i) {
-                            st_data[6u * batch_size + i]
-                                = std::sqrt(st_data[i] * st_data[i] + st_data[batch_size + i] * st_data[batch_size + i]
-                                            + st_data[batch_size * 2u + i] * st_data[batch_size * 2u + i]);
-                        }
+                        // Setup the integrator.
+                        init_batch_ta(ta, pidx_begin, pidx_end);
 
                         // Integrate a single step.
                         ta.step();
@@ -1125,28 +1131,10 @@ double sim::infer_superstep()
 
                     // Cache a few variables.
                     auto &ta = *ta_ptr;
-                    auto *st_data = ta.get_state_data();
 
                     for (auto pidx = range.begin(); pidx < range.end(); pidx += stride) {
-                        // Reset cooldowns and set up the times.
-                        if (with_events) {
-                            ta.reset_cooldowns();
-                        }
-                        ta.set_dtime(init_time.hi, init_time.lo);
-
-                        // Copy over the state.
-                        // NOTE: would need to take care of synching up the
-                        // runtime parameters too.
-                        st_data[0] = m_x[pidx];
-                        st_data[1] = m_y[pidx];
-                        st_data[2] = m_z[pidx];
-                        st_data[3] = m_vx[pidx];
-                        st_data[4] = m_vy[pidx];
-                        st_data[5] = m_vz[pidx];
-
-                        // NOTE: compute the radius on the fly from the x/y/z coords.
-                        st_data[6]
-                            = std::sqrt(st_data[0] * st_data[0] + st_data[1] * st_data[1] + st_data[2] * st_data[2]);
+                        // Setup the integrator.
+                        init_scalar_ta(ta, pidx);
 
                         // Integrate for a single step
                         const auto [oc, h] = ta.step();
