@@ -91,7 +91,7 @@ void sim::construct_bvh_trees()
 
     // Fetch the number of particles and chunks from m_data.
     const auto nparts = get_nparts();
-    const auto nchunks = static_cast<unsigned>(m_data->global_lb.size());
+    const auto nchunks = m_data->nchunks;
 
     // Initial values for the nodes' bounding boxes.
     constexpr auto finf = std::numeric_limits<float>::infinity();
@@ -430,10 +430,10 @@ void sim::construct_bvh_trees()
 #endif
 }
 
-void sim::verify_bvh_trees()
+void sim::verify_bvh_trees() const
 {
     const auto nparts = get_nparts();
-    const auto nchunks = static_cast<unsigned>(m_data->global_lb.size());
+    const auto nchunks = m_data->nchunks;
 
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {

@@ -46,7 +46,7 @@ void sim::broad_phase()
 
     // Fetch the number of particles and chunks from m_data.
     const auto nparts = get_nparts();
-    const auto nchunks = static_cast<unsigned>(m_data->global_lb.size());
+    const auto nchunks = m_data->nchunks;
 
     // Global counter for the total number of AABBs collisions
     // across all chunks.
@@ -189,10 +189,10 @@ void sim::broad_phase()
 }
 
 // Debug checks on the broad phase collision detection.
-void sim::verify_broad_phase()
+void sim::verify_broad_phase() const
 {
     const auto nparts = get_nparts();
-    const auto nchunks = static_cast<unsigned>(m_data->global_lb.size());
+    const auto nchunks = m_data->nchunks;
 
     // Don't run the check if there's too many particles.
     if (nparts > 10000u) {

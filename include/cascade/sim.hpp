@@ -44,11 +44,12 @@ class CASCADE_DLL_PUBLIC sim
     CASCADE_DLL_LOCAL void add_jit_functions();
     CASCADE_DLL_LOCAL void morton_encode_sort();
     CASCADE_DLL_LOCAL void construct_bvh_trees();
-    CASCADE_DLL_LOCAL void verify_bvh_trees();
+    CASCADE_DLL_LOCAL void verify_bvh_trees() const;
     CASCADE_DLL_LOCAL void broad_phase();
-    CASCADE_DLL_LOCAL void verify_broad_phase();
+    CASCADE_DLL_LOCAL void verify_broad_phase() const;
     CASCADE_DLL_LOCAL void narrow_phase(double);
     CASCADE_DLL_LOCAL double infer_superstep();
+    CASCADE_DLL_LOCAL void verify_global_aabbs() const;
 
     template <typename InTup, typename OutTup, std::size_t... I>
     void ctor_impl(const InTup &in_tup, const OutTup &out_tup, std::index_sequence<I...>)
@@ -125,6 +126,8 @@ private:
     CASCADE_DLL_LOCAL void init_scalar_ta(T &, size_type) const;
     template <typename T>
     CASCADE_DLL_LOCAL void init_batch_ta(T &, size_type, size_type) const;
+    template <typename T>
+    CASCADE_DLL_LOCAL void compute_particle_aabb(unsigned, const T &, const T &, size_type);
 };
 
 } // namespace cascade

@@ -260,7 +260,7 @@ void sim::narrow_phase(double chunk_size)
     auto *logger = detail::get_logger();
 
     // Cache a few bits.
-    const auto nchunks = static_cast<unsigned>(m_data->global_lb.size());
+    const auto nchunks = m_data->nchunks;
     const auto order = m_data->s_ta.get_order();
     const auto init_time = m_data->time;
     const auto &s_data = m_data->s_data;

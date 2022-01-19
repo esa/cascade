@@ -217,6 +217,151 @@ void sim::init_batch_ta(T &ta, size_type pidx_begin, size_type pidx_end) const
     }
 }
 
+// Compute the AABB of the trajectory of the particle at index pidx within a chunk.
+// chunk_idx is the chunk index, chunk_begin/end the time range of the chunk.
+template <typename T>
+void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const T &chunk_end, size_type pidx)
+{
+    namespace hy = heyoka;
+
+    // Fetch pointers to the AABB data for the current chunk.
+    const auto offset = get_nparts() * chunk_idx;
+
+    auto *CASCADE_RESTRICT x_lb_ptr = m_data->x_lb.data() + offset;
+    auto *CASCADE_RESTRICT y_lb_ptr = m_data->y_lb.data() + offset;
+    auto *CASCADE_RESTRICT z_lb_ptr = m_data->z_lb.data() + offset;
+    auto *CASCADE_RESTRICT r_lb_ptr = m_data->r_lb.data() + offset;
+
+    auto *CASCADE_RESTRICT x_ub_ptr = m_data->x_ub.data() + offset;
+    auto *CASCADE_RESTRICT y_ub_ptr = m_data->y_ub.data() + offset;
+    auto *CASCADE_RESTRICT z_ub_ptr = m_data->z_ub.data() + offset;
+    auto *CASCADE_RESTRICT r_ub_ptr = m_data->r_ub.data() + offset;
+
+    // Setup the initial values for the bounding box.
+    constexpr auto finf = std::numeric_limits<float>::infinity();
+
+    x_lb_ptr[pidx] = finf;
+    y_lb_ptr[pidx] = finf;
+    z_lb_ptr[pidx] = finf;
+    r_lb_ptr[pidx] = finf;
+
+    x_ub_ptr[pidx] = -finf;
+    y_ub_ptr[pidx] = -finf;
+    z_ub_ptr[pidx] = -finf;
+    r_ub_ptr[pidx] = -finf;
+
+    // Fetch the particle radius.
+    const auto p_radius = m_sizes[pidx];
+
+    // Cache a few quantities.
+    const auto order = m_data->s_ta.get_order();
+    const auto &s_data = m_data->s_data;
+    const auto &tcoords = s_data[pidx].tcoords;
+    const auto tcoords_begin = tcoords.begin();
+    const auto tcoords_end = tcoords.end();
+
+    // We need to locate the substep range that fully includes
+    // the current chunk.
+    // First we locate the first substep whose end is strictly
+    // *greater* than the lower bound of the chunk.
+    const auto ss_it_begin = std::upper_bound(tcoords_begin, tcoords_end, chunk_begin);
+    // Then, we locate the first substep whose end is *greater than or
+    // equal to* the end of the chunk.
+    auto ss_it_end = std::lower_bound(ss_it_begin, tcoords_end, chunk_end);
+    // Bump it up by one to define a half-open range.
+    // NOTE: don't bump it if it is already at the end.
+    // This could happen at the last chunk due to FP rounding.
+    ss_it_end += (ss_it_end != tcoords_end);
+
+    // Iterate over all substeps and update the bounding box
+    // for the current particle.
+    for (auto it = ss_it_begin; it != ss_it_end; ++it) {
+        // it points to the end of a substep which overlaps
+        // with the current chunk. The size of the polynomial evaluation
+        // interval is the size of the intersection between the substep and
+        // the chunk.
+
+        // Determine the initial time coordinate of the substep, relative
+        // to init_time. If it is tcoords_begin, ss_start will be zero, otherwise
+        // ss_start is given by the iterator preceding it.
+        const auto ss_start = (it == tcoords_begin) ? hy::detail::dfloat<double>(0) : *(it - 1);
+
+        // Determine lower/upper bounds of the evaluation interval,
+        // relative to init_time.
+        // TODO std::min/max here?
+        const auto ev_lb = std::max(chunk_begin, ss_start);
+        const auto ev_ub = std::min(chunk_end, *it);
+
+        // Create the actual evaluation interval, referring
+        // it to the beginning of the substep.
+        const auto h_int_lb = static_cast<double>(ev_lb - ss_start);
+        const auto h_int_ub = static_cast<double>(ev_ub - ss_start);
+
+        // Determine the index of the substep within the chunk.
+        // TODO: overflow check -> tcoords' size must fit in the
+        // iterator difference type.
+        const auto ss_idx = boost::numeric_cast<decltype(s_data[pidx].tc_x.size())>(it - tcoords_begin);
+
+        // Compute the pointers to the TCs for the current particle
+        // and substep.
+        const auto tc_ptr_x = s_data[pidx].tc_x.data() + ss_idx * (order + 1u);
+        const auto tc_ptr_y = s_data[pidx].tc_y.data() + ss_idx * (order + 1u);
+        const auto tc_ptr_z = s_data[pidx].tc_z.data() + ss_idx * (order + 1u);
+        const auto tc_ptr_r = s_data[pidx].tc_r.data() + ss_idx * (order + 1u);
+
+        // Run the polynomial evaluations using interval arithmetic.
+        // TODO jit for performance? If so, we can do all 4 coordinates
+        // in a single JIT compiled function. Possibly also the update
+        // with the particle radius?
+        auto horner_eval = [order, h_int = detail::ival(h_int_lb, h_int_ub)](const double *ptr) {
+            auto acc = detail::ival(ptr[order]);
+            for (auto o = 1u; o <= order; ++o) {
+                acc = detail::ival(ptr[order - o]) + acc * h_int;
+            }
+
+            return acc;
+        };
+
+        auto x_int = horner_eval(tc_ptr_x);
+        auto y_int = horner_eval(tc_ptr_y);
+        auto z_int = horner_eval(tc_ptr_z);
+        auto r_int = horner_eval(tc_ptr_r);
+
+        // Adjust the intervals accounting for the particle radius.
+        x_int.lower -= p_radius;
+        x_int.upper += p_radius;
+
+        y_int.lower -= p_radius;
+        y_int.upper += p_radius;
+
+        z_int.lower -= p_radius;
+        z_int.upper += p_radius;
+
+        r_int.lower -= p_radius;
+        r_int.upper += p_radius;
+
+        // A couple of helpers to cast lower/upper bounds from double to float. After
+        // the cast, we will also move slightly the bounds to add a safety margin to account
+        // for possible truncation in the conversion.
+        // TODO: this looks like a good place for inf checking.
+        auto lb_make_float = [&](double lb) { return std::nextafter(static_cast<float>(lb), -finf); };
+        auto ub_make_float = [&](double ub) { return std::nextafter(static_cast<float>(ub), finf); };
+
+        // Update the bounding box for the current particle.
+        // TODO: min/max usage?
+        // TODO: inf checking? Here or when updating the global AABB?
+        x_lb_ptr[pidx] = std::min(x_lb_ptr[pidx], lb_make_float(x_int.lower));
+        y_lb_ptr[pidx] = std::min(y_lb_ptr[pidx], lb_make_float(y_int.lower));
+        z_lb_ptr[pidx] = std::min(z_lb_ptr[pidx], lb_make_float(z_int.lower));
+        r_lb_ptr[pidx] = std::min(r_lb_ptr[pidx], lb_make_float(r_int.lower));
+
+        x_ub_ptr[pidx] = std::max(x_ub_ptr[pidx], ub_make_float(x_int.upper));
+        y_ub_ptr[pidx] = std::max(y_ub_ptr[pidx], ub_make_float(y_int.upper));
+        z_ub_ptr[pidx] = std::max(z_ub_ptr[pidx], ub_make_float(z_int.upper));
+        r_ub_ptr[pidx] = std::max(r_ub_ptr[pidx], ub_make_float(r_int.upper));
+    }
+}
+
 // Perform the Morton encoding of the centres of the AABBs of the particles
 // and sort the AABB data according to the codes.
 void sim::morton_encode_sort()
@@ -227,7 +372,7 @@ void sim::morton_encode_sort()
 
     // Fetch the number of particles and chunks from m_data.
     const auto nparts = get_nparts();
-    const auto nchunks = static_cast<unsigned>(m_data->global_lb.size());
+    const auto nchunks = m_data->nchunks;
 
     constexpr auto morton_enc = mortonnd::MortonNDLutEncoder<4, 16, 8>();
 
@@ -348,6 +493,9 @@ void sim::propagate_for(double t)
     const auto delta_t = 0.46 * 4u;
     // TODO enforce power of 2?
     const auto nchunks = 8u;
+
+    // Assign the number of chunks.
+    m_data->nchunks = nchunks;
 
     const auto chunk_size = delta_t / nchunks;
 
@@ -549,127 +697,8 @@ void sim::propagate_for(double t)
                 const auto pidx_begin = idx * batch_size;
 
                 for (std::uint32_t i = 0; i < batch_size; ++i) {
-                    // Setup the initial values for the bounding box
-                    // of the current particle in the current chunk.
-                    x_lb_ptr[pidx_begin + i] = finf;
-                    y_lb_ptr[pidx_begin + i] = finf;
-                    z_lb_ptr[pidx_begin + i] = finf;
-                    r_lb_ptr[pidx_begin + i] = finf;
-
-                    x_ub_ptr[pidx_begin + i] = -finf;
-                    y_ub_ptr[pidx_begin + i] = -finf;
-                    z_ub_ptr[pidx_begin + i] = -finf;
-                    r_ub_ptr[pidx_begin + i] = -finf;
-
-                    // Fetch the particle radius.
-                    const auto p_radius = m_sizes[pidx_begin + i];
-
-                    // Cache the range of end times of the substeps.
-                    const auto &tcoords = s_data[pidx_begin + i].tcoords;
-                    const auto tcoords_begin = tcoords.begin();
-                    const auto tcoords_end = tcoords.end();
-
-                    // We need to locate the substep range that fully includes
-                    // the current chunk.
-                    // First we locate the first substep whose end is strictly
-                    // *greater* than the lower bound of the chunk.
-                    const auto ss_it_begin = std::upper_bound(tcoords_begin, tcoords_end, chunk_begin);
-                    // Then, we locate the first substep whose end is *greater than or
-                    // equal to* the end of the chunk.
-                    auto ss_it_end = std::lower_bound(ss_it_begin, tcoords_end, chunk_end);
-                    // Bump it up by one to define a half-open range.
-                    // NOTE: don't bump it if it is already at the end.
-                    // This could happen at the last chunk due to FP rounding.
-                    ss_it_end += (ss_it_end != tcoords_end);
-
-                    // Iterate over all substeps and update the bounding box
-                    // for the current particle.
-                    for (auto it = ss_it_begin; it != ss_it_end; ++it) {
-                        // it points to the end of a substep which overlaps
-                        // with the current chunk. The size of the polynomial evaluation
-                        // interval is the size of the intersection between the substep and
-                        // the chunk.
-
-                        // Determine the initial time coordinate of the substep, relative
-                        // to init_time. If it is tcoords_begin, ss_start will be zero, otherwise
-                        // ss_start is given by the iterator preceding it.
-                        const auto ss_start = (it == tcoords_begin) ? hy::detail::dfloat<double>(0) : *(it - 1);
-
-                        // Determine lower/upper bounds of the evaluation interval,
-                        // relative to init_time.
-                        // TODO std::min/max here?
-                        const auto ev_lb = std::max(chunk_begin, ss_start);
-                        const auto ev_ub = std::min(chunk_end, *it);
-
-                        // Create the actual evaluation interval, referring
-                        // it to the beginning of the substep.
-                        const auto h_int_lb = static_cast<double>(ev_lb - ss_start);
-                        const auto h_int_ub = static_cast<double>(ev_ub - ss_start);
-
-                        // Determine the index of the substep within the chunk.
-                        // TODO: overflow check -> tcoords' size must fit in the
-                        // iterator difference type.
-                        const auto ss_idx
-                            = boost::numeric_cast<decltype(s_data[pidx_begin + i].tc_x.size())>(it - tcoords_begin);
-
-                        // Compute the pointers to the TCs for the current particle
-                        // and substep.
-                        const auto tc_ptr_x = s_data[pidx_begin + i].tc_x.data() + ss_idx * (order + 1u);
-                        const auto tc_ptr_y = s_data[pidx_begin + i].tc_y.data() + ss_idx * (order + 1u);
-                        const auto tc_ptr_z = s_data[pidx_begin + i].tc_z.data() + ss_idx * (order + 1u);
-                        const auto tc_ptr_r = s_data[pidx_begin + i].tc_r.data() + ss_idx * (order + 1u);
-
-                        // Run the polynomial evaluations using interval arithmetic.
-                        // TODO jit for performance? If so, we can do all 4 coordinates
-                        // in a single JIT compiled function. Possibly also the update
-                        // with the particle radius?
-                        auto horner_eval = [order, h_int = detail::ival(h_int_lb, h_int_ub)](const double *ptr) {
-                            auto acc = detail::ival(ptr[order]);
-                            for (auto o = 1u; o <= order; ++o) {
-                                acc = detail::ival(ptr[order - o]) + acc * h_int;
-                            }
-
-                            return acc;
-                        };
-
-                        auto x_int = horner_eval(tc_ptr_x);
-                        auto y_int = horner_eval(tc_ptr_y);
-                        auto z_int = horner_eval(tc_ptr_z);
-                        auto r_int = horner_eval(tc_ptr_r);
-
-                        // Adjust the intervals accounting for the particle radius.
-                        x_int.lower -= p_radius;
-                        x_int.upper += p_radius;
-
-                        y_int.lower -= p_radius;
-                        y_int.upper += p_radius;
-
-                        z_int.lower -= p_radius;
-                        z_int.upper += p_radius;
-
-                        r_int.lower -= p_radius;
-                        r_int.upper += p_radius;
-
-                        // A couple of helpers to cast lower/upper bounds from double to float. After
-                        // the cast, we will also move slightly the bounds to add a safety margin to account
-                        // for possible truncation in the conversion.
-                        // TODO: this looks like a good place for inf checking.
-                        auto lb_make_float = [&](double lb) { return std::nextafter(static_cast<float>(lb), -finf); };
-                        auto ub_make_float = [&](double ub) { return std::nextafter(static_cast<float>(ub), finf); };
-
-                        // Update the bounding box for the current particle.
-                        // TODO: min/max usage?
-                        // TODO: inf checking? Here or when updating the global AABB?
-                        x_lb_ptr[pidx_begin + i] = std::min(x_lb_ptr[pidx_begin + i], lb_make_float(x_int.lower));
-                        y_lb_ptr[pidx_begin + i] = std::min(y_lb_ptr[pidx_begin + i], lb_make_float(y_int.lower));
-                        z_lb_ptr[pidx_begin + i] = std::min(z_lb_ptr[pidx_begin + i], lb_make_float(z_int.lower));
-                        r_lb_ptr[pidx_begin + i] = std::min(r_lb_ptr[pidx_begin + i], lb_make_float(r_int.lower));
-
-                        x_ub_ptr[pidx_begin + i] = std::max(x_ub_ptr[pidx_begin + i], ub_make_float(x_int.upper));
-                        y_ub_ptr[pidx_begin + i] = std::max(y_ub_ptr[pidx_begin + i], ub_make_float(y_int.upper));
-                        z_ub_ptr[pidx_begin + i] = std::max(z_ub_ptr[pidx_begin + i], ub_make_float(z_int.upper));
-                        r_ub_ptr[pidx_begin + i] = std::max(r_ub_ptr[pidx_begin + i], ub_make_float(r_int.upper));
-                    }
+                    // Compute the AABB for the current particle.
+                    compute_particle_aabb(chunk_idx, chunk_begin, chunk_end, pidx_begin + i);
 
                     // Update the local AABB with the bounding box for the current particle.
                     // TODO: min/max usage?
@@ -678,10 +707,10 @@ void sim::propagate_for(double t)
                     local_lb[2] = std::min(local_lb[2], z_lb_ptr[pidx_begin + i]);
                     local_lb[3] = std::min(local_lb[3], r_lb_ptr[pidx_begin + i]);
 
-                    local_ub[0] = std::max(local_ub[0], x_lb_ptr[pidx_begin + i]);
-                    local_ub[1] = std::max(local_ub[1], y_lb_ptr[pidx_begin + i]);
-                    local_ub[2] = std::max(local_ub[2], z_lb_ptr[pidx_begin + i]);
-                    local_ub[3] = std::max(local_ub[3], r_lb_ptr[pidx_begin + i]);
+                    local_ub[0] = std::max(local_ub[0], x_ub_ptr[pidx_begin + i]);
+                    local_ub[1] = std::max(local_ub[1], y_ub_ptr[pidx_begin + i]);
+                    local_ub[2] = std::max(local_ub[2], z_ub_ptr[pidx_begin + i]);
+                    local_ub[3] = std::max(local_ub[3], r_ub_ptr[pidx_begin + i]);
                 }
             }
 
@@ -811,126 +840,8 @@ void sim::propagate_for(double t)
             const auto chunk_end = hy::detail::dfloat<double>(chunk_size * (chunk_idx + 1u));
 
             for (auto pidx = range.begin(); pidx != range.end(); ++pidx) {
-                // Setup the initial values for the bounding box
-                // of the current particle in the current chunk.
-                x_lb_ptr[pidx] = finf;
-                y_lb_ptr[pidx] = finf;
-                z_lb_ptr[pidx] = finf;
-                r_lb_ptr[pidx] = finf;
-
-                x_ub_ptr[pidx] = -finf;
-                y_ub_ptr[pidx] = -finf;
-                z_ub_ptr[pidx] = -finf;
-                r_ub_ptr[pidx] = -finf;
-
-                // Fetch the particle radius.
-                const auto p_radius = m_sizes[pidx];
-
-                // Cache the range of end times of the substeps.
-                const auto &tcoords = s_data[pidx].tcoords;
-                const auto tcoords_begin = tcoords.begin();
-                const auto tcoords_end = tcoords.end();
-
-                // We need to locate the substep range that fully includes
-                // the current chunk.
-                // First we locate the first substep whose end is strictly
-                // *greater* than the lower bound of the chunk.
-                const auto ss_it_begin = std::upper_bound(tcoords_begin, tcoords_end, chunk_begin);
-                // Then, we locate the first substep whose end is *greater than or
-                // equal to* the end of the chunk.
-                auto ss_it_end = std::lower_bound(ss_it_begin, tcoords_end, chunk_end);
-                // Bump it up by one to define a half-open range.
-                // NOTE: don't bump it if it is already at the end.
-                // This could happen at the last chunk due to FP rounding.
-                ss_it_end += (ss_it_end != tcoords_end);
-
-                // Iterate over all substeps and update the bounding box
-                // for the current particle.
-                for (auto it = ss_it_begin; it != ss_it_end; ++it) {
-                    // it points to the end of a substep which overlaps
-                    // with the current chunk. The size of the polynomial evaluation
-                    // interval is the size of the intersection between the substep and
-                    // the chunk.
-
-                    // Determine the initial time coordinate of the substep, relative
-                    // to init_time. If it is tcoords_begin, ss_start will be zero, otherwise
-                    // ss_start is given by the iterator preceding it.
-                    const auto ss_start = (it == tcoords_begin) ? hy::detail::dfloat<double>(0) : *(it - 1);
-
-                    // Determine lower/upper bounds of the evaluation interval,
-                    // relative to init_time.
-                    // TODO std::min/max here?
-                    const auto ev_lb = std::max(chunk_begin, ss_start);
-                    const auto ev_ub = std::min(chunk_end, *it);
-
-                    // Create the actual evaluation interval, referring
-                    // it to the beginning of the substep.
-                    const auto h_int_lb = static_cast<double>(ev_lb - ss_start);
-                    const auto h_int_ub = static_cast<double>(ev_ub - ss_start);
-
-                    // Determine the index of the substep within the chunk.
-                    // TODO: overflow check -> tcoords' size must fit in the
-                    // iterator difference type.
-                    const auto ss_idx = boost::numeric_cast<decltype(s_data[pidx].tc_x.size())>(it - tcoords_begin);
-
-                    // Compute the pointers to the TCs for the current particle
-                    // and substep.
-                    const auto tc_ptr_x = s_data[pidx].tc_x.data() + ss_idx * (order + 1u);
-                    const auto tc_ptr_y = s_data[pidx].tc_y.data() + ss_idx * (order + 1u);
-                    const auto tc_ptr_z = s_data[pidx].tc_z.data() + ss_idx * (order + 1u);
-                    const auto tc_ptr_r = s_data[pidx].tc_r.data() + ss_idx * (order + 1u);
-
-                    // Run the polynomial evaluations using interval arithmetic.
-                    // TODO jit for performance? If so, we can do all 4 coordinates
-                    // in a single JIT compiled function. Possibly also the update
-                    // with the particle radius?
-                    auto horner_eval = [order, h_int = detail::ival(h_int_lb, h_int_ub)](const double *ptr) {
-                        auto acc = detail::ival(ptr[order]);
-                        for (auto o = 1u; o <= order; ++o) {
-                            acc = detail::ival(ptr[order - o]) + acc * h_int;
-                        }
-
-                        return acc;
-                    };
-
-                    auto x_int = horner_eval(tc_ptr_x);
-                    auto y_int = horner_eval(tc_ptr_y);
-                    auto z_int = horner_eval(tc_ptr_z);
-                    auto r_int = horner_eval(tc_ptr_r);
-
-                    // Adjust the intervals accounting for the particle radius.
-                    x_int.lower -= p_radius;
-                    x_int.upper += p_radius;
-
-                    y_int.lower -= p_radius;
-                    y_int.upper += p_radius;
-
-                    z_int.lower -= p_radius;
-                    z_int.upper += p_radius;
-
-                    r_int.lower -= p_radius;
-                    r_int.upper += p_radius;
-
-                    // A couple of helpers to cast lower/upper bounds from double to float. After
-                    // the cast, we will also move slightly the bounds to add a safety margin to account
-                    // for possible truncation in the conversion.
-                    // TODO: this looks like a good place for inf checking.
-                    auto lb_make_float = [&](double lb) { return std::nextafter(static_cast<float>(lb), -finf); };
-                    auto ub_make_float = [&](double ub) { return std::nextafter(static_cast<float>(ub), finf); };
-
-                    // Update the bounding box for the current particle.
-                    // TODO: min/max usage?
-                    // TODO: inf checking? Here or when updating the global AABB?
-                    x_lb_ptr[pidx] = std::min(x_lb_ptr[pidx], lb_make_float(x_int.lower));
-                    y_lb_ptr[pidx] = std::min(y_lb_ptr[pidx], lb_make_float(y_int.lower));
-                    z_lb_ptr[pidx] = std::min(z_lb_ptr[pidx], lb_make_float(z_int.lower));
-                    r_lb_ptr[pidx] = std::min(r_lb_ptr[pidx], lb_make_float(r_int.lower));
-
-                    x_ub_ptr[pidx] = std::max(x_ub_ptr[pidx], ub_make_float(x_int.upper));
-                    y_ub_ptr[pidx] = std::max(y_ub_ptr[pidx], ub_make_float(y_int.upper));
-                    z_ub_ptr[pidx] = std::max(z_ub_ptr[pidx], ub_make_float(z_int.upper));
-                    r_ub_ptr[pidx] = std::max(r_ub_ptr[pidx], ub_make_float(r_int.upper));
-                }
+                // Compute the AABB for the current particle.
+                compute_particle_aabb(chunk_idx, chunk_begin, chunk_end, pidx);
 
                 // Update the local AABB with the bounding box for the current particle.
                 // TODO: min/max usage?
@@ -939,10 +850,10 @@ void sim::propagate_for(double t)
                 local_lb[2] = std::min(local_lb[2], z_lb_ptr[pidx]);
                 local_lb[3] = std::min(local_lb[3], r_lb_ptr[pidx]);
 
-                local_ub[0] = std::max(local_ub[0], x_lb_ptr[pidx]);
-                local_ub[1] = std::max(local_ub[1], y_lb_ptr[pidx]);
-                local_ub[2] = std::max(local_ub[2], z_lb_ptr[pidx]);
-                local_ub[3] = std::max(local_ub[3], r_lb_ptr[pidx]);
+                local_ub[0] = std::max(local_ub[0], x_ub_ptr[pidx]);
+                local_ub[1] = std::max(local_ub[1], y_ub_ptr[pidx]);
+                local_ub[2] = std::max(local_ub[2], z_ub_ptr[pidx]);
+                local_ub[3] = std::max(local_ub[3], r_ub_ptr[pidx]);
             }
 
             // Atomically update the global AABB for the current chunk.
@@ -990,6 +901,10 @@ void sim::propagate_for(double t)
         // TODO
         throw;
     }
+
+#if !defined(NDEBUG)
+    verify_global_aabbs();
+#endif
 
     // Computation of the Morton codes and sorting.
     morton_encode_sort();
@@ -1193,6 +1108,47 @@ double sim::infer_superstep()
     logger->debug("Number of particles considered for timestep deduction: {}", n_part_acc);
 
     return res;
+}
+
+// Helper to verify the global AABB computed for each chunk.
+void sim::verify_global_aabbs() const
+{
+    constexpr auto finf = std::numeric_limits<float>::infinity();
+
+    const auto nparts = get_nparts();
+    const auto nchunks = m_data->nchunks;
+
+    for (auto chunk_idx = 0u; chunk_idx < nchunks; ++chunk_idx) {
+        std::array lb = {finf, finf, finf, finf};
+        std::array ub = {-finf, -finf, -finf, -finf};
+
+        const auto offset = nparts * chunk_idx;
+
+        const auto *CASCADE_RESTRICT x_lb_ptr = m_data->x_lb.data() + offset;
+        const auto *CASCADE_RESTRICT y_lb_ptr = m_data->y_lb.data() + offset;
+        const auto *CASCADE_RESTRICT z_lb_ptr = m_data->z_lb.data() + offset;
+        const auto *CASCADE_RESTRICT r_lb_ptr = m_data->r_lb.data() + offset;
+
+        const auto *CASCADE_RESTRICT x_ub_ptr = m_data->x_ub.data() + offset;
+        const auto *CASCADE_RESTRICT y_ub_ptr = m_data->y_ub.data() + offset;
+        const auto *CASCADE_RESTRICT z_ub_ptr = m_data->z_ub.data() + offset;
+        const auto *CASCADE_RESTRICT r_ub_ptr = m_data->r_ub.data() + offset;
+
+        for (size_type i = 0; i < nparts; ++i) {
+            lb[0] = std::min(lb[0], x_lb_ptr[i]);
+            lb[1] = std::min(lb[1], y_lb_ptr[i]);
+            lb[2] = std::min(lb[2], z_lb_ptr[i]);
+            lb[3] = std::min(lb[3], r_lb_ptr[i]);
+
+            ub[0] = std::max(ub[0], x_ub_ptr[i]);
+            ub[1] = std::max(ub[1], y_ub_ptr[i]);
+            ub[2] = std::max(ub[2], z_ub_ptr[i]);
+            ub[3] = std::max(ub[3], r_ub_ptr[i]);
+        }
+
+        assert(lb == m_data->global_lb[chunk_idx]);
+        assert(ub == m_data->global_ub[chunk_idx]);
+    }
 }
 
 } // namespace cascade

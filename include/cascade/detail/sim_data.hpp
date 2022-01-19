@@ -109,6 +109,10 @@ struct sim::sim_data {
     using pt1_t = void (*)(double *, const double *) noexcept;
     pt1_t pt1 = nullptr;
 
+    // The number of chunks.
+    // NOTE: this is set up at the beginning of each superstep.
+    unsigned nchunks = 0;
+
     // Buffers that will contain the state at the end of a superstep.
     std::vector<double> final_x, final_y, final_z, final_vx, final_vy, final_vz;
 
@@ -151,6 +155,8 @@ struct sim::sim_data {
     std::vector<std::uint64_t> srt_mcodes;
 
     // The BVH node struct.
+    // NOTE: all members left intentionally uninited
+    // for performance reasons.
     struct bvh_node {
         // Particle range.
         std::uint32_t begin, end;
