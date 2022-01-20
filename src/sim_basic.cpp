@@ -12,6 +12,7 @@
 #include <cmath>
 #include <cstdint>
 #include <initializer_list>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -205,11 +206,17 @@ void sim::finalise_ctor()
             hy::prime(vz) = -z * hy::pow(hy::sum_sq({x, y, z}), -1.5),
             hy::prime(r) = hy::sum({x * vx, y * vy, z * vz}) / r};
 
-        // TODO overflow checks.
         const std::uint32_t batch_size = hy::recommended_simd_size<double>();
         oneapi::tbb::parallel_invoke(
             [&]() { s_ta.emplace(dynamics, std::vector<double>(7u)); },
-            [&]() { b_ta.emplace(dynamics, std::vector<double>(7u * batch_size), batch_size); });
+            [&]() {
+                if (batch_size > std::numeric_limits<std::vector<double>::size_type>::max() / 7u) {
+                    throw std::overflow_error(
+                        "An overflow as detected during the construction of the batch integrator");
+                }
+
+                b_ta.emplace(dynamics, std::vector<double>(7u * batch_size), batch_size);
+            });
     };
 
     // Helper to check that all values in a vector

@@ -382,7 +382,9 @@ void sim::narrow_phase()
 
                             // Determine the intersections of the two substeps
                             // with the current chunk.
-                            // TODO std::min/max here?
+                            // NOTE: min/max is fine here: values in tcoords are always checked
+                            // for finiteness, chunk_begin/end are also checked in
+                            // get_chunk_begin_end().
                             const auto lb_i = std::max(chunk_begin, ss_start_i);
                             const auto ub_i = std::min(chunk_end, *it_i);
                             const auto lb_j = std::max(chunk_begin, ss_start_j);
@@ -393,7 +395,7 @@ void sim::narrow_phase()
                             // within which we need to do polynomial root finding.
                             // NOTE: at this stage lb_rf/ub_rf are still time coordinates wrt
                             // init_time.
-                            // TODO std::min/max here?
+                            // NOTE: min/max fine here, all quantities are safe.
                             const auto lb_rf = std::max(lb_i, lb_j);
                             const auto ub_rf = std::min(ub_i, ub_j);
 

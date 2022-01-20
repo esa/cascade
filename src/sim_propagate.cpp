@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <functional>
 #include <initializer_list>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <tuple>
@@ -140,7 +141,7 @@ std::uint64_t disc_single_coord(float x, float min, float max)
     // Make sure to clamp it before returning, in case
     // somehow FP arithmetic makes it spill outside
     // the bound.
-    // TODO min usage?
+    // NOTE: std::min is safe with integral types.
     return std::min(retval, std::uint64_t((std::uint64_t(1) << 16) - 1u));
 }
 
@@ -293,7 +294,9 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
 
         // Determine lower/upper bounds of the evaluation interval,
         // relative to init_time.
-        // TODO std::min/max here?
+        // NOTE: min/max is fine here: values in tcoords are always checked
+        // for finiteness, chunk_begin/end are also checked in
+        // get_chunk_begin_end().
         const auto ev_lb = std::max(chunk_begin, ss_start);
         const auto ev_ub = std::min(chunk_end, *it);
 
@@ -303,8 +306,9 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
         const auto h_int_ub = static_cast<double>(ev_ub - ss_start);
 
         // Determine the index of the substep within the chunk.
-        // TODO: overflow check -> tcoords' size must fit in the
-        // iterator difference type.
+        // NOTE: we checked at the end of the numerical integration
+        // that the size of tcoords can be represented by its iterator
+        // type's difference. Thus, the computation it - tcoords_begin is safe.
         const auto ss_idx = boost::numeric_cast<decltype(s_data[pidx].tc_x.size())>(it - tcoords_begin);
 
         // Compute the pointers to the TCs for the current particle
@@ -315,7 +319,7 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
         const auto tc_ptr_r = s_data[pidx].tc_r.data() + ss_idx * (order + 1u);
 
         // Run the polynomial evaluations using interval arithmetic.
-        // TODO jit for performance? If so, we can do all 4 coordinates
+        // NOTE: jit for performance? If so, we can do all 4 coordinates
         // in a single JIT compiled function. Possibly also the update
         // with the particle radius?
         auto horner_eval = [order, h_int = detail::ival(h_int_lb, h_int_ub)](const double *ptr) {
@@ -348,13 +352,32 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
         // A couple of helpers to cast lower/upper bounds from double to float. After
         // the cast, we will also move slightly the bounds to add a safety margin to account
         // for possible truncation in the conversion.
-        // TODO: this looks like a good place for inf checking.
-        auto lb_make_float = [&](double lb) { return std::nextafter(static_cast<float>(lb), -finf); };
-        auto ub_make_float = [&](double ub) { return std::nextafter(static_cast<float>(ub), finf); };
+        auto lb_make_float = [&](double lb) {
+            auto ret = std::nextafter(static_cast<float>(lb), -finf);
+
+            if (!std::isfinite(ret)) {
+                throw std::invalid_argument(fmt::format("The computation of the bounding box for the particle at index "
+                                                        "{} produced the non-finite lower bound {}",
+                                                        pidx, ret));
+            }
+
+            return ret;
+        };
+        auto ub_make_float = [&](double ub) {
+            auto ret = std::nextafter(static_cast<float>(ub), finf);
+
+            if (!std::isfinite(ret)) {
+                throw std::invalid_argument(fmt::format("The computation of the bounding box for the particle at index "
+                                                        "{} produced the non-finite upper bound {}",
+                                                        pidx, ret));
+            }
+
+            return ret;
+        };
 
         // Update the bounding box for the current particle.
-        // TODO: min/max usage?
-        // TODO: inf checking? Here or when updating the global AABB?
+        // NOTE: min/max is fine: the make_float() helpers check for finiteness,
+        // and the other operand is never NaN.
         x_lb_ptr[pidx] = std::min(x_lb_ptr[pidx], lb_make_float(x_int.lower));
         y_lb_ptr[pidx] = std::min(y_lb_ptr[pidx], lb_make_float(y_int.lower));
         z_lb_ptr[pidx] = std::min(z_lb_ptr[pidx], lb_make_float(z_int.lower));
@@ -583,8 +606,6 @@ outcome sim::step(double dt)
 
     logger->trace("Initial buffer setup time: {}s", sw_buf);
 
-    std::atomic<bool> int_error{false};
-
     // Numerical integration and computation of the AABBs in batch mode.
     auto batch_int_aabb = [&](const auto &range) {
         // Fetch an integrator from the cache, or create it.
@@ -640,7 +661,9 @@ outcome sim::step(double dt)
                     const auto time_f = hy::detail::dfloat<double>(ta.get_dtime().first[i], ta.get_dtime().second[i]);
                     s_data[pidx_begin + i].tcoords.push_back(time_f - init_time);
                     if (!isfinite(s_data[pidx_begin + i].tcoords.back())) {
-                        return false;
+                        throw std::invalid_argument(fmt::format("A non-finite time coordinate was generated during the "
+                                                                "numerical integration of the particle at index {}",
+                                                                pidx_begin + i));
                     }
 
                     // Copy over the Taylor coefficients.
@@ -671,15 +694,29 @@ outcome sim::step(double dt)
             ta.propagate_for(delta_t, hy::kw::write_tc = true, hy::kw::callback = cbf);
 
             // Check for errors.
-            // TODO check also for empty tcoords.
-            if (std::ranges::any_of(ta.get_propagate_res(), [](const auto &tup) {
-                    return std::get<0>(tup) != hy::taylor_outcome::time_limit;
-                })) {
-                // TODO distinguish various error codes?
-                int_error.store(true, std::memory_order_relaxed);
+            for (std::uint32_t i = 0; i < batch_size; ++i) {
+                if (std::get<0>(ta.get_propagate_res()[i]) != hy::taylor_outcome::time_limit) {
+                    throw std::invalid_argument(fmt::format(
+                        "The numerical integration of the particle at index {} returned an error", pidx_begin + i));
+                }
 
-                // TODO return instead of break here?
-                break;
+                const auto &tcoords = s_data[pidx_begin + i].tcoords;
+
+                // NOTE: tcoords can never be empty because that would mean that
+                // we took a superstep of zero size, which is prevented by the checks
+                // at the beginning of the step() function.
+                assert(!tcoords.empty());
+
+                // Overflow check on tcoords: tcoords' size must fit in the
+                // iterator difference type. This is relied upon when computing
+                // the index of a substep within a chunk.
+                using it_diff_t = std::iter_difference_t<decltype(tcoords.begin())>;
+                using it_udiff_t = std::make_unsigned_t<it_diff_t>;
+                if (tcoords.size() > static_cast<it_udiff_t>(std::numeric_limits<it_diff_t>::max())) {
+                    throw std::overflow_error(
+                        fmt::format("Overflow detected during the numerical integration of the particle at index {}",
+                                    pidx_begin + i));
+                }
             }
 
             // Fill in the state at the end of the superstep.
@@ -730,7 +767,8 @@ outcome sim::step(double dt)
                     compute_particle_aabb(chunk_idx, dfloat(chunk_begin), dfloat(chunk_end), pidx_begin + i);
 
                     // Update the local AABB with the bounding box for the current particle.
-                    // TODO: min/max usage?
+                    // NOTE: min/max usage is safe, because compute_particle_aabb()
+                    // ensures that the bounding boxes are finite.
                     local_lb[0] = std::min(local_lb[0], x_lb_ptr[pidx_begin + i]);
                     local_lb[1] = std::min(local_lb[1], y_lb_ptr[pidx_begin + i]);
                     local_lb[2] = std::min(local_lb[2], z_lb_ptr[pidx_begin + i]);
@@ -801,7 +839,9 @@ outcome sim::step(double dt)
                 const auto time_f = hy::detail::dfloat<double>(ta.get_dtime().first, ta.get_dtime().second);
                 s_data[pidx].tcoords.push_back(time_f - init_time);
                 if (!isfinite(s_data[pidx].tcoords.back())) {
-                    return false;
+                    throw std::invalid_argument(fmt::format("A non-finite time coordinate was generated during the "
+                                                            "numerical integration of the particle at index {}",
+                                                            pidx));
                 }
 
                 // Copy over the Taylor coefficients.
@@ -826,13 +866,26 @@ outcome sim::step(double dt)
             const auto oc = std::get<0>(ta.propagate_for(delta_t, hy::kw::write_tc = true, hy::kw::callback = cbf));
 
             // Check for errors.
-            // TODO check also for empty tcoords.
             if (oc != hy::taylor_outcome::time_limit) {
-                // TODO distinguish various error codes?
-                int_error.store(true, std::memory_order_relaxed);
+                throw std::invalid_argument(
+                    fmt::format("The numerical integration of the particle at index {} returned an error", pidx));
+            }
 
-                // TODO return instead of break here?
-                break;
+            const auto &tcoords = s_data[pidx].tcoords;
+
+            // NOTE: tcoords can never be empty because that would mean that
+            // we took a superstep of zero size, which is prevented by the checks
+            // at the beginning of the step() function.
+            assert(!tcoords.empty());
+
+            // Overflow check on tcoords: tcoords' size must fit in the
+            // iterator difference type. This is relied upon when computing
+            // the index of a substep within a chunk.
+            using it_diff_t = std::iter_difference_t<decltype(tcoords.begin())>;
+            using it_udiff_t = std::make_unsigned_t<it_diff_t>;
+            if (tcoords.size() > static_cast<it_udiff_t>(std::numeric_limits<it_diff_t>::max())) {
+                throw std::overflow_error(fmt::format(
+                    "Overflow detected during the numerical integration of the particle at index {}", pidx));
             }
 
             // Fill in the state at the end of the superstep.
@@ -879,7 +932,8 @@ outcome sim::step(double dt)
                 compute_particle_aabb(chunk_idx, dfloat(chunk_begin), dfloat(chunk_end), pidx);
 
                 // Update the local AABB with the bounding box for the current particle.
-                // TODO: min/max usage?
+                // NOTE: min/max usage is safe, because compute_particle_aabb()
+                // ensures that the bounding boxes are finite.
                 local_lb[0] = std::min(local_lb[0], x_lb_ptr[pidx]);
                 local_lb[1] = std::min(local_lb[1], y_lb_ptr[pidx]);
                 local_lb[2] = std::min(local_lb[2], z_lb_ptr[pidx]);
@@ -931,11 +985,6 @@ outcome sim::step(double dt)
         });
 
     logger->trace("Propagation + AABB computation time: {}s", sw);
-
-    if (int_error.load(std::memory_order_relaxed)) {
-        // TODO
-        throw;
-    }
 
 #if !defined(NDEBUG)
     verify_global_aabbs();
@@ -1286,7 +1335,7 @@ void sim::dense_propagate(double t)
             const auto tc_ptr_vz = s_data[pidx].tc_vz.data() + ss_idx * (order + 1u);
 
             // Run the polynomial evaluations.
-            // TODO jit for performance? If so, we can do all variables
+            // NOTE: jit for performance? If so, we can do all variables
             // in a single JIT compiled function.
             auto horner_eval = [order, eval_tm](const double *ptr) {
                 auto acc = ptr[order];
