@@ -73,8 +73,8 @@ void sim::broad_phase()
 
             // Fetch a reference to the AABB collision vector for the
             // current chunk and clear it out.
-            auto &coll_vec = m_data->bp_coll[chunk_idx];
-            coll_vec.clear();
+            auto &bp_cv = m_data->bp_coll[chunk_idx];
+            bp_cv.clear();
 
             // Fetch a reference to the bp cache for the current chunk.
             auto &bp_cache = m_data->bp_caches[chunk_idx];
@@ -165,7 +165,7 @@ void sim::broad_phase()
                 }
 
                 // Atomically merge the local bp into the global one.
-                coll_vec.grow_by(local_bp.begin(), local_bp.end());
+                bp_cv.grow_by(local_bp.begin(), local_bp.end());
 
                 // Put local_bp and the stack (back) into the caches.
                 bp_cache.push(std::move(local_bp));
@@ -173,7 +173,7 @@ void sim::broad_phase()
             });
 
             // Update tot_n_bp with the data from the current chunk.
-            tot_n_bp.fetch_add(coll_vec.size(), std::memory_order::relaxed);
+            tot_n_bp.fetch_add(bp_cv.size(), std::memory_order::relaxed);
         }
     });
 
