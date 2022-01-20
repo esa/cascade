@@ -9,13 +9,16 @@
 #ifndef CASCADE_SIM_HPP
 #define CASCADE_SIM_HPP
 
+#include <array>
 #include <concepts>
 #include <cstddef>
 #include <functional>
+#include <optional>
 #include <ranges>
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <boost/numeric/conversion/cast.hpp>
@@ -33,13 +36,24 @@ CASCADE_CONCEPT_DECL di_range
 
 #undef CASCADE_CONCEPT_DECL
 
+enum class outcome {
+    success,
+    time_limit,
+    interrupt,
+};
+
 class CASCADE_DLL_PUBLIC sim
 {
+public:
+    using size_type = std::vector<double>::size_type;
+
+private:
     struct sim_data;
 
     std::vector<double> m_x, m_y, m_z, m_vx, m_vy, m_vz, m_sizes;
     double m_ct;
     sim_data *m_data = nullptr;
+    std::optional<std::variant<std::array<size_type, 2>, size_type>> m_int_info;
 
     void finalise_ctor();
     CASCADE_DLL_LOCAL void add_jit_functions();
@@ -51,6 +65,7 @@ class CASCADE_DLL_PUBLIC sim
     CASCADE_DLL_LOCAL void narrow_phase();
     CASCADE_DLL_LOCAL double infer_superstep();
     CASCADE_DLL_LOCAL void verify_global_aabbs() const;
+    CASCADE_DLL_LOCAL void dense_propagate(double);
 
     template <typename InTup, typename OutTup, std::size_t... I>
     void ctor_impl(const InTup &in_tup, const OutTup &out_tup, std::index_sequence<I...>)
@@ -88,8 +103,6 @@ class CASCADE_DLL_PUBLIC sim
     }
 
 public:
-    using size_type = std::vector<double>::size_type;
-
     sim();
     template <di_range X, di_range Y, di_range Z, di_range VX, di_range VY, di_range VZ, di_range S>
     explicit sim(X &&x, Y &&y, Z &&z, VX &&vx, VY &&vy, VZ &&vz, S &&s, double ct) : m_ct(ct)
@@ -120,7 +133,7 @@ public:
     }
     double get_time() const;
 
-    void step(double = 0);
+    outcome step(double = 0);
 
 private:
     template <typename T>

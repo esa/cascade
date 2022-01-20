@@ -474,8 +474,10 @@ void sim::morton_encode_sort()
     logger->trace("Morton encoding and sorting time: {}s", sw);
 }
 
-// TODO clarify behaviour in case of exceptions.
-void sim::step(double dt)
+// NOTE: exception-wise: no user-visible data is altered
+// until the end of the function, at which point the new
+// sim data is set up in a noexcept manner.
+outcome sim::step(double dt)
 {
     namespace hy = heyoka;
     using dfloat = hy::detail::dfloat<double>;
@@ -948,32 +950,64 @@ void sim::step(double dt)
     // Broad phase collision detection.
     broad_phase();
 
-    // Record the original size of the global
-    // collision vector before running narrow phase.
-    const auto orig_cv_size = m_data->coll_vec.size();
-
     // Narrow phase collision detection.
     narrow_phase();
 
-    // Sort the detected collisions by time.
-    // NOTE: this can of course become a parallel sort if needed.
-    std::sort(m_data->coll_vec.data() + orig_cv_size, m_data->coll_vec.data() + m_data->coll_vec.size(),
-              [](const auto &tup1, const auto &tup2) { return std::get<2>(tup1) < std::get<2>(tup2); });
+    outcome oc{};
 
-    logger->debug("Total number of collisions detected: {}", m_data->coll_vec.size() - orig_cv_size);
+    if (m_data->coll_vec.empty()) {
+        // NOTE: it is *important* that everything in this
+        // block is noexcept.
 
-    // Update the time coordinate.
-    m_data->time += delta_t;
+        // Update the time coordinate.
+        m_data->time += delta_t;
 
-    // Swap in the updated state.
-    m_x.swap(m_data->final_x);
-    m_y.swap(m_data->final_y);
-    m_z.swap(m_data->final_z);
-    m_vx.swap(m_data->final_vx);
-    m_vy.swap(m_data->final_vy);
-    m_vz.swap(m_data->final_vz);
+        // Swap in the updated state.
+        m_x.swap(m_data->final_x);
+        m_y.swap(m_data->final_y);
+        m_z.swap(m_data->final_z);
+        m_vx.swap(m_data->final_vx);
+        m_vy.swap(m_data->final_vy);
+        m_vz.swap(m_data->final_vz);
+
+        // Reset the interrupt data.
+        m_int_info.reset();
+
+        // Set the exit flag.
+        oc = outcome::success;
+    } else {
+        // Fetch the earliest collision.
+        const auto coll_it = std::ranges::min_element(
+            m_data->coll_vec, [](const auto &tup1, const auto &tup2) { return std::get<2>(tup1) < std::get<2>(tup2); });
+
+        // Propagate the state of all particles up to the first
+        // collision using dense output, writing the updated state
+        // into the m_data->final_* vectors.
+        dense_propagate(std::get<2>(*coll_it));
+
+        // NOTE: noexcept until the end of the block.
+
+        // Update the time coordinate.
+        m_data->time += std::get<2>(*coll_it);
+
+        // Swap in the updated state.
+        m_x.swap(m_data->final_x);
+        m_y.swap(m_data->final_y);
+        m_z.swap(m_data->final_z);
+        m_vx.swap(m_data->final_vx);
+        m_vy.swap(m_data->final_vy);
+        m_vz.swap(m_data->final_vz);
+
+        // Setup the interrupt data.
+        m_int_info.emplace(std::array{std::get<0>(*coll_it), std::get<1>(*coll_it)});
+
+        // Set the exit flag.
+        oc = outcome::interrupt;
+    }
 
     logger->trace("Total propagation time: {}s", sw);
+
+    return oc;
 }
 
 // Helper for the automatic determination
@@ -1194,6 +1228,94 @@ void sim::verify_global_aabbs() const
         assert(lb == m_data->global_lb[chunk_idx]);
         assert(ub == m_data->global_ub[chunk_idx]);
     }
+}
+
+// Propagate the state of all particles up to t using dense output,
+// writing the updated state into the m_data->final_* vectors.
+// t is a time coordinate relative to the beginning of the current
+// superstep.
+void sim::dense_propagate(double t)
+{
+    spdlog::stopwatch sw;
+
+    auto *logger = detail::get_logger();
+
+    const auto order = m_data->s_ta.get_order();
+
+    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, get_nparts()), [&](const auto &range) {
+        using dfloat = heyoka::detail::dfloat<double>;
+
+        const auto &s_data = m_data->s_data;
+        const dfloat dt(t);
+
+        for (auto pidx = range.begin(); pidx != range.end(); ++pidx) {
+            const auto &tcoords = s_data[pidx].tcoords;
+            const auto tcoords_begin = tcoords.begin();
+            const auto tcoords_end = tcoords.end();
+
+            assert(tcoords_begin != tcoords_end);
+
+            // Locate the first substep whose end is *greater than or
+            // equal to* t.
+            auto it = std::lower_bound(tcoords_begin, tcoords_end, dt);
+            // NOTE: ss_it could be at the end due to FP rounding,
+            // roll it back by 1 if necessary.
+            it -= (it == tcoords_end);
+
+            // Determine the initial time coordinate of the substep, relative
+            // to the beginning of the superstep. If it is tcoords_begin,
+            // ss_start will be zero, otherwise
+            // ss_start is given by the iterator preceding it.
+            const auto ss_start = (it == tcoords_begin) ? dfloat(0) : *(it - 1);
+
+            // Determine the evaluation time for the Taylor polynomials.
+            const auto eval_tm = static_cast<double>(t - ss_start);
+
+            // Determine the index of the substep within the chunk.
+            // NOTE: static cast because overflow detection has been
+            // done already in earlier steps.
+            const auto ss_idx = static_cast<decltype(s_data[pidx].tc_x.size())>(it - tcoords_begin);
+
+            // Compute the pointers to the TCs for the current particle
+            // and substep.
+            const auto tc_ptr_x = s_data[pidx].tc_x.data() + ss_idx * (order + 1u);
+            const auto tc_ptr_y = s_data[pidx].tc_y.data() + ss_idx * (order + 1u);
+            const auto tc_ptr_z = s_data[pidx].tc_z.data() + ss_idx * (order + 1u);
+            const auto tc_ptr_vx = s_data[pidx].tc_vx.data() + ss_idx * (order + 1u);
+            const auto tc_ptr_vy = s_data[pidx].tc_vy.data() + ss_idx * (order + 1u);
+            const auto tc_ptr_vz = s_data[pidx].tc_vz.data() + ss_idx * (order + 1u);
+
+            // Run the polynomial evaluations.
+            // TODO jit for performance? If so, we can do all variables
+            // in a single JIT compiled function.
+            auto horner_eval = [order, eval_tm](const double *ptr) {
+                auto acc = ptr[order];
+                for (auto o = 1u; o <= order; ++o) {
+                    acc = ptr[order - o] + acc * eval_tm;
+                }
+
+                return acc;
+            };
+
+            const auto fx = horner_eval(tc_ptr_x);
+            const auto fy = horner_eval(tc_ptr_y);
+            const auto fz = horner_eval(tc_ptr_z);
+            const auto fvx = horner_eval(tc_ptr_vx);
+            const auto fvy = horner_eval(tc_ptr_vy);
+            const auto fvz = horner_eval(tc_ptr_vz);
+
+            // Write the state of the particle at t
+            // into the final_* vectors.
+            m_data->final_x[pidx] = fx;
+            m_data->final_y[pidx] = fy;
+            m_data->final_z[pidx] = fz;
+            m_data->final_vx[pidx] = fvx;
+            m_data->final_vy[pidx] = fvy;
+            m_data->final_vz[pidx] = fvz;
+        }
+    });
+
+    logger->trace("Dense propagation time: {}s", sw);
 }
 
 } // namespace cascade

@@ -267,6 +267,9 @@ void sim::narrow_phase()
     const auto rtscc = m_data->rtscc;
     const auto pt1 = m_data->pt1;
 
+    // Reset the collision vector.
+    m_data->coll_vec.clear();
+
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
             // Fetch a reference to the chunk-specific broad
@@ -703,6 +706,7 @@ void sim::narrow_phase()
     });
 
     logger->trace("Narrow phase collision detection time: {}s", sw);
+    logger->debug("Total number of collisions detected: {}", m_data->coll_vec.size());
 }
 
 } // namespace cascade
