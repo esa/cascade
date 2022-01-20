@@ -120,6 +120,7 @@ public:
     sim(sim &&) noexcept;
     ~sim();
 
+    // NOTE: do we need a swap() specialisation as well?
     sim &operator=(const sim &);
     sim &operator=(sim &&) noexcept;
 
