@@ -260,6 +260,8 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
     const auto tcoords_begin = tcoords.begin();
     const auto tcoords_end = tcoords.end();
 
+    assert(tcoords_begin != tcoords_end);
+
     // We need to locate the substep range that fully includes
     // the current chunk.
     // First we locate the first substep whose end is strictly
@@ -548,8 +550,15 @@ void sim::step(double dt)
     resize_if_needed(npnc, m_data->srt_mcodes);
 
     // Final state vectors.
-    resize_if_needed(nparts, m_data->final_x, m_data->final_y, m_data->final_z, m_data->final_vx, m_data->final_vy,
-                     m_data->final_vz);
+    // NOTE: these need to match *exactly* nparts,
+    // as their data will be swapped in as the new state
+    // at the end of a step.
+    m_data->final_x.resize(nparts);
+    m_data->final_y.resize(nparts);
+    m_data->final_z.resize(nparts);
+    m_data->final_vx.resize(nparts);
+    m_data->final_vy.resize(nparts);
+    m_data->final_vz.resize(nparts);
 
     // Global AABBs data.
     resize_if_needed(nchunks, m_data->global_lb, m_data->global_ub);
