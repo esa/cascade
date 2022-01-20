@@ -260,7 +260,6 @@ void sim::narrow_phase()
     // Cache a few bits.
     const auto nchunks = m_data->nchunks;
     const auto order = m_data->s_ta.get_order();
-    const auto init_time = m_data->time;
     const auto &s_data = m_data->s_data;
     const auto pta = m_data->pta;
     const auto pssdiff3 = m_data->pssdiff3;
@@ -509,8 +508,9 @@ void sim::narrow_phase()
                                     // Record the collision only if the derivative
                                     // is negative.
                                     if (d_sgn < 0) {
-                                        // Compute the absolute time coordinate of the collision.
-                                        const auto tcoll = static_cast<double>(init_time + lb_rf + root);
+                                        // Compute the time coordinate of the collision with respect
+                                        // to the beginning of the superstep.
+                                        const auto tcoll = static_cast<double>(lb_rf + root);
 
                                         if (!std::isfinite(tcoll)) {
                                             // LCOV_EXCL_START
