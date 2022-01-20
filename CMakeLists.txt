@@ -21,6 +21,7 @@ message(STATUS "cascade version: ${cascade_VERSION}")
 include(YACMACompilerLinkerSettings)
 
 # Build options.
+option(CASCADE_BUILD_TESTS "Build unit tests." OFF)
 option(CASCADE_BUILD_BENCHMARKS "Build benchmarks." OFF)
 
 # Assemble the flags.
@@ -229,6 +230,11 @@ endif()
 # an interface library. See the discussion here:
 # https://gitlab.kitware.com/cmake/cmake/-/issues/15415
 target_link_libraries(cascade PRIVATE "$<BUILD_INTERFACE:cascade_llvm_internal>")
+
+if(CASCADE_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(test)
+endif()
 
 if(CASCADE_BUILD_BENCHMARKS)
     add_subdirectory(benchmark)

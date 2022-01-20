@@ -123,6 +123,10 @@ public:
     sim &operator=(const sim &);
     sim &operator=(sim &&) noexcept;
 
+    const std::optional<std::variant<std::array<size_type, 2>, size_type>> &get_interrupt_info() const
+    {
+        return m_int_info;
+    }
     size_type get_nparts() const
     {
         return m_x.size();
@@ -130,6 +134,14 @@ public:
     const auto &get_x() const
     {
         return m_x;
+    }
+    const auto &get_y() const
+    {
+        return m_y;
+    }
+    const auto &get_z() const
+    {
+        return m_z;
     }
     double get_time() const;
 
