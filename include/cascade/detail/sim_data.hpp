@@ -131,9 +131,9 @@ struct sim::sim_data {
 
     // Particle substep data to be filled in at each superstep.
     struct step_data {
-        // Taylor coefficients for the position vector,
-        // each vector contains data for multiple substeps.
-        std::vector<double> tc_x, tc_y, tc_z, tc_r;
+        // Taylor coefficients for the state variables.
+        // Each vector contains data for multiple substeps.
+        std::vector<double> tc_x, tc_y, tc_z, tc_vx, tc_vy, tc_vz, tc_r;
         // Time coordinates of the end of each substep.
         std::vector<heyoka::detail::dfloat<double>> tcoords;
     };

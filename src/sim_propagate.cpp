@@ -613,6 +613,9 @@ void sim::step(double dt)
                 s_data[i].tc_x.clear();
                 s_data[i].tc_y.clear();
                 s_data[i].tc_z.clear();
+                s_data[i].tc_vx.clear();
+                s_data[i].tc_vy.clear();
+                s_data[i].tc_vz.clear();
                 s_data[i].tc_r.clear();
 
                 s_data[i].tcoords.clear();
@@ -647,6 +650,12 @@ void sim::step(double dt)
                         s_data[pidx_begin + i].tc_y.push_back(ta_tc[(order + 1u) * batch_size + o * batch_size + i]);
                         s_data[pidx_begin + i].tc_z.push_back(
                             ta_tc[2u * (order + 1u) * batch_size + o * batch_size + i]);
+                        s_data[pidx_begin + i].tc_vx.push_back(
+                            ta_tc[3u * (order + 1u) * batch_size + o * batch_size + i]);
+                        s_data[pidx_begin + i].tc_vy.push_back(
+                            ta_tc[4u * (order + 1u) * batch_size + o * batch_size + i]);
+                        s_data[pidx_begin + i].tc_vz.push_back(
+                            ta_tc[5u * (order + 1u) * batch_size + o * batch_size + i]);
                         s_data[pidx_begin + i].tc_r.push_back(
                             ta_tc[6u * (order + 1u) * batch_size + o * batch_size + i]);
                     }
@@ -773,6 +782,9 @@ void sim::step(double dt)
             s_data[pidx].tc_x.clear();
             s_data[pidx].tc_y.clear();
             s_data[pidx].tc_z.clear();
+            s_data[pidx].tc_vx.clear();
+            s_data[pidx].tc_vy.clear();
+            s_data[pidx].tc_vz.clear();
             s_data[pidx].tc_r.clear();
 
             s_data[pidx].tcoords.clear();
@@ -798,6 +810,9 @@ void sim::step(double dt)
                     s_data[pidx].tc_x.push_back(ta_tc[o]);
                     s_data[pidx].tc_y.push_back(ta_tc[order + 1u + o]);
                     s_data[pidx].tc_z.push_back(ta_tc[2u * (order + 1u) + o]);
+                    s_data[pidx].tc_vx.push_back(ta_tc[3u * (order + 1u) + o]);
+                    s_data[pidx].tc_vy.push_back(ta_tc[4u * (order + 1u) + o]);
+                    s_data[pidx].tc_vz.push_back(ta_tc[5u * (order + 1u) + o]);
                     s_data[pidx].tc_r.push_back(ta_tc[6u * (order + 1u) + o]);
                 }
 
