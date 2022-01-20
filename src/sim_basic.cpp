@@ -78,11 +78,70 @@ sim::sim()
 {
 }
 
-// TODO fill in copy/move ctor/assignment ops.
-// sim::sim(sim &&) noexcept = default;
+sim::sim(const sim &other)
+    : m_x(other.m_x), m_y(other.m_y), m_z(other.m_z), m_vx(other.m_vx), m_vy(other.m_vy), m_vz(other.m_vz),
+      m_sizes(other.m_sizes), m_ct(other.m_ct), m_int_info(other.m_int_info)
+{
+    // For m_data, we will be copying only:
+    // - the integrator templates,
+    // - the llvm state.
+    auto data_ptr = std::make_unique<sim_data>(other.m_data->s_ta, other.m_data->b_ta, other.m_data->state);
+
+    // Need to assign the JIT function pointers.
+    data_ptr->pta = reinterpret_cast<decltype(data_ptr->pta)>(data_ptr->state.jit_lookup("poly_translate_a"));
+    data_ptr->pssdiff3 = reinterpret_cast<decltype(data_ptr->pssdiff3)>(data_ptr->state.jit_lookup("poly_ssdiff3"));
+    data_ptr->fex_check = reinterpret_cast<decltype(data_ptr->fex_check)>(data_ptr->state.jit_lookup("fex_check"));
+    data_ptr->rtscc = reinterpret_cast<decltype(data_ptr->rtscc)>(data_ptr->state.jit_lookup("poly_rtscc"));
+    // NOTE: this is implicitly added by llvm_add_poly_rtscc().
+    data_ptr->pt1 = reinterpret_cast<decltype(data_ptr->pt1)>(data_ptr->state.jit_lookup("poly_translate_1"));
+
+    // Assign the pointer.
+    m_data = data_ptr.release();
+}
+
+// Move everything, then destroy the m_data pointer in other.
+sim::sim(sim &&other) noexcept
+    : m_x(std::move(other.m_x)), m_y(std::move(other.m_y)), m_z(std::move(other.m_z)), m_vx(std::move(other.m_vx)),
+      m_vy(std::move(other.m_vy)), m_vz(std::move(other.m_vz)), m_sizes(std::move(other.m_sizes)),
+      m_ct(std::move(other.m_ct)), m_data(other.m_data), m_int_info(std::move(other.m_int_info))
+{
+    other.m_data = nullptr;
+}
+
+sim &sim::operator=(const sim &other)
+{
+    if (this != &other) {
+        *this = sim(other);
+    }
+
+    return *this;
+}
+
+sim &sim::operator=(sim &&other) noexcept
+{
+    // Assign everything, then destroy the m_data pointer in other.
+    m_x = std::move(other.m_x);
+    m_y = std::move(other.m_y);
+    m_z = std::move(other.m_z);
+    m_vx = std::move(other.m_vx);
+    m_vy = std::move(other.m_vy);
+    m_vz = std::move(other.m_vz);
+    m_sizes = std::move(other.m_sizes);
+
+    m_ct = std::move(other.m_ct);
+
+    m_data = other.m_data;
+
+    m_int_info = std::move(other.m_int_info);
+
+    other.m_data = nullptr;
+
+    return *this;
+}
 
 sim::~sim()
 {
+    // NOTE: well-defined if m_data is null.
     std::unique_ptr<sim_data> tmp_ptr(m_data);
 }
 
