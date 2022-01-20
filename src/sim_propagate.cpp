@@ -660,6 +660,7 @@ void sim::step(double dt)
             ta.propagate_for(delta_t, hy::kw::write_tc = true, hy::kw::callback = cbf);
 
             // Check for errors.
+            // TODO check also for empty tcoords.
             if (std::ranges::any_of(ta.get_propagate_res(), [](const auto &tup) {
                     return std::get<0>(tup) != hy::taylor_outcome::time_limit;
                 })) {
@@ -808,6 +809,7 @@ void sim::step(double dt)
             const auto oc = std::get<0>(ta.propagate_for(delta_t, hy::kw::write_tc = true, hy::kw::callback = cbf));
 
             // Check for errors.
+            // TODO check also for empty tcoords.
             if (oc != hy::taylor_outcome::time_limit) {
                 // TODO distinguish various error codes?
                 int_error.store(true, std::memory_order_relaxed);
