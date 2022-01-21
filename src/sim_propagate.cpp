@@ -75,6 +75,12 @@ namespace
 
 // Minimal interval class supporting a couple
 // of elementary operations.
+// NOTE: like in heyoka, the implementation of interval arithmetic
+// could be improved in 2 areas:
+// - accounting for floating-point truncation to yield results
+//   which are truly mathematically exact,
+// - ensuring that min/max propagate nans, instead of potentially
+//   ignoring them.
 struct ival {
     double lower;
     double upper;
@@ -404,15 +410,26 @@ void sim::morton_encode_sort()
 
     constexpr auto morton_enc = mortonnd::MortonNDLutEncoder<4, 16, 8>();
 
+    constexpr auto finf = std::numeric_limits<float>::infinity();
+
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
-            // TODO:
-            // - bump up UB in order to ensure it's always > lb, as requested by the spatial
-            //   discretisation function;
-            // - check finiteness and the disc_single_coord requirements, before adjusting;
-            // TODO: run a second check here to verify the new upper bound is not +inf.
+            // Fetch the global AABB for this chunk.
             auto &glb = m_data->global_lb[chunk_idx];
             auto &gub = m_data->global_ub[chunk_idx];
+
+            // Bump up the upper bounds to make absolutely sure that ub > lb, as required
+            // by the spatial discretisation function.
+            for (auto i = 0u; i < 4u; ++i) {
+                gub[i] = std::nextafter(gub[i], finf);
+
+                // Check that the interval size is finite.
+                // This also ensures that ub/lb are finite.
+                if (!std::isfinite(gub[i] - glb[i])) {
+                    throw std::invalid_argument(
+                        "A global bounding box with non-finite boundaries and/or size was generated");
+                }
+            }
 
             // Computation of the Morton codes.
             const auto offset = nparts * chunk_idx;
