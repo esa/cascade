@@ -2,6 +2,7 @@ name: cascade
 channels:
   - conda-forge
 dependencies:
+  - cmake
   - python
   - heyoka-llvm-13
   - tbb-devel
