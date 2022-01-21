@@ -69,7 +69,7 @@ private:
     CASCADE_DLL_LOCAL void dense_propagate(double);
 
     template <typename InTup, typename OutTup, std::size_t... I>
-    static void ctor_impl(const InTup &in_tup, const OutTup &out_tup, std::index_sequence<I...>)
+    static void ctor_impl(const InTup &in_tup, OutTup &out_tup, std::index_sequence<I...>)
     {
         auto func = [&](auto ic) {
             constexpr auto Idx = decltype(ic)::value;

@@ -526,6 +526,10 @@ outcome sim::step(double dt)
 
     auto *logger = detail::get_logger();
 
+    if (get_nparts() == 0u) {
+        throw std::invalid_argument("Cannot integrate a simulation with no particles");
+    }
+
     if (!std::isfinite(dt)) {
         throw std::invalid_argument("The superstep size must be finite");
     }

@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.12.0)
+# NOTE: temporarily to 3.17 for the Python bits,
+# otherwise 3.12 is sufficient.
+cmake_minimum_required(VERSION 3.17.0)
 
 # Set default build type to "Release".
 # NOTE: this should be done before the project command since the latter can set
@@ -23,6 +25,29 @@ include(YACMACompilerLinkerSettings)
 # Build options.
 option(CASCADE_BUILD_TESTS "Build unit tests." OFF)
 option(CASCADE_BUILD_BENCHMARKS "Build benchmarks." OFF)
+option(CASCADE_BUILD_PYTHON_BINDINGS "Build Python bindings." OFF)
+
+# NOTE: on Unix systems, the correct library installation path
+# could be something other than just "lib", such as "lib64",
+# "lib32", etc., depending on platform/configuration. Apparently,
+# CMake provides this information via the GNUInstallDirs module.
+# Let's enable this for now on all Unixes except OSX.
+# NOTE: potentially, this could be applicable to Cygwin as well.
+#
+# https://cmake.org/cmake/help/v3.15/module/GNUInstallDirs.html
+# https://cmake.org/pipermail/cmake/2013-July/055375.html
+if(UNIX AND NOT APPLE)
+    include(GNUInstallDirs)
+    set(_CASCADE_INSTALL_LIBDIR_DEFAULT "${CMAKE_INSTALL_LIBDIR}")
+else()
+    set(_CASCADE_INSTALL_LIBDIR_DEFAULT "lib")
+endif()
+if(NOT CASCADE_INSTALL_LIBDIR)
+    set(CASCADE_INSTALL_LIBDIR "${_CASCADE_INSTALL_LIBDIR_DEFAULT}" CACHE STRING
+        "Library installation directory." FORCE)
+endif()
+mark_as_advanced(CASCADE_INSTALL_LIBDIR)
+message(STATUS "Library installation directory: ${CASCADE_INSTALL_LIBDIR}")
 
 # Assemble the flags.
 set(CASCADE_CXX_FLAGS_DEBUG ${YACMA_CXX_FLAGS} ${YACMA_CXX_FLAGS_DEBUG})
@@ -231,6 +256,36 @@ endif()
 # https://gitlab.kitware.com/cmake/cmake/-/issues/15415
 target_link_libraries(cascade PRIVATE "$<BUILD_INTERFACE:cascade_llvm_internal>")
 
+# Installation of the header files.
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/cascade" DESTINATION include)
+#install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/cascade/config.hpp" DESTINATION include/cascade)
+
+# Installation of the library.
+install(TARGETS cascade
+    EXPORT cascade_export
+    LIBRARY DESTINATION "${CASCADE_INSTALL_LIBDIR}"
+    ARCHIVE DESTINATION "${CASCADE_INSTALL_LIBDIR}"
+    RUNTIME DESTINATION bin
+)
+
+if(CASCADE_BUILD_PYTHON_BINDINGS)
+  # Python.
+  find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+  message(STATUS "Python3 interpreter: ${Python3_EXECUTABLE}")
+  message(STATUS "Python3 installation directory: ${Python3_SITEARCH}")
+  if(${Python3_VERSION_MINOR} LESS 5)
+      message(FATAL_ERROR "The minimum supported version of Python is 3.5, but version 3.${Python3_VERSION_MINOR} was found instead")
+  endif()
+  set(CASCADE_PY_INSTALL_PATH "" CACHE STRING "cascade module installation path")
+  mark_as_advanced(CASCADE_PY_INSTALL_PATH)
+
+  # pybind11.
+  find_package(pybind11 REQUIRED CONFIG)
+  if(${pybind11_VERSION} VERSION_LESS "2.6")
+      message(FATAL_ERROR "pybind11 >= 2.6 is required, but version ${pybind11_VERSION} was found instead.")
+  endif()
+endif()
+
 if(CASCADE_BUILD_TESTS)
     enable_testing()
     add_subdirectory(test)
@@ -238,4 +293,8 @@ endif()
 
 if(CASCADE_BUILD_BENCHMARKS)
     add_subdirectory(benchmark)
+endif()
+
+if(CASCADE_BUILD_PYTHON_BINDINGS)
+  add_subdirectory(cascade.py)
 endif()
