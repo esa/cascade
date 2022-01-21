@@ -15,6 +15,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -327,6 +328,14 @@ void sim::finalise_ctor()
 double sim::get_time() const
 {
     return static_cast<double>(m_data->time);
+}
+
+std::ostream &operator<<(std::ostream &os, const sim &s)
+{
+    os << "Total number of particles: " << s.get_nparts() << '\n';
+    os << "Collisional timestep     : " << s.get_ct() << '\n';
+
+    return os;
 }
 
 } // namespace cascade

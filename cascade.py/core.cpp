@@ -6,6 +6,7 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#include <sstream>
 #include <utility>
 #include <vector>
 
@@ -123,5 +124,11 @@ PYBIND11_MODULE(core, m)
                 std::vector<double> vy, std::vector<double> vz, std::vector<double> sizes) {
                  s.set_new_state(std::move(x), std::move(y), std::move(z), std::move(vx), std::move(vy), std::move(vz),
                                  std::move(sizes));
-             });
+             })
+        // Repr.
+        .def("__repr__", [](const sim &s) {
+            std::ostringstream oss;
+            oss << s;
+            return oss.str();
+        });
 }

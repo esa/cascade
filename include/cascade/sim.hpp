@@ -13,6 +13,7 @@
 #include <concepts>
 #include <cstddef>
 #include <functional>
+#include <iostream>
 #include <optional>
 #include <ranges>
 #include <tuple>
@@ -190,6 +191,8 @@ private:
     template <typename T>
     CASCADE_DLL_LOCAL void compute_particle_aabb(unsigned, const T &, const T &, size_type);
 };
+
+CASCADE_DLL_PUBLIC std::ostream &operator<<(std::ostream &, const sim &);
 
 } // namespace cascade
 
