@@ -56,6 +56,7 @@ private:
     std::optional<std::variant<std::array<size_type, 2>, size_type>> m_int_info;
 
     void finalise_ctor();
+    void set_new_state_impl(std::array<std::vector<double>, 7> &);
     CASCADE_DLL_LOCAL void add_jit_functions();
     CASCADE_DLL_LOCAL void morton_encode_sort();
     CASCADE_DLL_LOCAL void construct_bvh_trees();
@@ -68,7 +69,7 @@ private:
     CASCADE_DLL_LOCAL void dense_propagate(double);
 
     template <typename InTup, typename OutTup, std::size_t... I>
-    void ctor_impl(const InTup &in_tup, const OutTup &out_tup, std::index_sequence<I...>)
+    static void ctor_impl(const InTup &in_tup, const OutTup &out_tup, std::index_sequence<I...>)
     {
         auto func = [&](auto ic) {
             constexpr auto Idx = decltype(ic)::value;
@@ -112,7 +113,7 @@ public:
                                     std::forward<VY>(vy), std::forward<VZ>(vz), std::forward<S>(s));
         auto out_tup = std::make_tuple(std::ref(m_x), std::ref(m_y), std::ref(m_z), std::ref(m_vx), std::ref(m_vy),
                                        std::ref(m_vz), std::ref(m_sizes));
-        ctor_impl(in_tup, out_tup, std::make_index_sequence<std::tuple_size_v<decltype(out_tup)>>{});
+        ctor_impl(in_tup, out_tup, std::make_index_sequence<std::tuple_size_v<decltype(in_tup)>>{});
 
         finalise_ctor();
     }
@@ -144,9 +145,42 @@ public:
     {
         return m_z;
     }
+    const auto &get_vx() const
+    {
+        return m_vx;
+    }
+    const auto &get_vy() const
+    {
+        return m_vy;
+    }
+    const auto &get_vz() const
+    {
+        return m_vz;
+    }
+    const auto &get_sizes() const
+    {
+        return m_sizes;
+    }
     double get_time() const;
 
+    double get_ct() const;
+    void set_ct(double);
+
     outcome step(double = 0);
+
+    template <di_range X, di_range Y, di_range Z, di_range VX, di_range VY, di_range VZ, di_range S>
+    void set_new_state(X &&x, Y &&y, Z &&z, VX &&vx, VY &&vy, VZ &&vz, S &&s)
+    {
+        auto in_tup
+            = std::forward_as_tuple(std::forward<X>(x), std::forward<Y>(y), std::forward<Z>(z), std::forward<VX>(vx),
+                                    std::forward<VY>(vy), std::forward<VZ>(vz), std::forward<S>(s));
+
+        std::array<std::vector<double>, 7> new_state;
+
+        ctor_impl(in_tup, new_state, std::make_index_sequence<7>{});
+
+        set_new_state_impl(new_state);
+    }
 
 private:
     template <typename T>

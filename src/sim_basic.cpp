@@ -146,6 +146,63 @@ sim::~sim()
     std::unique_ptr<sim_data> tmp_ptr(m_data);
 }
 
+double sim::get_ct() const
+{
+    return m_ct;
+}
+
+void sim::set_ct(double ct)
+{
+    if (!std::isfinite(ct) || ct <= 0) {
+        throw std::invalid_argument(
+            fmt::format("The collisional timestep must be finite and positive, but it is {} instead", ct));
+    }
+
+    m_ct = ct;
+}
+
+void sim::set_new_state_impl(std::array<std::vector<double>, 7> &new_state)
+{
+    // Check the new state.
+    oneapi::tbb::parallel_for(
+        oneapi::tbb::blocked_range<decltype(new_state.size())>(0, new_state.size()),
+        [new_nparts = new_state[0].size(), &new_state](const auto &range) {
+            for (auto i = range.begin(); i != range.end(); ++i) {
+                // Check size consistency.
+                if (new_state[i].size() != new_nparts) {
+                    throw std::invalid_argument(
+                        "An invalid new state was specified: the number of particles is not the "
+                        "same for all the state vectors");
+                }
+
+                // Check finiteness and, for sizes, non-negativity.
+                oneapi::tbb::parallel_for(
+                    oneapi::tbb::blocked_range(new_state[i].begin(), new_state[i].end()), [i](const auto &r2) {
+                        for (const auto &val : r2) {
+                            if (!std::isfinite(val)) {
+                                throw std::invalid_argument(fmt::format(
+                                    "The non-finite value {} was detected in the new particle states", val));
+                            }
+
+                            if (i == 6u && val < 0) {
+                                throw std::invalid_argument(fmt::format(
+                                    "The negative particle radius {} was detected in the new particle states", val));
+                            }
+                        }
+                    });
+            }
+        });
+
+    // Move it in.
+    m_x = std::move(new_state[0]);
+    m_y = std::move(new_state[1]);
+    m_z = std::move(new_state[2]);
+    m_vx = std::move(new_state[3]);
+    m_vy = std::move(new_state[4]);
+    m_vz = std::move(new_state[5]);
+    m_sizes = std::move(new_state[6]);
+}
+
 void sim::finalise_ctor()
 {
     namespace hy = heyoka;
@@ -225,7 +282,8 @@ void sim::finalise_ctor()
         oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(v.begin(), v.end()), [](const auto &range) {
             for (const auto &val : range) {
                 if (!std::isfinite(val)) {
-                    throw std::domain_error("The non-finite value {} was detected in the particle states"_format(val));
+                    throw std::invalid_argument(
+                        "The non-finite value {} was detected in the particle states"_format(val));
                 }
             }
         });
@@ -244,11 +302,11 @@ void sim::finalise_ctor()
                 oneapi::tbb::blocked_range(m_sizes.begin(), m_sizes.end()), [](const auto &range) {
                     for (const auto &val : range) {
                         if (!std::isfinite(val)) {
-                            throw std::domain_error("A non-finite particle radius of {} was detected"_format(val));
+                            throw std::invalid_argument("A non-finite particle radius of {} was detected"_format(val));
                         }
 
                         if (val < 0) {
-                            throw std::domain_error("A negative particle radius of {} was detected"_format(val));
+                            throw std::invalid_argument("A negative particle radius of {} was detected"_format(val));
                         }
                     }
                 });
