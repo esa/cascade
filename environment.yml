@@ -1,8 +1,12 @@
 name: cascade
 channels:
   - conda-forge
-  - defaults
 dependencies:
   - python
-  - heyoka
-  - gcc'>=10'
+  - heyoka-llvm-13
+  - tbb-devel
+  - tbb
+  - pybind11
+  - llvmdev=13.*
+  - gcc>=10
+  - ipython
