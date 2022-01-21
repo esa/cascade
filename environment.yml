@@ -1,0 +1,8 @@
+name: cascade
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python
+  - heyoka
+  - gcc'>=10'
