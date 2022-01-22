@@ -10,4 +10,5 @@ dependencies:
   - pybind11
   - llvmdev=13.*
   - gcc>=10
+  - gxx>=10
   - ipython
