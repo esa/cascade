@@ -11,4 +11,6 @@ dependencies:
   - llvmdev=13.*
   - gcc>=10
   - gxx>=10
+  - c-compiler
+  - cxx-compiler
   - ipython
