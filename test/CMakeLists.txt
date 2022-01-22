@@ -26,3 +26,4 @@ function(ADD_CASCADE_TESTCASE arg1)
 endfunction()
 
 ADD_CASCADE_TESTCASE(single_collision)
+ADD_CASCADE_TESTCASE(same_morton_code)

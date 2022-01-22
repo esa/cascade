@@ -506,8 +506,8 @@ void sim::verify_bvh_trees() const
                     for (auto j = cur_node.begin + 1u; j < cur_node.end; ++j) {
                         assert(mcodes_ptr[j] == mc);
 
-                        assert(pset.find(boost::numeric_cast<size_type>(cur_node.begin)) == pset.end());
-                        pset.insert(boost::numeric_cast<size_type>(cur_node.begin));
+                        assert(pset.find(boost::numeric_cast<size_type>(j)) == pset.end());
+                        pset.insert(boost::numeric_cast<size_type>(j));
                     }
                 }
 
