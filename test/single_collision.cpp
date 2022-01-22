@@ -25,11 +25,11 @@
 using namespace cascade;
 using namespace cascade_test;
 
-// Create two particles of 1cm size on polar Keplerian orbits.
+// Create two particles of 10cm size on polar Keplerian orbits.
 // All orbital elements are equal apart from the longitude of the ascending node.
 TEST_CASE("single collision polar")
 {
-    const auto psize = 1.57e-9;
+    const auto psize = 1.57e-8;
     const auto [x1, v1] = kep_to_cart<double>({1.05, .05, boost::math::constants::pi<double>() / 2, 0, 1.23, 0}, 1);
     const auto [x2, v2] = kep_to_cart<double>({1.05, .05, boost::math::constants::pi<double>() / 2, 0, 4.56, 0}, 1);
 
@@ -57,7 +57,7 @@ TEST_CASE("single collision polar")
 // is zero.
 TEST_CASE("single collision equatorial")
 {
-    const auto psize = 1.57e-9;
+    const auto psize = 1.57e-8;
     const auto [x1, v1] = kep_to_cart<double>({1.05, 0., 0., 0., 0., 0}, 1);
     auto x2 = x1;
     x2[0] = -x2[0];
