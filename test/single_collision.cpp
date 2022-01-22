@@ -25,13 +25,43 @@
 using namespace cascade;
 using namespace cascade_test;
 
-TEST_CASE("single collision")
+// Create two particles of 1cm size on polar Keplerian orbits.
+// All orbital elements are equal apart from the longitude of the ascending node.
+TEST_CASE("single collision polar")
 {
-    // Create two particles of 1cm size on polar Keplerian orbits.
-    // All orbital elements are equal apart from the longitude of the ascending node.
     const auto psize = 1.57e-9;
     const auto [x1, v1] = kep_to_cart<double>({1.05, .05, boost::math::constants::pi<double>() / 2, 0, 1.23, 0}, 1);
     const auto [x2, v2] = kep_to_cart<double>({1.05, .05, boost::math::constants::pi<double>() / 2, 0, 4.56, 0}, 1);
+
+    sim s(std::vector<double>{x1[0], x2[0]}, std::vector<double>{x1[1], x2[1]}, std::vector<double>{x1[2], x2[2]},
+          std::vector<double>{v1[0], v2[0]}, std::vector<double>{v1[1], v2[1]}, std::vector<double>{v1[2], v2[2]},
+          std::vector<double>{psize, psize}, 0.23);
+
+    while (s.step() != outcome::interrupt) {
+    }
+
+    const auto &i_info = std::get<0>(*s.get_interrupt_info());
+    std::cout << fmt::format("Simulation end time: {}\n", s.get_time());
+    std::cout << fmt::format("Colliding particles: {}\n", i_info);
+    std::cout << fmt::format("x/y/z coordinates at collision time:\n{}\n{}\n{}\n", s.get_x(), s.get_y(), s.get_z());
+
+    const auto dx = s.get_x()[0] - s.get_x()[1];
+    const auto dy = s.get_y()[0] - s.get_y()[1];
+    const auto dz = s.get_z()[0] - s.get_z()[1];
+
+    REQUIRE(dx * dx + dy * dy + dz * dz - 4 * psize * psize < std::numeric_limits<double>::epsilon() * 10);
+}
+
+// Same as above, but equatorial orbits. This tests a configuration
+// in which a dimension of the global bounding box (i.e., the z coordinate)
+// is zero.
+TEST_CASE("single collision equatorial")
+{
+    const auto psize = 1.57e-9;
+    const auto [x1, v1] = kep_to_cart<double>({1.05, 0., 0., 0., 0., 0}, 1);
+    auto x2 = x1;
+    x2[0] = -x2[0];
+    auto v2 = v1;
 
     sim s(std::vector<double>{x1[0], x2[0]}, std::vector<double>{x1[1], x2[1]}, std::vector<double>{x1[2], x2[2]},
           std::vector<double>{v1[0], v2[0]}, std::vector<double>{v1[1], v2[1]}, std::vector<double>{v1[2], v2[2]},
