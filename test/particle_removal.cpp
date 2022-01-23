@@ -53,6 +53,17 @@ TEST_CASE("particle removal")
     }
 
     sim s(xv, yv, zv, vxv, vyv, vzv, sizev, 0.23);
+    REQUIRE(s.get_nparts() == 100u);
+
+    REQUIRE(s.get_x() == xv);
+    REQUIRE(s.get_y() == yv);
+    REQUIRE(s.get_z() == zv);
+
+    REQUIRE(s.get_vx() == vxv);
+    REQUIRE(s.get_vy() == vyv);
+    REQUIRE(s.get_vz() == vzv);
+
+    REQUIRE(s.get_sizes() == sizev);
 
     for (auto i = 0; i < 10; ++i) {
         REQUIRE(s.step() == outcome::success);
@@ -70,8 +81,10 @@ TEST_CASE("particle removal")
     sizev.resize(50u);
 
     s.set_new_state(xv, yv, zv, vxv, vyv, vzv, sizev);
+    REQUIRE(s.get_nparts() == 50u);
 
     for (auto i = 0; i < 10; ++i) {
         REQUIRE(s.step() == outcome::success);
+        REQUIRE(s.get_nparts() == 50u);
     }
 }
