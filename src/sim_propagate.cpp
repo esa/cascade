@@ -508,6 +508,8 @@ void sim::morton_encode_sort()
             isort_apply(srt_r_ub_ptr, r_ub_ptr);
 
             isort_apply(srt_mcodes_ptr, mcodes_ptr);
+
+            assert(std::is_sorted(srt_mcodes_ptr, srt_mcodes_ptr + nparts));
         }
     });
 
