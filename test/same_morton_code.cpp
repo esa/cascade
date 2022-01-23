@@ -7,7 +7,6 @@
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include <initializer_list>
-#include <iostream>
 #include <limits>
 #include <random>
 #include <vector>
@@ -27,9 +26,6 @@ using namespace cascade_test;
 TEST_CASE("same morton code")
 {
     std::mt19937 rng;
-    const auto seed = std::random_device{}();
-    rng.seed(seed);
-    std::cout << "Seed set to: " << seed << '\n';
 
     // Create random particles.
     std::uniform_real_distribution<double> a_dist(1.02, 1.3), e_dist(0., 0.02), i_dist(0., 0.05),
