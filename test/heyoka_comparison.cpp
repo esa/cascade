@@ -67,7 +67,7 @@ TEST_CASE("heyoka comparison")
     sim s(xv, yv, zv, vxv, vyv, vzv, sizev, 0.23);
 
     for (auto i = 0; i < 10; ++i) {
-        s.step();
+        REQUIRE(s.step() == outcome::success);
     }
 
     auto [x, y, z, vx, vy, vz, r] = hy::make_vars("x", "y", "z", "vx", "vy", "vz", "r");
