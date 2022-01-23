@@ -419,7 +419,7 @@ void sim::construct_bvh_trees()
                 }
             }
 
-            logger->debug("Tree levels/nodes for chunk {}: {}/{}", chunk_idx, n_levels, n_nodes);
+            SPDLOG_LOGGER_DEBUG(logger, "Tree levels/nodes for chunk {}: {}/{}", chunk_idx, n_levels, n_nodes);
         }
     });
 

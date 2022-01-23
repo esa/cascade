@@ -89,7 +89,7 @@ void sim::broad_phase()
                     // Clear it.
                     local_bp.clear();
                 } else {
-                    logger->debug("Creating new local BP");
+                    SPDLOG_LOGGER_DEBUG(logger, "Creating new local BP");
                 }
 
                 // Fetch a local stack from the cache.
@@ -97,7 +97,7 @@ void sim::broad_phase()
                 // of the traversal for each particle.
                 std::vector<std::int32_t> stack;
                 if (!st_cache.try_pop(stack)) {
-                    logger->debug("Creating new local stack");
+                    SPDLOG_LOGGER_DEBUG(logger, "Creating new local stack");
                 }
 
                 for (auto pidx = r2.begin(); pidx != r2.end(); ++pidx) {
@@ -179,7 +179,7 @@ void sim::broad_phase()
 
     logger->trace("Broad phase collision detection time: {}s", sw);
 
-    logger->debug("Average number of collisions per particle per chunk: {}",
+    logger->trace("Average number of collisions per particle per chunk: {}",
                   static_cast<double>(tot_n_bp.load(std::memory_order::relaxed)) / static_cast<double>(nchunks)
                       / static_cast<double>(nparts));
 

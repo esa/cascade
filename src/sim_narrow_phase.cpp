@@ -303,7 +303,7 @@ void sim::narrow_phase()
                 std::unique_ptr<sim_data::np_data> pcaches;
 
                 if (!np_cache.try_pop(pcaches)) {
-                    logger->debug("Creating new local polynomials for narrow phase collision detection");
+                    SPDLOG_LOGGER_DEBUG(logger, "Creating new local polynomials for narrow phase collision detection");
 
                     // Init pcaches.
                     pcaches = std::make_unique<sim_data::np_data>();
@@ -702,13 +702,14 @@ void sim::narrow_phase()
                 n_ffex.fetch_add(local_n_ffex, std::memory_order::relaxed);
             });
 
-            logger->debug("Number of failed fast exclusion checks for chunk {}: {} vs {} broad phase collisions",
-                          chunk_idx, n_ffex.load(std::memory_order::relaxed), bpc.size());
+            SPDLOG_LOGGER_DEBUG(logger,
+                                "Number of failed fast exclusion checks for chunk {}: {} vs {} broad phase collisions",
+                                chunk_idx, n_ffex.load(std::memory_order::relaxed), bpc.size());
         }
     });
 
     logger->trace("Narrow phase collision detection time: {}s", sw);
-    logger->debug("Total number of collisions detected: {}", m_data->coll_vec.size());
+    logger->trace("Total number of collisions detected: {}", m_data->coll_vec.size());
 }
 
 } // namespace cascade

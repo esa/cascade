@@ -528,6 +528,8 @@ outcome sim::step(double dt)
 
     auto *logger = detail::get_logger();
 
+    logger->trace("---- STEP BEGIN ---");
+
     if (get_nparts() == 0u) {
         throw std::invalid_argument("Cannot integrate a simulation with no particles");
     }
@@ -544,7 +546,7 @@ outcome sim::step(double dt)
     if (m_data->nchunks == 0u) {
         throw std::invalid_argument("The number of chunks cannot be zero");
     }
-    logger->debug("Number of chunks: {}", m_data->nchunks);
+    logger->trace("Number of chunks: {}", m_data->nchunks);
 
     // Cache a few quantities.
     const auto delta_t = m_data->delta_t;
@@ -559,7 +561,6 @@ outcome sim::step(double dt)
     const auto init_time = m_data->time;
 
     // Prepare the s_data buffers with the correct sizes.
-    spdlog::stopwatch sw_buf;
 
     // NOTE: this is a helper that resizes vec to new_size
     // only if vec is currently smaller than new_size.
@@ -627,15 +628,13 @@ outcome sim::step(double dt)
     // Narrow phase data.
     resize_if_needed(nchunks, m_data->np_caches);
 
-    logger->trace("Initial buffer setup time: {}s", sw_buf);
-
     // Numerical integration and computation of the AABBs in batch mode.
     auto batch_int_aabb = [&](const auto &range) {
         // Fetch an integrator from the cache, or create it.
         std::unique_ptr<hy::taylor_adaptive_batch<double>> ta_ptr;
 
         if (!m_data->b_ta_cache.try_pop(ta_ptr)) {
-            logger->debug("Creating new batch integrator");
+            SPDLOG_LOGGER_DEBUG(logger, "Creating new batch integrator");
 
             ta_ptr = std::make_unique<hy::taylor_adaptive_batch<double>>(m_data->b_ta);
         }
@@ -826,7 +825,7 @@ outcome sim::step(double dt)
         std::unique_ptr<hy::taylor_adaptive<double>> ta_ptr;
 
         if (!m_data->s_ta_cache.try_pop(ta_ptr)) {
-            logger->debug("Creating new integrator");
+            SPDLOG_LOGGER_DEBUG(logger, "Creating new integrator");
 
             ta_ptr = std::make_unique<hy::taylor_adaptive<double>>(m_data->s_ta);
         }
@@ -1079,6 +1078,8 @@ outcome sim::step(double dt)
 
     logger->trace("Total propagation time: {}s", sw);
 
+    logger->trace("---- STEP END ---");
+
     return oc;
 }
 
@@ -1129,7 +1130,7 @@ double sim::infer_superstep()
                     std::unique_ptr<hy::taylor_adaptive_batch<double>> ta_ptr;
 
                     if (!m_data->b_ta_cache.try_pop(ta_ptr)) {
-                        logger->debug("Creating new batch integrator");
+                        SPDLOG_LOGGER_DEBUG(logger, "Creating new batch integrator");
 
                         ta_ptr = std::make_unique<hy::taylor_adaptive_batch<double>>(m_data->b_ta);
                     }
@@ -1189,7 +1190,7 @@ double sim::infer_superstep()
                     std::unique_ptr<hy::taylor_adaptive<double>> ta_ptr;
 
                     if (!m_data->s_ta_cache.try_pop(ta_ptr)) {
-                        logger->debug("Creating new integrator");
+                        SPDLOG_LOGGER_DEBUG(logger, "Creating new integrator");
 
                         ta_ptr = std::make_unique<hy::taylor_adaptive<double>>(m_data->s_ta);
                     }
@@ -1255,8 +1256,8 @@ double sim::infer_superstep()
     }
 
     logger->trace("Timestep deduction time: {}s", sw);
-    logger->debug("Inferred superstep size: {}", res);
-    logger->debug("Number of particles considered for timestep deduction: {}", n_part_acc);
+    logger->trace("Inferred superstep size: {}", res);
+    SPDLOG_LOGGER_DEBUG(logger, "Number of particles considered for timestep deduction: {}", n_part_acc);
 
     return res;
 }
