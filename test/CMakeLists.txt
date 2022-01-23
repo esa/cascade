@@ -27,3 +27,4 @@ endfunction()
 
 ADD_CASCADE_TESTCASE(single_collision)
 ADD_CASCADE_TESTCASE(same_morton_code)
+ADD_CASCADE_TESTCASE(heyoka_comparison)
