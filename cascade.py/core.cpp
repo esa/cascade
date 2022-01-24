@@ -18,12 +18,21 @@
 
 #include <cascade/sim.hpp>
 
+#include "logging.hpp"
+
 PYBIND11_MODULE(core, m)
 {
     namespace py = pybind11;
     using namespace pybind11::literals;
 
     using namespace cascade;
+    namespace cpy = cascade_py;
+
+    // Connect cascade's logging to Python's logging.
+    cpy::enable_logging();
+
+    // Expose the logging setter functions.
+    cpy::expose_logging_setters(m);
 
     // outcome enum.
     py::enum_<outcome>(m, "outcome")

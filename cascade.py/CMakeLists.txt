@@ -16,10 +16,10 @@ endforeach()
 # Core module.
 Python3_add_library(core MODULE WITH_SOABI
     core.cpp
-    # logging.cpp
+    logging.cpp
 )
 
-target_link_libraries(core PRIVATE cascade Boost::boost)
+target_link_libraries(core PRIVATE cascade Boost::boost fmt::fmt spdlog::spdlog)
 target_link_libraries(core PRIVATE "${pybind11_LIBRARIES}")
 target_include_directories(core SYSTEM PRIVATE "${pybind11_INCLUDE_DIR}" "${Python3_INCLUDE_DIRS}")
 target_compile_definitions(core PRIVATE "${pybind11_DEFINITIONS}")
