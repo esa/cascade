@@ -8,10 +8,10 @@
 
 #include <algorithm>
 #include <array>
-#include <atomic>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <set>
 #include <stdexcept>
@@ -21,6 +21,7 @@
 
 #include <oneapi/tbb/blocked_range.h>
 #include <oneapi/tbb/parallel_for.h>
+#include <oneapi/tbb/parallel_reduce.h>
 #include <oneapi/tbb/parallel_scan.h>
 
 #include <cascade/detail/logging_impl.hpp>
@@ -168,6 +169,8 @@ void sim::construct_bvh_trees()
                 // - determine if the node is a leaf, and
                 // - if it is *not* a leaf, how many particles
                 //   are in the left child.
+                // The return value is the total number
+                // of leaf nodes detected in the range.
                 auto node_split = [&](auto rbegin, auto rend) {
                     // Local accumulator for the number of leaf nodes
                     // detected in the range.
@@ -238,9 +241,7 @@ void sim::construct_bvh_trees()
                         }
                     }
 
-                    // Atomically decrease nn_next_level by n_leaf_nodes * 2.
-                    std::atomic_ref nn_next_level_at(nn_next_level);
-                    nn_next_level_at.fetch_sub(n_leaf_nodes * 2u, std::memory_order::relaxed);
+                    return n_leaf_nodes;
                 };
 
                 // For each node in a range, and using the
@@ -320,8 +321,14 @@ void sim::construct_bvh_trees()
                 // Step 1: determine, for each node in the range,
                 // if the node is a leaf or not, and, if so, the number
                 // of particles in the left child.
-                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(n_begin, n_end),
-                                          [&](const auto &rn) { node_split(rn.begin(), rn.end()); });
+                const auto n_leaf_nodes = oneapi::tbb::parallel_reduce(
+                    oneapi::tbb::blocked_range(n_begin, n_end), std::uint32_t(0),
+                    [&](const auto &rn, std::uint32_t init) { return init + node_split(rn.begin(), rn.end()); },
+                    std::plus<>{});
+
+                // Decrease nn_next_level by n_leaf_nodes * 2.
+                assert(n_leaf_nodes * 2u <= nn_next_level);
+                nn_next_level -= n_leaf_nodes * 2u;
 
                 // Step 2: prepare the tree for the new nodes.
                 // NOTE: nn_next_level was computed in the previous step.
@@ -347,7 +354,7 @@ void sim::construct_bvh_trees()
 
                         return temp;
                     },
-                    [](auto left, auto right) { return left + right; });
+                    std::plus<>{});
 
                 // Step 4: finalise the nodes in the range with the children pointers,
                 // and perform the initial setup of the children nodes.
