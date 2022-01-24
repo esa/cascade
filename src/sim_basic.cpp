@@ -22,8 +22,6 @@
 
 #include <fmt/format.h>
 
-#include <spdlog/stopwatch.h>
-
 #include <oneapi/tbb/blocked_range.h>
 #include <oneapi/tbb/parallel_for.h>
 #include <oneapi/tbb/parallel_invoke.h>

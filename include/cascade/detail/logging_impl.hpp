@@ -19,6 +19,7 @@
 #endif
 
 #include <spdlog/spdlog.h>
+#include <spdlog/stopwatch.h>
 
 namespace cascade::detail
 {

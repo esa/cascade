@@ -14,8 +14,6 @@
 #include <utility>
 #include <vector>
 
-#include <spdlog/stopwatch.h>
-
 #include <oneapi/tbb/blocked_range.h>
 #include <oneapi/tbb/parallel_for.h>
 
