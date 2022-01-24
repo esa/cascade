@@ -29,7 +29,8 @@ inline void lb_atomic_update(T &out_, T val)
 
     do {
         // Compute the new value.
-        // TODO min usage?
+        // NOTE: min usage safe, we checked outside that
+        // there are no NaN values at this point.
         new_val = std::min(val, orig_val);
     } while (!out.compare_exchange_weak(orig_val, new_val, std::memory_order_relaxed, std::memory_order_relaxed));
 }
@@ -48,7 +49,8 @@ inline void ub_atomic_update(T &out_, T val)
 
     do {
         // Compute the new value.
-        // TODO max usage?
+        // NOTE: max usage safe, we checked outside that
+        // there are no NaN values at this point.
         new_val = std::max(val, orig_val);
     } while (!out.compare_exchange_weak(orig_val, new_val, std::memory_order_relaxed, std::memory_order_relaxed));
 }

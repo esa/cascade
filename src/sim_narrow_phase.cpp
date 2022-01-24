@@ -288,13 +288,17 @@ void sim::narrow_phase()
             const auto chunk_begin = dfloat(c_begin);
             const auto chunk_end = dfloat(c_end);
 
+#if !defined(NDEBUG)
             // Counter for the number of failed fast exclusion checks.
             std::atomic<std::size_t> n_ffex(0);
+#endif
 
             // Iterate over all collisions.
             oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(bpc.begin(), bpc.end()), [&](const auto &rn) {
+#if !defined(NDEBUG)
                 // Local version of n_ffex.
                 std::size_t local_n_ffex = 0;
+#endif
 
                 // Fetch the polynomial caches.
                 std::unique_ptr<sim_data::np_data> pcaches;
@@ -466,8 +470,10 @@ void sim::narrow_phase()
                             if (!fex_check_res) {
                                 // Fast exclusion check failed, we need to run the real root isolation algorithm.
 
+#if !defined(NDEBUG)
                                 // Update local_n_ffex.
                                 ++local_n_ffex;
+#endif
 
                                 // Clear out the list of isolating intervals.
                                 isol.clear();
@@ -695,8 +701,10 @@ void sim::narrow_phase()
                 // Put the polynomials back into the caches.
                 np_cache.push(std::move(pcaches));
 
+#if !defined(NDEBUG)
                 // Update n_ffex.
                 n_ffex.fetch_add(local_n_ffex, std::memory_order::relaxed);
+#endif
             });
 
             SPDLOG_LOGGER_DEBUG(logger,

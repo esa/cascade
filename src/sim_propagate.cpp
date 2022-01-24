@@ -610,8 +610,6 @@ outcome sim::step(double dt)
     resize_if_needed(nchunks, m_data->global_lb, m_data->global_ub);
     // NOTE: the global AABBs need to be set up with
     // initial values.
-    // TODO once we compute the global AABBs with accumulate,
-    // these can probably go.
     constexpr auto finf = std::numeric_limits<float>::infinity();
     std::ranges::fill(m_data->global_lb, std::array{finf, finf, finf, finf});
     std::ranges::fill(m_data->global_ub, std::array{-finf, -finf, -finf, -finf});
