@@ -8,7 +8,6 @@
 
 #include <array>
 #include <cassert>
-#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <initializer_list>
