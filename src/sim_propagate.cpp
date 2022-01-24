@@ -1386,4 +1386,109 @@ void sim::dense_propagate(double t)
     logger->trace("Dense propagation time: {}s", sw);
 }
 
+template <typename T>
+outcome sim::propagate_until_impl(const T &final_t, double dt)
+{
+    assert(isfinite(final_t) && final_t > m_data->time);
+
+    while (true) {
+        // Store the original time coord.
+        const auto orig_t = m_data->time;
+
+        // Take a step.
+        const auto cur_oc = step(dt);
+
+        if (cur_oc == outcome::success) {
+            // Successful step with no interruption.
+            // Check the time.
+            if (m_data->time >= final_t) {
+                // We are at or past the final time.
+
+                // Propagate the state of the system up
+                // to the final time, writing the new state
+                // into the m_final_* vectors.
+                dense_propagate(static_cast<double>(final_t - orig_t));
+
+                // NOTE: everything noexcept from now on.
+
+                // Update the time coordinate.
+                m_data->time = final_t;
+
+                // Swap in the updated state.
+                m_x.swap(m_data->final_x);
+                m_y.swap(m_data->final_y);
+                m_z.swap(m_data->final_z);
+                m_vx.swap(m_data->final_vx);
+                m_vy.swap(m_data->final_vy);
+                m_vz.swap(m_data->final_vz);
+
+                // NOTE: m_int_info has already been reset by the
+                // step() function.
+
+                return outcome::time_limit;
+            }
+        } else {
+            // Successful step with interruption.
+            assert(cur_oc == outcome::interrupt);
+
+            if (m_data->time > final_t) {
+                // If the interruption happened *after*
+                // final_t, we need to:
+                // - roll back the state to final_t,
+                // - update the time,
+                // - update the interrupt info.
+
+                // Propagate the state of the system up
+                // to the final time, writing the new state
+                // into the m_final_* vectors.
+                dense_propagate(static_cast<double>(final_t - orig_t));
+
+                // NOTE: everything noexcept from now on.
+
+                // Update the time coordinate.
+                m_data->time = final_t;
+
+                // Swap in the updated state.
+                m_x.swap(m_data->final_x);
+                m_y.swap(m_data->final_y);
+                m_z.swap(m_data->final_z);
+                m_vx.swap(m_data->final_vx);
+                m_vy.swap(m_data->final_vy);
+                m_vz.swap(m_data->final_vz);
+
+                // Reset the interrupt data, which
+                // was set up at the end of the step() function.
+                m_int_info.reset();
+
+                return outcome::time_limit;
+            } else {
+                // Otherwise, we can just return cur_oc.
+                // NOTE: this also includes the case
+                // m_data->time == final_t: that is, collision
+                // has priority wrt final time.
+                return cur_oc;
+            }
+        }
+    }
+}
+
+outcome sim::propagate_until(double t, double dt)
+{
+    using dfloat = heyoka::detail::dfloat<double>;
+
+    if (!std::isfinite(t) || dfloat(t) < m_data->time) {
+        throw std::invalid_argument(
+            fmt::format("The final time passed to the propagate_until() function must be finite and not less than "
+                        "the current simulation time, but a value of {} was provided instead",
+                        t));
+    }
+
+    if (dfloat(t) == m_data->time) {
+        // Already at the final time, don't do anything.
+        return outcome::time_limit;
+    }
+
+    return propagate_until_impl(dfloat(t), dt);
+}
+
 } // namespace cascade

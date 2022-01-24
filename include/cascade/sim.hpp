@@ -68,6 +68,8 @@ private:
     CASCADE_DLL_LOCAL double infer_superstep();
     CASCADE_DLL_LOCAL void verify_global_aabbs() const;
     CASCADE_DLL_LOCAL void dense_propagate(double);
+    template <typename T>
+    CASCADE_DLL_LOCAL outcome propagate_until_impl(const T &, double);
 
     template <typename InTup, typename OutTup, std::size_t... I>
     static void ctor_impl(const InTup &in_tup, OutTup &out_tup, std::index_sequence<I...>)
@@ -163,11 +165,10 @@ public:
         return m_sizes;
     }
     double get_time() const;
+    void set_time(double);
 
     double get_ct() const;
     void set_ct(double);
-
-    outcome step(double = 0);
 
     template <di_range X, di_range Y, di_range Z, di_range VX, di_range VY, di_range VZ, di_range S>
     void set_new_state(X &&x, Y &&y, Z &&z, VX &&vx, VY &&vy, VZ &&vz, S &&s)
@@ -182,6 +183,9 @@ public:
 
         set_new_state_impl(new_state);
     }
+
+    outcome step(double = 0);
+    outcome propagate_until(double, double = 0);
 
 private:
     template <typename T>

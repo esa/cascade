@@ -327,6 +327,15 @@ double sim::get_time() const
     return static_cast<double>(m_data->time);
 }
 
+void sim::set_time(double t)
+{
+    if (!std::isfinite(t)) {
+        throw std::invalid_argument(fmt::format("Cannot set the simulation time to the non-finite value {}", t));
+    }
+
+    m_data->time = decltype(m_data->time)(t);
+}
+
 std::ostream &operator<<(std::ostream &os, const sim &s)
 {
     os << "Total number of particles: " << s.get_nparts() << '\n';
