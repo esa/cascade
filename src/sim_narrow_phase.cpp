@@ -404,7 +404,7 @@ void sim::narrow_phase()
                             // in which time is counted from the beginning of the substep. In order to
                             // create the polynomial representing the distance square, we need first to
                             // translate the polynomials of both particles so that they refer to a
-                            // common time coordinate, the time elapsed from lb.
+                            // common time coordinate, the time elapsed from lb_rf.
 
                             // Compute the translation amount for the two particles.
                             const auto delta_i = static_cast<double>(lb_rf - ss_start_i);
