@@ -65,9 +65,9 @@ PYBIND11_MODULE(core, m)
         .def_property("time", &sim::get_time, &sim::set_time)
         .def_property("ct", &sim::get_ct, &sim::set_ct)
         .def(
-            "step", [](sim &s, double dt) { s.step(dt); }, "dt"_a = 0.)
+            "step", [](sim &s, double dt) { return s.step(dt); }, "dt"_a = 0.)
         .def(
-            "propagate_until", [](sim &s, double t, double dt) { s.propagate_until(t, dt); }, "t"_a, "dt"_a = 0.)
+            "propagate_until", [](sim &s, double t, double dt) { return s.propagate_until(t, dt); }, "t"_a, "dt"_a = 0.)
         // Expose the state getters.
         .def_property_readonly("x",
                                [](const sim &s) {
