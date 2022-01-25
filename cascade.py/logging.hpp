@@ -16,8 +16,6 @@ namespace cascade_py
 
 namespace py = pybind11;
 
-void enable_logging();
-
 void expose_logging_setters(py::module_ &);
 
 } // namespace cascade_py

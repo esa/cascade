@@ -44,9 +44,6 @@ PYBIND11_MODULE(core, m)
     using namespace cascade;
     namespace cpy = cascade_py;
 
-    // Connect cascade's logging to Python's logging.
-    cpy::enable_logging();
-
     // Expose the logging setter functions.
     cpy::expose_logging_setters(m);
 
