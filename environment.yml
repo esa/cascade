@@ -14,3 +14,9 @@ dependencies:
   - c-compiler
   - cxx-compiler
   - ipython
+  - numpy
+  - pykep
+  - scipy
+  - jupyterlab
+  - matplotlib
+
