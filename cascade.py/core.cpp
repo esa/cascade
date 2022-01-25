@@ -6,11 +6,15 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#include <cstddef>
+#include <iostream>
 #include <sstream>
 #include <utility>
 #include <vector>
 
 #include <boost/numeric/conversion/cast.hpp>
+
+#include <oneapi/tbb/global_control.h>
 
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -19,6 +23,18 @@
 #include <cascade/sim.hpp>
 
 #include "logging.hpp"
+
+namespace cascade_py::detail
+{
+
+namespace
+{
+
+std::optional<oneapi::tbb::global_control> tbb_gc;
+
+}
+
+} // namespace cascade_py::detail
 
 PYBIND11_MODULE(core, m)
 {
@@ -142,4 +158,26 @@ PYBIND11_MODULE(core, m)
             oss << s;
             return oss.str();
         });
+
+    m.def("set_nthreads", [](std::size_t n) {
+        if (n == 0u) {
+            cpy::detail::tbb_gc.reset();
+        } else {
+            cpy::detail::tbb_gc.emplace(oneapi::tbb::global_control::max_allowed_parallelism, n);
+        }
+    });
+
+    m.def("get_nthreads", []() {
+        return oneapi::tbb::global_control::active_value(oneapi::tbb::global_control::max_allowed_parallelism);
+    });
+
+    // Make sure the TBB control structure is cleaned
+    // up before shutdown.
+    auto atexit = py::module_::import("atexit");
+    atexit.attr("register")(py::cpp_function([]() {
+#if !defined(NDEBUG)
+        std::cout << "Cleaning up the TBB control structure" << std::endl;
+#endif
+        cpy::detail::tbb_gc.reset();
+    }));
 }
