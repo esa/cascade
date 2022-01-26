@@ -9,6 +9,11 @@
 # Version setup.
 from ._version import __version__
 
+# NOTE: import heyoka to ensure that
+# cascade knows how to convert to/from
+# expressions.
+import heyoka as _hy
+
 import os as _os
 
 if _os.name == 'posix':

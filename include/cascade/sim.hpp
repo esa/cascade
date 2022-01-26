@@ -24,10 +24,35 @@
 
 #include <boost/numeric/conversion/cast.hpp>
 
+#include <heyoka/detail/igor.hpp>
+#include <heyoka/expression.hpp>
+
 #include <cascade/detail/visibility.hpp>
 
 namespace cascade
 {
+
+namespace detail
+{
+
+template <typename... Args>
+inline constexpr bool always_false_v = false;
+
+}
+
+namespace dynamics
+{
+
+CASCADE_DLL_PUBLIC std::vector<std::pair<heyoka::expression, heyoka::expression>> kepler(double = 1.);
+
+}
+
+namespace kw
+{
+
+IGOR_MAKE_NAMED_ARGUMENT(dyn);
+
+}
 
 #define CASCADE_CONCEPT_DECL concept
 
@@ -56,7 +81,7 @@ private:
     sim_data *m_data = nullptr;
     std::optional<std::variant<std::array<size_type, 2>, size_type>> m_int_info;
 
-    void finalise_ctor();
+    void finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>>);
     void set_new_state_impl(std::array<std::vector<double>, 7> &);
     CASCADE_DLL_LOCAL void add_jit_functions();
     CASCADE_DLL_LOCAL void morton_encode_sort();
@@ -72,7 +97,7 @@ private:
     CASCADE_DLL_LOCAL outcome propagate_until_impl(const T &, double);
 
     template <typename InTup, typename OutTup, std::size_t... I>
-    static void ctor_impl(const InTup &in_tup, OutTup &out_tup, std::index_sequence<I...>)
+    static void state_set_impl(const InTup &in_tup, OutTup &out_tup, std::index_sequence<I...>)
     {
         auto func = [&](auto ic) {
             constexpr auto Idx = decltype(ic)::value;
@@ -108,17 +133,36 @@ private:
 
 public:
     sim();
-    template <di_range X, di_range Y, di_range Z, di_range VX, di_range VY, di_range VZ, di_range S>
-    explicit sim(X &&x, Y &&y, Z &&z, VX &&vx, VY &&vy, VZ &&vz, S &&s, double ct) : m_ct(ct)
+    template <di_range X, di_range Y, di_range Z, di_range VX, di_range VY, di_range VZ, di_range S, typename... KwArgs>
+    explicit sim(X &&x, Y &&y, Z &&z, VX &&vx, VY &&vy, VZ &&vz, S &&s, double ct, KwArgs &&...kw_args) : m_ct(ct)
     {
+        igor::parser p{kw_args...};
+
+        if constexpr (p.has_unnamed_arguments()) {
+            static_assert(detail::always_false_v<KwArgs...>,
+                          "The variadic arguments to the constructor of a simulation "
+                          "contain unnamed arguments.");
+            throw;
+        }
+
+        std::vector<std::pair<heyoka::expression, heyoka::expression>> dyn;
+
+        if constexpr (p.has(kw::dyn)) {
+            if constexpr (std::assignable_from<decltype(dyn) &, decltype(p(kw::dyn))>) {
+                dyn = std::forward<decltype(p(kw::dyn))>(p(kw::dyn));
+            } else {
+                static_assert(detail::always_false_v<KwArgs...>, "The dynamics object is of the wrong type.");
+            }
+        }
+
         auto in_tup
             = std::forward_as_tuple(std::forward<X>(x), std::forward<Y>(y), std::forward<Z>(z), std::forward<VX>(vx),
                                     std::forward<VY>(vy), std::forward<VZ>(vz), std::forward<S>(s));
         auto out_tup = std::make_tuple(std::ref(m_x), std::ref(m_y), std::ref(m_z), std::ref(m_vx), std::ref(m_vy),
                                        std::ref(m_vz), std::ref(m_sizes));
-        ctor_impl(in_tup, out_tup, std::make_index_sequence<std::tuple_size_v<decltype(in_tup)>>{});
+        state_set_impl(in_tup, out_tup, std::make_index_sequence<std::tuple_size_v<decltype(in_tup)>>{});
 
-        finalise_ctor();
+        finalise_ctor(std::move(dyn));
     }
     sim(const sim &);
     sim(sim &&) noexcept;
@@ -179,7 +223,7 @@ public:
 
         std::array<std::vector<double>, 7> new_state;
 
-        ctor_impl(in_tup, new_state, std::make_index_sequence<7>{});
+        state_set_impl(in_tup, new_state, std::make_index_sequence<7>{});
 
         set_new_state_impl(new_state);
     }

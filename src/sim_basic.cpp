@@ -11,15 +11,22 @@
 #include <cmath>
 #include <cstdint>
 #include <initializer_list>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <optional>
 #include <ostream>
+#include <ranges>
+#include <set>
 #include <stdexcept>
+#include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <fmt/format.h>
+#include <fmt/ostream.h>
+#include <fmt/ranges.h>
 
 #include <oneapi/tbb/blocked_range.h>
 #include <oneapi/tbb/parallel_for.h>
@@ -31,6 +38,7 @@
 #include <heyoka/math/sum.hpp>
 #include <heyoka/math/sum_sq.hpp>
 #include <heyoka/taylor.hpp>
+#include <heyoka/variable.hpp>
 
 #include <cascade/detail/logging_impl.hpp>
 #include <cascade/detail/sim_data.hpp>
@@ -50,6 +58,21 @@ using fmt::literals::operator""_format;
 
 namespace cascade
 {
+
+namespace detail
+{
+
+namespace
+{
+
+// The list of allowed dynamical symbols, first in dynamical order then in alphabetical order.
+const std::array<std::string, 6> allowed_vars = {"x", "y", "z", "vx", "vy", "vz"};
+
+const std::set<std::string> allowed_vars_alph(allowed_vars.begin(), allowed_vars.end());
+
+} // namespace
+
+} // namespace detail
 
 // Helper to compute the begin and end of a chunk within
 // a superstep for a given collisional timestep.
@@ -201,7 +224,7 @@ void sim::set_new_state_impl(std::array<std::vector<double>, 7> &new_state)
     m_sizes = std::move(new_state[6]);
 }
 
-void sim::finalise_ctor()
+void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>> dyn)
 {
     namespace hy = heyoka;
 
@@ -245,32 +268,65 @@ void sim::finalise_ctor()
             fmt::format("The collisional timestep must be finite and positive, but it is {} instead", m_ct));
     }
 
+    if (dyn.empty()) {
+        // Default is Keplerian dynamics with unitary mu.
+        dyn = dynamics::kepler();
+    }
+
+    // Check the dynamics.
+    if (dyn.size() != 6u) {
+        throw std::invalid_argument(
+            fmt::format("6 dynamical equations are expected, but {} were provided instead", dyn.size()));
+    }
+
+    for (auto i = 0u; i < 6u; ++i) {
+        const auto &[var, eq] = dyn[i];
+
+        // Check that the LHS is a variable with the correct name.
+        if (!std::holds_alternative<hy::variable>(var.value())
+            || std::get<hy::variable>(var.value()).name() != detail::allowed_vars[i]) {
+            throw std::invalid_argument(fmt::format("The LHS of the dynamics at index {} must be a variable named "
+                                                    "\"{}\", but instead it is the expression \"{}\"",
+                                                    i, detail::allowed_vars[i], var));
+        }
+
+        if (hy::get_param_size(eq) != 0u) {
+            throw std::invalid_argument("Dynamical equations with runtime parameters are not supported at this time");
+        }
+
+        // Check the list of variables in the RHS.
+        const auto eq_vars = hy::get_variables(eq);
+        std::vector<std::string> set_diff;
+        std::ranges::set_difference(eq_vars, detail::allowed_vars_alph, std::back_inserter(set_diff));
+
+        if (!set_diff.empty()) {
+            throw std::invalid_argument(
+                fmt::format("The RHS of the differential equation for the variable \"{}\" contains the invalid "
+                            "variables {} (the allowed variables are {})",
+                            std::get<hy::variable>(var.value()).name(), set_diff, detail::allowed_vars_alph));
+        }
+    }
+
+    // Add the differential equation for r.
+    auto [x, y, z, vx, vy, vz, r] = hy::make_vars("x", "y", "z", "vx", "vy", "vz", "r");
+    dyn.push_back(hy::prime(r) = hy::sum({x * vx, y * vy, z * vz}) / r);
+
+    // Machinery to construct the integrators.
     std::optional<hy::taylor_adaptive<double>> s_ta;
     std::optional<hy::taylor_adaptive_batch<double>> b_ta;
 
-    auto integrators_setup = [&s_ta, &b_ta]() {
-        // Set up the dynamics.
-        auto [x, y, z, vx, vy, vz, r] = hy::make_vars("x", "y", "z", "vx", "vy", "vz", "r");
-
-        const auto dynamics = std::vector<std::pair<hy::expression, hy::expression>>{
-            hy::prime(x) = vx,
-            hy::prime(y) = vy,
-            hy::prime(z) = vz,
-            hy::prime(vx) = -x * hy::pow(hy::sum_sq({x, y, z}), -1.5),
-            hy::prime(vy) = -y * hy::pow(hy::sum_sq({x, y, z}), -1.5),
-            hy::prime(vz) = -z * hy::pow(hy::sum_sq({x, y, z}), -1.5),
-            hy::prime(r) = hy::sum({x * vx, y * vy, z * vz}) / r};
-
-        const std::uint32_t batch_size = hy::recommended_simd_size<double>();
+    auto integrators_setup = [&s_ta, &b_ta, &dyn]() {
         oneapi::tbb::parallel_invoke(
-            [&]() { s_ta.emplace(dynamics, std::vector<double>(7u)); },
+            [&]() { s_ta.emplace(dyn, std::vector<double>(7u)); },
             [&]() {
+                const std::uint32_t batch_size = hy::recommended_simd_size<double>();
+
                 if (batch_size > std::numeric_limits<std::vector<double>::size_type>::max() / 7u) {
                     throw std::overflow_error(
                         "An overflow as detected during the construction of the batch integrator");
                 }
 
-                b_ta.emplace(dynamics, std::vector<double>(7u * batch_size), batch_size);
+                b_ta.emplace(dyn, std::vector<double>(7u * batch_size), batch_size);
             });
     };
 

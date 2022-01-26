@@ -155,6 +155,7 @@ set(CASCADE_SRC_FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/sim_broad_phase.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/sim_narrow_phase.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/sim_jit.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/sim_dynamics.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/detail/logging_impl.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/logging.cpp"
 )
@@ -197,7 +198,7 @@ target_link_libraries(cascade PRIVATE fmt::fmt)
 
 # heyoka.
 find_package(heyoka CONFIG REQUIRED)
-target_link_libraries(cascade PRIVATE heyoka::heyoka)
+target_link_libraries(cascade PUBLIC heyoka::heyoka)
 message(STATUS "heyoka version: ${heyoka_VERSION}")
 if(heyoka_VERSION VERSION_LESS 0.17)
     message(FATAL_ERROR "heyoka>=0.17 is required, but heyoka ${heyoka_VERSION} was found instead")

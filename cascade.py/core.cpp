@@ -20,6 +20,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <heyoka/expression.hpp>
+
 #include <cascade/sim.hpp>
 
 #include "logging.hpp"
@@ -41,6 +43,8 @@ PYBIND11_MODULE(core, m)
     namespace py = pybind11;
     using namespace pybind11::literals;
 
+    namespace hy = heyoka;
+
     using namespace cascade;
     namespace cpy = cascade_py;
 
@@ -53,18 +57,47 @@ PYBIND11_MODULE(core, m)
         .value("time_limit", outcome::time_limit)
         .value("interrupt", outcome::interrupt);
 
+    // Dynamics submodule.
+    auto dynamics_module = m.def_submodule("dynamics");
+    dynamics_module.def("kepler", &dynamics::kepler, "mu"_a = 1.);
+
     // sim class.
     py::class_<sim>(m, "sim", py::dynamic_attr{})
         .def(py::init<>())
-        .def(py::init<std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>,
-                      std::vector<double>, std::vector<double>, std::vector<double>, double>())
+        .def(py::init([](std::vector<double> x, std::vector<double> y, std::vector<double> z, std::vector<double> vx,
+                         std::vector<double> vy, std::vector<double> vz, std::vector<double> sizes, double ct,
+                         std::vector<std::pair<hy::expression, hy::expression>> dyn) {
+                 // NOTE: might have to re-check this if we ever offer the
+                 // option to define event callbacks in the dynamics.
+                 py::gil_scoped_release release;
+
+                 return sim(std::move(x), std::move(y), std::move(z), std::move(vx), std::move(vy), std::move(vz),
+                            std::move(sizes), ct, kw::dyn = std::move(dyn));
+             }),
+             "x"_a, "y"_a, "z"_a, "vx"_a, "vy"_a, "vz"_a, "sizes"_a, "ct"_a, "dyn"_a = py::list{})
         .def_property_readonly("interrupt_info", &sim::get_interrupt_info)
         .def_property("time", &sim::get_time, &sim::set_time)
         .def_property("ct", &sim::get_ct, &sim::set_ct)
         .def(
-            "step", [](sim &s, double dt) { return s.step(dt); }, "dt"_a = 0.)
+            "step",
+            [](sim &s, double dt) {
+                // NOTE: might have to re-check this if we ever offer the
+                // option to define event callbacks in the dynamics.
+                py::gil_scoped_release release;
+
+                return s.step(dt);
+            },
+            "dt"_a = 0.)
         .def(
-            "propagate_until", [](sim &s, double t, double dt) { return s.propagate_until(t, dt); }, "t"_a, "dt"_a = 0.)
+            "propagate_until",
+            [](sim &s, double t, double dt) {
+                // NOTE: might have to re-check this if we ever offer the
+                // option to define event callbacks in the dynamics.
+                py::gil_scoped_release release;
+
+                return s.propagate_until(t, dt);
+            },
+            "t"_a, "dt"_a = 0.)
         // Expose the state getters.
         .def_property_readonly("x",
                                [](const sim &s) {
@@ -146,6 +179,8 @@ PYBIND11_MODULE(core, m)
         .def("set_new_state",
              [](sim &s, std::vector<double> x, std::vector<double> y, std::vector<double> z, std::vector<double> vx,
                 std::vector<double> vy, std::vector<double> vz, std::vector<double> sizes) {
+                 py::gil_scoped_release release;
+
                  s.set_new_state(std::move(x), std::move(y), std::move(z), std::move(vx), std::move(vy), std::move(vz),
                                  std::move(sizes));
              })
