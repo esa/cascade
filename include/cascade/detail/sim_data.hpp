@@ -13,7 +13,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <mutex>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -241,12 +240,33 @@ struct sim::sim_data {
     // pwrap semantics.
     std::vector<std::unique_ptr<oneapi::tbb::concurrent_queue<std::unique_ptr<np_data>>>> np_caches;
     // The global vector of collisions.
-    // NOTE: protect with a mutex for the time being,
+    // NOTE: use a concurrent vector for the time being,
     // in the assumption that collisions are infrequent.
     // We can later consider solutions with better concurrency
     // if needed (e.g., chunk local concurrent queues of collision vectors).
-    std::mutex coll_mutex;
-    std::vector<std::tuple<size_type, size_type, double>> coll_vec;
+    oneapi::tbb::concurrent_vector<std::tuple<size_type, size_type, double>> coll_vec;
+
+    // Structures to detect reentry or out-of-domain conditions.
+    // NOTE: these cannot be chunk-local because they are written to
+    // during the dynamical propagation, which is not happening
+    // chunk-by-chunk.
+    oneapi::tbb::concurrent_vector<std::tuple<size_type, double>> reentry_vec;
+    oneapi::tbb::concurrent_vector<std::tuple<size_type, double>> exit_vec;
+
+    // The callback functors for use when a particle exits the domain or
+    // crashes onto the central object.
+    struct exit_cb {
+        mutable sim_data *sdata = nullptr;
+        mutable size_type pidx = 0;
+
+        void operator()(heyoka::taylor_adaptive<double> &, double, int) const;
+    };
+    struct exit_cb_batch {
+        mutable sim_data *sdata = nullptr;
+        mutable size_type pidx = 0;
+
+        void operator()(heyoka::taylor_adaptive_batch<double> &, double, int, std::uint32_t) const;
+    };
 };
 
 } // namespace cascade

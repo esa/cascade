@@ -15,7 +15,6 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
-#include <mutex>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -531,7 +530,6 @@ void sim::narrow_phase()
                                         }
 
                                         // Add it.
-                                        std::lock_guard lock{m_data->coll_mutex};
                                         m_data->coll_vec.emplace_back(pi, pj, tcoll);
                                     }
                                 };

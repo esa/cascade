@@ -168,6 +168,18 @@ void sim::init_scalar_ta(T &ta, size_type pidx) const
     }
     ta.set_dtime(m_data->time.hi, m_data->time.lo);
 
+    // Setup the exit callback data, if needed.
+    const auto with_dr = with_d_radius();
+    if (with_dr) {
+        // NOTE: exit callback is always at index 0, if
+        // it exists.
+        assert(ta.get_nt_events().size() > 0u);
+        auto *cb = ta.get_nt_events()[0].get_callback().template extract<sim_data::exit_cb>();
+        assert(cb != nullptr);
+        cb->sdata = m_data;
+        cb->pidx = pidx;
+    }
+
     // Copy over the state.
     // NOTE: would need to take care of synching up the
     // runtime parameters too.
@@ -201,6 +213,18 @@ void sim::init_batch_ta(T &ta, size_type pidx_begin, size_type pidx_end) const
         ta.reset_cooldowns();
     }
     ta.set_dtime(m_data->time.hi, m_data->time.lo);
+
+    // Setup the exit callback data, if needed.
+    const auto with_dr = with_d_radius();
+    if (with_dr) {
+        // NOTE: exit callback is always at index 0, if
+        // it exists.
+        assert(ta.get_nt_events().size() > 0u);
+        auto *cb = ta.get_nt_events()[0].get_callback().template extract<sim_data::exit_cb_batch>();
+        assert(cb != nullptr);
+        cb->sdata = m_data;
+        cb->pidx = pidx_begin;
+    }
 
     // Copy over the state.
     // NOTE: would need to take care of synching up the
@@ -623,6 +647,10 @@ outcome sim::step(double dt)
     // Narrow phase data.
     resize_if_needed(nchunks, m_data->np_caches);
 
+    // Reentry and exit vectors.
+    m_data->reentry_vec.clear();
+    m_data->exit_vec.clear();
+
     // Numerical integration and computation of the AABBs in batch mode.
     auto batch_int_aabb = [&](const auto &range) {
         // Fetch an integrator from the cache, or create it.
@@ -1019,9 +1047,78 @@ outcome sim::step(double dt)
     // Narrow phase collision detection.
     narrow_phase();
 
-    outcome oc{};
+    // Data to determine and setup the outcome of the step.
+    outcome oc = outcome::success;
 
-    if (m_data->coll_vec.empty()) {
+    // Pointer to the time of the earliest event
+    // causing the interruption of the simulation.
+    // If there is no such event, this will remain null.
+    const double *interrupt_time = nullptr;
+
+    // Iterators to the collision/exit/reentry vectors,
+    // initially set to end(). They will be set up to point
+    // to the earliest occurrence of the corresponding event
+    // within the step, if any.
+    auto coll_it = m_data->coll_vec.end();
+    auto exit_it = m_data->exit_vec.end();
+    auto reentry_it = m_data->reentry_vec.end();
+
+    // Check for particle-particle collisions.
+    if (!m_data->coll_vec.empty()) {
+        // Fetch the earliest collision.
+        coll_it = std::ranges::min_element(
+            m_data->coll_vec, [](const auto &tup1, const auto &tup2) { return std::get<2>(tup1) < std::get<2>(tup2); });
+
+        // Set the interrupt time.
+        interrupt_time = &std::get<2>(*coll_it);
+
+        // Set the outcome.
+        oc = outcome::collision;
+    }
+
+    // Check for particles exiting the domain.
+    if (!m_data->exit_vec.empty()) {
+        // Fetch the earliest domain exit event.
+        exit_it = std::ranges::min_element(
+            m_data->exit_vec, [](const auto &tup1, const auto &tup2) { return std::get<1>(tup1) < std::get<1>(tup2); });
+
+        // Fetch the corresponding time.
+        const double *new_itime_ptr = &std::get<1>(*exit_it);
+
+        // Update interrupt_time and oc, if needed.
+        if (interrupt_time == nullptr || *new_itime_ptr < *interrupt_time) {
+            interrupt_time = new_itime_ptr;
+            oc = outcome::exit;
+        }
+    }
+
+    // Check for particles hitting the central body.
+    if (!m_data->reentry_vec.empty()) {
+        // Fetch the earliest reentry event.
+        reentry_it = std::ranges::min_element(m_data->reentry_vec, [](const auto &tup1, const auto &tup2) {
+            return std::get<1>(tup1) < std::get<1>(tup2);
+        });
+
+        // Fetch the corresponding time.
+        const double *new_itime_ptr = &std::get<1>(*reentry_it);
+
+        // Update interrupt_time and oc, if needed.
+        if (interrupt_time == nullptr || *new_itime_ptr < *interrupt_time) {
+            interrupt_time = new_itime_ptr;
+            oc = outcome::reentry;
+        }
+    }
+
+    if (oc == outcome::success) {
+        // No interruptions. We just need to:
+        // - update the time variable,
+        // - swap in the final_* vectors, that were
+        //   filled in during the numerical integration
+        //   of the particles,
+        // - reset the interrupt info.
+
+        assert(!interrupt_time);
+
         // NOTE: it is *important* that everything in this
         // block is noexcept.
 
@@ -1038,23 +1135,30 @@ outcome sim::step(double dt)
 
         // Reset the interrupt data.
         m_int_info.reset();
-
-        // Set the exit flag.
-        oc = outcome::success;
     } else {
-        // Fetch the earliest collision.
-        const auto coll_it = std::ranges::min_element(
-            m_data->coll_vec, [](const auto &tup1, const auto &tup2) { return std::get<2>(tup1) < std::get<2>(tup2); });
+        // Some event interrupted the integration.
+        // We need to:
+        // - propagate the state of all particles up to the
+        //   first interruption,
+        // - update the time coordinate,
+        // - swap in the final_* vectors, which were filled
+        //   in by dense_propagate(),
+        // - set up the interrupt info.
 
-        // Propagate the state of all particles up to the first
-        // collision using dense output, writing the updated state
+        assert(interrupt_time);
+
+        // Propagate the state of all particles up to the interrupt
+        // time using dense output, writing the updated state
         // into the m_data->final_* vectors.
-        dense_propagate(std::get<2>(*coll_it));
+        // NOTE: interruption times are all reported with respect
+        // to the time coordinate at the beginning of the superstep,
+        // as expected by dense_propagate().
+        dense_propagate(*interrupt_time);
 
         // NOTE: noexcept until the end of the block.
 
         // Update the time coordinate.
-        m_data->time += std::get<2>(*coll_it);
+        m_data->time += *interrupt_time;
 
         // Swap in the updated state.
         m_x.swap(m_data->final_x);
@@ -1065,10 +1169,20 @@ outcome sim::step(double dt)
         m_vz.swap(m_data->final_vz);
 
         // Setup the interrupt data.
-        m_int_info.emplace(std::array{std::get<0>(*coll_it), std::get<1>(*coll_it)});
-
-        // Set the exit flag.
-        oc = outcome::collision;
+        switch (oc) {
+            case outcome::collision:
+                assert(coll_it != m_data->coll_vec.end());
+                m_int_info.emplace(std::array{std::get<0>(*coll_it), std::get<1>(*coll_it)});
+                break;
+            case outcome::exit:
+                assert(exit_it != m_data->exit_vec.end());
+                m_int_info.emplace(std::get<0>(*exit_it));
+                break;
+            default:
+                assert(oc == outcome::reentry);
+                assert(reentry_it != m_data->reentry_vec.end());
+                m_int_info.emplace(std::get<0>(*reentry_it));
+        }
     }
 
     logger->trace("Total propagation time: {}s", sw);
@@ -1142,6 +1256,10 @@ double sim::infer_superstep()
                         init_batch_ta(ta, pidx_begin, pidx_end);
 
                         // Integrate a single step.
+                        // NOTE: in case ta contains events, their callbacks
+                        // may end up writing into m_data vectors. This is ok,
+                        // as those vectors are cleaned up in the step() function
+                        // *after* infer_superstep() has been called.
                         ta.step();
 
                         // Check for errors and accumulate into partial_sum.
@@ -1198,6 +1316,10 @@ double sim::infer_superstep()
                         init_scalar_ta(ta, pidx);
 
                         // Integrate for a single step
+                        // NOTE: in case ta contains events, their callbacks
+                        // may end up writing into m_data vectors. This is ok,
+                        // as those vectors are cleaned up in the step() function
+                        // *after* infer_superstep() has been called.
                         const auto [oc, h] = ta.step();
 
                         // Check for errors and accumulate into partial_sum.
@@ -1429,8 +1551,7 @@ outcome sim::propagate_until_impl(const T &final_t, double dt)
             }
         } else {
             // Successful step with interruption.
-            // TODO fix.
-            // assert(cur_oc == outcome::interrupt);
+            assert(cur_oc > outcome::success);
 
             if (m_data->time > final_t) {
                 // If the interruption happened *after*

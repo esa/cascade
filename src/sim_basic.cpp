@@ -94,6 +94,33 @@ std::array<double, 2> sim::sim_data::get_chunk_begin_end(unsigned chunk_idx, dou
     return {cbegin, cend};
 }
 
+void sim::sim_data::exit_cb::operator()(heyoka::taylor_adaptive<double> &, double t, int) const
+{
+    assert(sdata != nullptr);
+
+    // NOTE: need to store only particle index and time.
+    // NOTE: the time t here is the integrator time, which
+    // coincides with the global simulation time as set up
+    // by init_scalar_ta(). We want to record the time coordinate
+    // *relative* to the start of the superstep, to be consistent
+    // with the time reported for particle-particle collisions.
+    sdata->exit_vec.emplace_back(pidx, static_cast<double>(t - sdata->time));
+}
+
+void sim::sim_data::exit_cb_batch::operator()(heyoka::taylor_adaptive_batch<double> &, double t, int,
+                                              std::uint32_t batch_idx) const
+{
+    assert(sdata != nullptr);
+
+    // NOTE: need to store only particle index and time.
+    // NOTE: the time t here is the integrator time, which
+    // coincides with the global simulation time as set up
+    // by init_batch_ta(). We want to record the time coordinate
+    // *relative* to the start of the superstep, to be consistent
+    // with the time reported for particle-particle collisions.
+    sdata->exit_vec.emplace_back(pidx + batch_idx, static_cast<double>(t - sdata->time));
+}
+
 sim::sim()
     : sim(std::vector<double>{}, std::vector<double>{}, std::vector<double>{}, std::vector<double>{},
           std::vector<double>{}, std::vector<double>{}, std::vector<double>{}, 1)
@@ -360,9 +387,21 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
     std::optional<hy::taylor_adaptive<double>> s_ta;
     std::optional<hy::taylor_adaptive_batch<double>> b_ta;
 
-    auto integrators_setup = [&s_ta, &b_ta, &dyn]() {
+    auto integrators_setup = [&]() {
         oneapi::tbb::parallel_invoke(
-            [&]() { s_ta.emplace(dyn, std::vector<double>(7u)); },
+            [&]() {
+                using ev_t = hy::taylor_adaptive<double>::nt_event_t;
+                std::vector<ev_t> nt_events;
+
+                if (with_d_radius()) {
+                    nt_events.emplace_back(
+                        hy::sum_sq({x, y, z}) - m_d_radius * m_d_radius, sim_data::exit_cb{},
+                        // NOTE: direction is positive in order to detect only domain exit (not entrance).
+                        hy::kw::direction = hy::event_direction::positive);
+                }
+
+                s_ta.emplace(dyn, std::vector<double>(7u), hy::kw::nt_events = std::move(nt_events));
+            },
             [&]() {
                 const std::uint32_t batch_size = hy::recommended_simd_size<double>();
 
@@ -371,7 +410,18 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                         "An overflow as detected during the construction of the batch integrator");
                 }
 
-                b_ta.emplace(dyn, std::vector<double>(7u * batch_size), batch_size);
+                using ev_t = hy::taylor_adaptive_batch<double>::nt_event_t;
+                std::vector<ev_t> nt_events;
+
+                if (with_d_radius()) {
+                    nt_events.emplace_back(
+                        hy::sum_sq({x, y, z}) - m_d_radius * m_d_radius, sim_data::exit_cb_batch{},
+                        // NOTE: direction is positive in order to detect only domain exit (not entrance).
+                        hy::kw::direction = hy::event_direction::positive);
+                }
+
+                b_ta.emplace(dyn, std::vector<double>(7u * batch_size), batch_size,
+                             hy::kw::nt_events = std::move(nt_events));
             });
     };
 
