@@ -51,8 +51,10 @@ namespace kw
 {
 
 IGOR_MAKE_NAMED_ARGUMENT(dyn);
+IGOR_MAKE_NAMED_ARGUMENT(c_radius);
+IGOR_MAKE_NAMED_ARGUMENT(d_radius);
 
-}
+} // namespace kw
 
 #define CASCADE_CONCEPT_DECL concept
 
@@ -62,11 +64,7 @@ CASCADE_CONCEPT_DECL di_range
 
 #undef CASCADE_CONCEPT_DECL
 
-enum class outcome {
-    success,
-    time_limit,
-    interrupt,
-};
+enum class outcome { success, time_limit, collision, reentry, exit };
 
 class CASCADE_DLL_PUBLIC sim
 {
@@ -80,8 +78,11 @@ private:
     double m_ct;
     sim_data *m_data = nullptr;
     std::optional<std::variant<std::array<size_type, 2>, size_type>> m_int_info;
+    std::variant<double, std::vector<double>> m_c_radius;
+    double m_d_radius = 0;
 
-    void finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>>);
+    void finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>>,
+                       std::variant<double, std::vector<double>>, double);
     void set_new_state_impl(std::array<std::vector<double>, 7> &);
     CASCADE_DLL_LOCAL void add_jit_functions();
     CASCADE_DLL_LOCAL void morton_encode_sort();
@@ -95,6 +96,10 @@ private:
     CASCADE_DLL_LOCAL void dense_propagate(double);
     template <typename T>
     CASCADE_DLL_LOCAL outcome propagate_until_impl(const T &, double);
+    CASCADE_DLL_LOCAL bool with_c_radius() const;
+    CASCADE_DLL_LOCAL bool with_d_radius() const;
+    CASCADE_DLL_LOCAL void check_positions(const std::vector<double> &, const std::vector<double> &,
+                                           const std::vector<double> &) const;
 
     template <typename InTup, typename OutTup, std::size_t... I>
     static void state_set_impl(const InTup &in_tup, OutTup &out_tup, std::index_sequence<I...>)
@@ -145,13 +150,45 @@ public:
             throw;
         }
 
+        // Dynamics.
         std::vector<std::pair<heyoka::expression, heyoka::expression>> dyn;
-
         if constexpr (p.has(kw::dyn)) {
             if constexpr (std::assignable_from<decltype(dyn) &, decltype(p(kw::dyn))>) {
                 dyn = std::forward<decltype(p(kw::dyn))>(p(kw::dyn));
             } else {
-                static_assert(detail::always_false_v<KwArgs...>, "The dynamics object is of the wrong type.");
+                static_assert(detail::always_false_v<KwArgs...>, "The 'dyn' keyword argument is of the wrong type.");
+            }
+        }
+
+        // Radius of the central body.
+        std::variant<double, std::vector<double>> c_radius(0.);
+        if constexpr (p.has(kw::c_radius)) {
+            if constexpr (std::convertible_to<decltype(p(kw::c_radius)), double>) {
+                c_radius = static_cast<double>(std::forward<decltype(p(kw::c_radius))>(p(kw::c_radius)));
+            } else if constexpr (di_range<decltype(p(kw::c_radius))>) {
+                // NOTE: turn it into an lvalue.
+                auto &&tmp_range = p(kw::c_radius);
+
+                std::vector<double> vd;
+                for (auto &&val : tmp_range) {
+                    vd.push_back(static_cast<double>(val));
+                }
+
+                c_radius = std::move(vd);
+            } else {
+                static_assert(detail::always_false_v<KwArgs...>,
+                              "The 'c_radius' keyword argument is of the wrong type.");
+            }
+        }
+
+        // Domain radius.
+        double d_radius = 0;
+        if constexpr (p.has(kw::d_radius)) {
+            if constexpr (std::convertible_to<decltype(p(kw::d_radius)), double>) {
+                d_radius = static_cast<double>(std::forward<decltype(p(kw::d_radius))>(p(kw::d_radius)));
+            } else {
+                static_assert(detail::always_false_v<KwArgs...>,
+                              "The 'd_radius' keyword argument is of the wrong type.");
             }
         }
 
@@ -162,7 +199,7 @@ public:
                                        std::ref(m_vz), std::ref(m_sizes));
         state_set_impl(in_tup, out_tup, std::make_index_sequence<std::tuple_size_v<decltype(in_tup)>>{});
 
-        finalise_ctor(std::move(dyn));
+        finalise_ctor(std::move(dyn), std::move(c_radius), d_radius);
     }
     sim(const sim &);
     sim(sim &&) noexcept;

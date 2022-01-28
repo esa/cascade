@@ -37,7 +37,7 @@ TEST_CASE("single collision polar")
           std::vector<double>{v1[0], v2[0]}, std::vector<double>{v1[1], v2[1]}, std::vector<double>{v1[2], v2[2]},
           std::vector<double>{psize, psize}, 0.23);
 
-    while (s.step() != outcome::interrupt) {
+    while (s.step() != outcome::collision) {
     }
 
     const auto &i_info = std::get<0>(*s.get_interrupt_info());
@@ -67,7 +67,7 @@ TEST_CASE("single collision propagate_until")
     // Propagate until *after* the collision time.
     auto oc = s.propagate_until(10);
 
-    REQUIRE(oc == outcome::interrupt);
+    REQUIRE(oc == outcome::collision);
     REQUIRE(s.get_time() < 9);
 
     const auto &i_info = std::get<0>(*s.get_interrupt_info());
@@ -121,7 +121,7 @@ TEST_CASE("single collision equatorial")
           std::vector<double>{v1[0], v2[0]}, std::vector<double>{v1[1], v2[1]}, std::vector<double>{v1[2], v2[2]},
           std::vector<double>{psize, psize}, 0.23);
 
-    while (s.step() != outcome::interrupt) {
+    while (s.step() != outcome::collision) {
     }
 
     const auto &i_info = std::get<0>(*s.get_interrupt_info());

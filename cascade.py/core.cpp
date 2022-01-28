@@ -10,6 +10,7 @@
 #include <iostream>
 #include <sstream>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <boost/numeric/conversion/cast.hpp>
@@ -55,7 +56,9 @@ PYBIND11_MODULE(core, m)
     py::enum_<outcome>(m, "outcome")
         .value("success", outcome::success)
         .value("time_limit", outcome::time_limit)
-        .value("interrupt", outcome::interrupt);
+        .value("collision", outcome::collision)
+        .value("reentry", outcome::reentry)
+        .value("exit", outcome::exit);
 
     // Dynamics submodule.
     auto dynamics_module = m.def_submodule("dynamics");
@@ -66,15 +69,22 @@ PYBIND11_MODULE(core, m)
         .def(py::init<>())
         .def(py::init([](std::vector<double> x, std::vector<double> y, std::vector<double> z, std::vector<double> vx,
                          std::vector<double> vy, std::vector<double> vz, std::vector<double> sizes, double ct,
-                         std::vector<std::pair<hy::expression, hy::expression>> dyn) {
+                         std::vector<std::pair<hy::expression, hy::expression>> dyn,
+                         const std::variant<double, std::vector<double>> &c_radius, double d_radius) {
                  // NOTE: might have to re-check this if we ever offer the
                  // option to define event callbacks in the dynamics.
                  py::gil_scoped_release release;
 
-                 return sim(std::move(x), std::move(y), std::move(z), std::move(vx), std::move(vy), std::move(vz),
-                            std::move(sizes), ct, kw::dyn = std::move(dyn));
+                 return std::visit(
+                     [&](const auto &cr_val) {
+                         return sim(std::move(x), std::move(y), std::move(z), std::move(vx), std::move(vy),
+                                    std::move(vz), std::move(sizes), ct, kw::dyn = std::move(dyn),
+                                    kw::c_radius = cr_val, kw::d_radius = d_radius);
+                     },
+                     c_radius);
              }),
-             "x"_a, "y"_a, "z"_a, "vx"_a, "vy"_a, "vz"_a, "sizes"_a, "ct"_a, "dyn"_a = py::list{})
+             "x"_a, "y"_a, "z"_a, "vx"_a, "vy"_a, "vz"_a, "sizes"_a, "ct"_a, "dyn"_a = py::list{}, "c_radius"_a = 0.,
+             "d_radius"_a = 0.)
         .def_property_readonly("interrupt_info", &sim::get_interrupt_info)
         .def_property("time", &sim::get_time, &sim::set_time)
         .def_property("ct", &sim::get_ct, &sim::set_ct)

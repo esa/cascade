@@ -102,7 +102,8 @@ sim::sim()
 
 sim::sim(const sim &other)
     : m_x(other.m_x), m_y(other.m_y), m_z(other.m_z), m_vx(other.m_vx), m_vy(other.m_vy), m_vz(other.m_vz),
-      m_sizes(other.m_sizes), m_ct(other.m_ct), m_int_info(other.m_int_info)
+      m_sizes(other.m_sizes), m_ct(other.m_ct), m_int_info(other.m_int_info), m_c_radius(other.m_c_radius),
+      m_d_radius(other.m_d_radius)
 {
     // For m_data, we will be copying only:
     // - the integrator templates,
@@ -125,7 +126,8 @@ sim::sim(const sim &other)
 sim::sim(sim &&other) noexcept
     : m_x(std::move(other.m_x)), m_y(std::move(other.m_y)), m_z(std::move(other.m_z)), m_vx(std::move(other.m_vx)),
       m_vy(std::move(other.m_vy)), m_vz(std::move(other.m_vz)), m_sizes(std::move(other.m_sizes)),
-      m_ct(std::move(other.m_ct)), m_data(other.m_data), m_int_info(std::move(other.m_int_info))
+      m_ct(std::move(other.m_ct)), m_data(other.m_data), m_int_info(std::move(other.m_int_info)),
+      m_c_radius(std::move(other.m_c_radius)), m_d_radius(other.m_d_radius)
 {
     other.m_data = nullptr;
 }
@@ -185,33 +187,44 @@ void sim::set_ct(double ct)
 void sim::set_new_state_impl(std::array<std::vector<double>, 7> &new_state)
 {
     // Check the new state.
-    oneapi::tbb::parallel_for(
-        oneapi::tbb::blocked_range<decltype(new_state.size())>(0, new_state.size()),
-        [new_nparts = new_state[0].size(), &new_state](const auto &range) {
-            for (auto i = range.begin(); i != range.end(); ++i) {
-                // Check size consistency.
-                if (new_state[i].size() != new_nparts) {
-                    throw std::invalid_argument(
-                        "An invalid new state was specified: the number of particles is not the "
-                        "same for all the state vectors");
-                }
-
-                // Check finiteness and, for sizes, non-negativity.
-                oneapi::tbb::parallel_for(
-                    oneapi::tbb::blocked_range(new_state[i].begin(), new_state[i].end()), [i](const auto &r2) {
-                        for (const auto &val : r2) {
-                            if (!std::isfinite(val)) {
-                                throw std::invalid_argument(fmt::format(
-                                    "The non-finite value {} was detected in the new particle states", val));
-                            }
-
-                            if (i == 6u && val < 0) {
-                                throw std::invalid_argument(fmt::format(
-                                    "The negative particle radius {} was detected in the new particle states", val));
-                            }
+    oneapi::tbb::parallel_invoke(
+        [&]() { this->check_positions(new_state[0], new_state[1], new_state[2]); },
+        [&]() {
+            oneapi::tbb::parallel_for(
+                // NOTE: don't check the positions, as they are checked in check_positions().
+                oneapi::tbb::blocked_range<decltype(new_state.size())>(3, new_state.size()),
+                [
+                    // NOTE: the number of particles is given by the number of values in the
+                    // x vector, which is also used for the same purpose in check_positions().
+                    // Thus, we know that the positions and velocities/sizes vectors have all
+                    // consistent lengths.
+                    new_nparts = new_state[0].size(), &new_state](const auto &range) {
+                    for (auto i = range.begin(); i != range.end(); ++i) {
+                        // Check size consistency.
+                        if (new_state[i].size() != new_nparts) {
+                            throw std::invalid_argument(
+                                "An invalid new state was specified: the number of particles is not the "
+                                "same for all the state vectors");
                         }
-                    });
-            }
+
+                        // Check finiteness and, for sizes, non-negativity.
+                        oneapi::tbb::parallel_for(
+                            oneapi::tbb::blocked_range(new_state[i].begin(), new_state[i].end()), [i](const auto &r2) {
+                                for (const auto &val : r2) {
+                                    if (!std::isfinite(val)) {
+                                        throw std::invalid_argument(fmt::format(
+                                            "The non-finite value {} was detected in the new particle states", val));
+                                    }
+
+                                    if (i == 6u && val < 0) {
+                                        throw std::invalid_argument(fmt::format(
+                                            "The negative particle radius {} was detected in the new particle states",
+                                            val));
+                                    }
+                                }
+                            });
+                    }
+                });
         });
 
     // Move it in.
@@ -224,7 +237,8 @@ void sim::set_new_state_impl(std::array<std::vector<double>, 7> &new_state)
     m_sizes = std::move(new_state[6]);
 }
 
-void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>> dyn)
+void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>> dyn,
+                        std::variant<double, std::vector<double>> c_radius, double d_radius)
 {
     namespace hy = heyoka;
 
@@ -311,6 +325,37 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
     auto [x, y, z, vx, vy, vz, r] = hy::make_vars("x", "y", "z", "vx", "vy", "vz", "r");
     dyn.push_back(hy::prime(r) = hy::sum({x * vx, y * vy, z * vz}) / r);
 
+    // Check and assign c_radius.
+    if (auto vcr_ptr = std::get_if<std::vector<double>>(&c_radius)) {
+        if (vcr_ptr->size() != 3u) {
+            throw std::invalid_argument(fmt::format(
+                "The c_radius argument must be either a scalar (for a spherical central body) "
+                "or a vector of 3 elements (for a triaxial ellipsoid), but instead it is a vector of {} elements",
+                vcr_ptr->size()));
+        }
+
+        if (std::ranges::any_of(*vcr_ptr, [](double x) { return !std::isfinite(x) || x <= 0; })) {
+            throw std::invalid_argument(fmt::format(
+                "A non-finite or non-positive value was detected among the 3 semiaxes of the central body: {}",
+                *vcr_ptr));
+        }
+    } else {
+        const auto cr_val = std::get<double>(c_radius);
+
+        if (!std::isfinite(cr_val) || cr_val < 0) {
+            throw std::invalid_argument(fmt::format(
+                "The radius of the central body must be finite and non-negative, but it is {} instead", cr_val));
+        }
+    }
+    m_c_radius = std::move(c_radius);
+
+    // Check and assign d_radius.
+    if (!std::isfinite(d_radius) || d_radius < 0) {
+        throw std::invalid_argument(
+            fmt::format("The domain radius must be finite and non-negative, but it is {} instead", d_radius));
+    }
+    m_d_radius = d_radius;
+
     // Machinery to construct the integrators.
     std::optional<hy::taylor_adaptive<double>> s_ta;
     std::optional<hy::taylor_adaptive_batch<double>> b_ta;
@@ -345,9 +390,11 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
 
     spdlog::stopwatch sw;
 
+    // Concurrently:
+    // - setup the heyoka integrators,
+    // - run checks on the input state vectors and sizes.
     oneapi::tbb::parallel_invoke(
-        integrators_setup, [&finite_checker, this]() { finite_checker(m_x); },
-        [&finite_checker, this]() { finite_checker(m_y); }, [&finite_checker, this]() { finite_checker(m_z); },
+        integrators_setup, [this]() { check_positions(m_x, m_y, m_z); },
         [&finite_checker, this]() { finite_checker(m_vx); }, [&finite_checker, this]() { finite_checker(m_vy); },
         [&finite_checker, this]() { finite_checker(m_vz); },
         [this]() {
@@ -390,6 +437,95 @@ void sim::set_time(double t)
     }
 
     m_data->time = decltype(m_data->time)(t);
+}
+
+bool sim::with_c_radius() const
+{
+    if (auto dbl_ptr = std::get_if<double>(&m_c_radius)) {
+        assert(std::isfinite(*dbl_ptr));
+        assert(*dbl_ptr >= 0);
+
+        return *dbl_ptr > 0;
+    } else {
+#if !defined(NDEBUG)
+        const auto &vec = std::get<std::vector<double>>(m_c_radius);
+        assert(vec.size() == 3u);
+        assert(std::ranges::all_of(vec, [](double val) { return std::isfinite(val) && val > 0; }));
+#endif
+
+        return true;
+    }
+}
+
+bool sim::with_d_radius() const
+{
+    assert(std::isfinite(m_d_radius));
+    assert(m_d_radius >= 0);
+
+    return m_d_radius > 0;
+}
+
+// This function is meant to check the positions vectors of the particles
+// in the simulation. It will check that:
+// - the three input vectors have all the same size,
+// - all values in all vectors are finite,
+// - if central and/or domain radius are defined in the
+//   simulation, no position falls within the central body
+//   or outside the domain.
+// NOTE: this function assumes that the c/d_radius data members have already
+// been set up.
+void sim::check_positions(const std::vector<double> &x, const std::vector<double> &y,
+                          const std::vector<double> &z) const
+{
+    if (x.size() != y.size() || x.size() != z.size()) {
+        throw std::invalid_argument(
+            fmt::format("Inconsistent sizes detected in the position vectors: the position vectors for the cartesian "
+                        "coordinates of the particles must all have the same size, but instead they have sizes {}, {} "
+                        "and {} for the x, y and z coordinates respectively",
+                        x.size(), y.size(), z.size()));
+    }
+
+    const auto nparts = x.size();
+    const auto with_cr = with_c_radius();
+    const auto with_dr = with_d_radius();
+
+    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<decltype(x.size())>(0, nparts), [with_cr, with_dr, &x, &y, &z,
+                                                                                          this](const auto &range) {
+        for (auto idx = range.begin(); idx != range.end(); ++idx) {
+            if (!std::isfinite(x[idx]) || !std::isfinite(y[idx]) || !std::isfinite(z[idx])) {
+                throw std::invalid_argument(
+                    fmt::format("A non-finite value was detected in the position vectors at index {}", idx));
+            }
+
+            if (with_cr) {
+                if (auto dbl_ptr = std::get_if<double>(&m_c_radius)) {
+                    if (x[idx] * x[idx] + y[idx] * y[idx] + z[idx] * z[idx] < *dbl_ptr * *dbl_ptr) {
+                        throw std::invalid_argument(
+                            fmt::format("The particle at index {} is inside the spherical central body", idx));
+                    }
+                } else {
+                    const auto &ax_vec = std::get<std::vector<double>>(m_c_radius);
+                    const auto ax_a = ax_vec[0];
+                    const auto ax_b = ax_vec[1];
+                    const auto ax_c = ax_vec[2];
+
+                    if (x[idx] * x[idx] / (ax_a * ax_a) + y[idx] * y[idx] / (ax_b * ax_b)
+                            + z[idx] * z[idx] / (ax_c * ax_c)
+                        < 1) {
+                        throw std::invalid_argument(
+                            fmt::format("The particle at index {} is inside the ellipsoidal central body", idx));
+                    }
+                }
+            }
+
+            if (with_dr) {
+                if (x[idx] * x[idx] + y[idx] * y[idx] + z[idx] * z[idx] >= m_d_radius * m_d_radius) {
+                    throw std::invalid_argument(
+                        fmt::format("The particle at index {} is outside the domain radius {}", idx, m_d_radius));
+                }
+            }
+        }
+    });
 }
 
 std::ostream &operator<<(std::ostream &os, const sim &s)
