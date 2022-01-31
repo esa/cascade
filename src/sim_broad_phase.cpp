@@ -255,9 +255,16 @@ void sim::verify_broad_phase() const
                                                                            && (zi_ub >= zj_lb && zi_lb <= zj_ub)
                                                                            && (ri_ub >= rj_lb && ri_lb <= rj_ub);
 
-                                                      const auto it = coll_tree.find({i, j});
-
-                                                      assert(overlap == (it != coll_tree.end()));
+                                                      if (overlap) {
+                                                          // Overlap detected in the simple algorithm:
+                                                          // the collision must be present also
+                                                          // in the tree code.
+                                                          assert(coll_tree.find({i, j}) != coll_tree.end());
+                                                      } else {
+                                                          // NOTE: the contrary is not necessarily
+                                                          // true: for multi-particle leaves, we
+                                                          // may detect overlaps that do not actually exist.
+                                                      }
 
                                                       loc_ncoll += overlap;
                                                   }

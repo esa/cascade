@@ -66,10 +66,11 @@ TEST_CASE("same morton code")
         vy.push_back(vy[idx]);
         vz.push_back(vz[idx]);
 
-        size.push_back(0.);
+        size.push_back(.1);
     }
 
     sim s(x, y, z, vx, vy, vz, size, 0.23);
 
-    REQUIRE(s.step() == outcome::success);
+    auto oc = s.step();
+    REQUIRE((oc == outcome::success || oc == outcome::collision));
 }
