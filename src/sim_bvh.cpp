@@ -191,10 +191,14 @@ void sim::construct_bvh_trees()
                         const auto mcodes_begin = mcodes_ptr + cur_node.begin;
                         const auto mcodes_end = mcodes_ptr + cur_node.end;
 
-                        if (cur_node.end - cur_node.begin > 1u) {
-                            // The node contains more than 1 particle.
-                            // Figure out where the bit at index cur_node.split_idx flips from 0 to 1
+                        if (cur_node.end - cur_node.begin > 1u && cur_node.split_idx <= 63) {
+                            // The node contains more than 1 particle,
+                            // and the initial value for split_idx is within
+                            // the bit width of a 64-bit integer.
+                            // Figure out where the bit at index cur_node.split_idx
+                            // (counted from MSB) flips from 0 to 1
                             // for the Morton codes in the range.
+                            assert(cur_node.split_idx <= 63);
                             split_ptr = std::lower_bound(
                                 mcodes_begin, mcodes_end, 1u,
                                 [mask = std::uint64_t(1) << (63 - cur_node.split_idx)](
@@ -215,13 +219,24 @@ void sim::construct_bvh_trees()
                                 // Bump up the bit index and look
                                 // again for the bit flip.
                                 ++cur_node.split_idx;
+                                assert(cur_node.split_idx <= 63);
                                 split_ptr = std::lower_bound(
                                     mcodes_begin, mcodes_end, 1u,
                                     [mask = std::uint64_t(1) << (63 - cur_node.split_idx)](
                                         std::uint64_t mcode, unsigned val) { return (mcode & mask) < val; });
                             }
                         } else {
-                            // Node with a single particle, leaf.
+                            // Node with either:
+                            // - a single particle, or
+                            // - a value of split_idx which is > 63.
+                            // The latter means that the node resulted
+                            // from splitting a node whose particles'
+                            // Morton codes differred at the least significant
+                            // bit. This also implies that all the particles
+                            // in the node have the same Morton code (this is checked
+                            // in the BVH verification function).
+                            // In either case, we cannot split any further
+                            // and the node is a leaf.
                             is_leaf_node = true;
                         }
 
@@ -535,6 +550,9 @@ void sim::verify_bvh_trees() const
                     assert(bvh_tree[uright].begin == bvh_tree[uleft].end);
                     assert(bvh_tree[uright].end == cur_node.end);
 
+                    // The node's split_idx value must not be larger than 63.
+                    assert(cur_node.split_idx <= 63);
+
 #if defined(__GNUC__) || defined(__clang__)
                     // Check that a node with children was split correctly (i.e.,
                     // cur_node.split_idx corresponds to the index of the first
@@ -544,6 +562,12 @@ void sim::verify_bvh_trees() const
                            == cur_node.split_idx);
                     assert(mcodes_ptr[split_idx] == umcodes_ptr[vidx_ptr[split_idx]]);
 #endif
+                } else {
+                    // A node with no children. In this case the maximum
+                    // split_idx value can be 64, if the node was created
+                    // from the split of a node whose particles' Morton codes
+                    // differred at the last possible bit.
+                    assert(cur_node.split_idx <= 64);
                 }
 
                 // Check the parent info.
