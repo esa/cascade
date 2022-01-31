@@ -267,6 +267,18 @@ struct sim::sim_data {
 
         void operator()(heyoka::taylor_adaptive_batch<double> &, double, int, std::uint32_t) const;
     };
+    struct reentry_cb {
+        mutable sim_data *sdata = nullptr;
+        mutable size_type pidx = 0;
+
+        void operator()(heyoka::taylor_adaptive<double> &, double, int) const;
+    };
+    struct reentry_cb_batch {
+        mutable sim_data *sdata = nullptr;
+        mutable size_type pidx = 0;
+
+        void operator()(heyoka::taylor_adaptive_batch<double> &, double, int, std::uint32_t) const;
+    };
 };
 
 } // namespace cascade

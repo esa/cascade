@@ -180,6 +180,17 @@ void sim::init_scalar_ta(T &ta, size_type pidx) const
         cb->pidx = pidx;
     }
 
+    // Setup the reentry callback data, if needed.
+    if (with_c_radius()) {
+        // NOTE: reentry callback at index 0 or 1, depending
+        // on whether we have exit callback or not.
+        assert(ta.get_nt_events().size() > 0u);
+        auto *cb = ta.get_nt_events()[with_dr].get_callback().template extract<sim_data::reentry_cb>();
+        assert(cb != nullptr);
+        cb->sdata = m_data;
+        cb->pidx = pidx;
+    }
+
     // Copy over the state.
     // NOTE: would need to take care of synching up the
     // runtime parameters too.
@@ -221,6 +232,17 @@ void sim::init_batch_ta(T &ta, size_type pidx_begin, size_type pidx_end) const
         // it exists.
         assert(ta.get_nt_events().size() > 0u);
         auto *cb = ta.get_nt_events()[0].get_callback().template extract<sim_data::exit_cb_batch>();
+        assert(cb != nullptr);
+        cb->sdata = m_data;
+        cb->pidx = pidx_begin;
+    }
+
+    // Setup the reentry callback data, if needed.
+    if (with_c_radius()) {
+        // NOTE: reentry callback at index 0 or 1, depending
+        // on whether we have exit callback or not.
+        assert(ta.get_nt_events().size() > 0u);
+        auto *cb = ta.get_nt_events()[with_dr].get_callback().template extract<sim_data::reentry_cb_batch>();
         assert(cb != nullptr);
         cb->sdata = m_data;
         cb->pidx = pidx_begin;
