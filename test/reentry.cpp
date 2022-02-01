@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include <initializer_list>
+#include <variant>
 #include <vector>
 
 #include <cascade/sim.hpp>
@@ -44,6 +45,24 @@ TEST_CASE("reentry sphere")
     x = s.get_x()[0];
     y = s.get_y()[0];
     z = s.get_z()[0];
+
+    REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.).epsilon(0.).margin(1e-14));
+
+    // Ensure correctness also when using the batch integrator.
+    s.set_new_state(std::vector<double>{1.1, 1.5, 1.1, 1.1, 1.1, 1.1}, std::vector<double>(6u, 0.),
+                    std::vector<double>(6u, 0.), std::vector<double>(6u, 0.),
+                    std::vector<double>{.953, 0.01, .953, .953, .953, .953}, std::vector<double>(6u, 0.),
+                    std::vector<double>(6u, 0.));
+    s.set_time(0.);
+
+    oc = s.propagate_until(1000, 0.1);
+
+    REQUIRE(oc == outcome::reentry);
+    REQUIRE(std::get<1>(*s.get_interrupt_info()) == 1u);
+
+    x = s.get_x()[1];
+    y = s.get_y()[1];
+    z = s.get_z()[1];
 
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.).epsilon(0.).margin(1e-14));
 }
@@ -93,4 +112,54 @@ TEST_CASE("reentry ellipsoid")
     z = s.get_z()[0];
 
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.2).epsilon(0.).margin(1e-14));
+
+    // Ensure correctness also when using the batch integrator.
+    s.set_new_state(std::vector<double>{1.1, 1.5, 1.1, 1.1, 1.1, 1.1}, std::vector<double>(6u, 0.),
+                    std::vector<double>(6u, 0.), std::vector<double>(6u, 0.),
+                    std::vector<double>{.953, 0., .953, .953, .953, .953}, std::vector<double>(6u, 0.),
+                    std::vector<double>(6u, 0.));
+    s.set_time(0.);
+
+    oc = s.propagate_until(1000, 0.1);
+
+    REQUIRE(oc == outcome::reentry);
+    REQUIRE(std::get<1>(*s.get_interrupt_info()) == 1u);
+
+    x = s.get_x()[1];
+    y = s.get_y()[1];
+    z = s.get_z()[1];
+
+    REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.).epsilon(0.).margin(1e-14));
+
+    s.set_new_state(std::vector<double>(6u, 0.), std::vector<double>(6u, 0.),
+                    std::vector<double>{2.1, 1.5, 2.1, 2.1, 2.1, 2.1}, std::vector<double>{.69, 0., .69, .69, .69, .69},
+                    std::vector<double>(6u, 0.), std::vector<double>(6u, 0.), std::vector<double>(6u, 0.));
+    s.set_time(0.);
+
+    oc = s.propagate_until(1000, 0.1);
+
+    REQUIRE(oc == outcome::reentry);
+    REQUIRE(std::get<1>(*s.get_interrupt_info()) == 1u);
+
+    x = s.get_x()[1];
+    y = s.get_y()[1];
+    z = s.get_z()[1];
+
+    REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.2).epsilon(0.).margin(1e-14));
+
+    s.set_new_state(std::vector<double>(6u, 0.), std::vector<double>{2.1, 1.5, 2.1, 2.1, 2.1, 2.1},
+                    std::vector<double>(6u, 0.), std::vector<double>{.69, 0., .69, .69, .69, .69},
+                    std::vector<double>(6u, 0.), std::vector<double>(6u, 0.), std::vector<double>(6u, 0.));
+    s.set_time(0.);
+
+    oc = s.propagate_until(1000, 0.1);
+
+    REQUIRE(oc == outcome::reentry);
+    REQUIRE(std::get<1>(*s.get_interrupt_info()) == 1u);
+
+    x = s.get_x()[1];
+    y = s.get_y()[1];
+    z = s.get_z()[1];
+
+    REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.1).epsilon(0.).margin(1e-14));
 }
