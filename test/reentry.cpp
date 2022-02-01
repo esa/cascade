@@ -147,19 +147,19 @@ TEST_CASE("reentry ellipsoid")
 
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.2).epsilon(0.).margin(1e-14));
 
-    s.set_new_state(std::vector<double>(6u, 0.), std::vector<double>{2.1, 1.5, 2.1, 2.1, 2.1, 2.1},
-                    std::vector<double>(6u, 0.), std::vector<double>{.69, 0., .69, .69, .69, .69},
+    s.set_new_state(std::vector<double>(6u, 0.), std::vector<double>{2.1, 2.1, 2.1, 1.5, 2.1, 2.1},
+                    std::vector<double>(6u, 0.), std::vector<double>{.69, .69, .69, 0., .69, .69},
                     std::vector<double>(6u, 0.), std::vector<double>(6u, 0.), std::vector<double>(6u, 0.));
     s.set_time(0.);
 
     oc = s.propagate_until(1000, 0.1);
 
     REQUIRE(oc == outcome::reentry);
-    REQUIRE(std::get<1>(*s.get_interrupt_info()) == 1u);
+    REQUIRE(std::get<1>(*s.get_interrupt_info()) == 3u);
 
-    x = s.get_x()[1];
-    y = s.get_y()[1];
-    z = s.get_z()[1];
+    x = s.get_x()[3];
+    y = s.get_y()[3];
+    z = s.get_z()[3];
 
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.1).epsilon(0.).margin(1e-14));
 }
