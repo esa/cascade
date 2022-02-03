@@ -156,8 +156,8 @@ sim::sim()
 
 sim::sim(const sim &other)
     : m_x(other.m_x), m_y(other.m_y), m_z(other.m_z), m_vx(other.m_vx), m_vy(other.m_vy), m_vz(other.m_vz),
-      m_sizes(other.m_sizes), m_ct(other.m_ct), m_int_info(other.m_int_info), m_c_radius(other.m_c_radius),
-      m_d_radius(other.m_d_radius)
+      m_sizes(other.m_sizes), m_pars(other.m_pars), m_ct(other.m_ct), m_int_info(other.m_int_info),
+      m_c_radius(other.m_c_radius), m_d_radius(other.m_d_radius)
 {
     // For m_data, we will be copying only:
     // - the integrator templates,
@@ -180,8 +180,8 @@ sim::sim(const sim &other)
 sim::sim(sim &&other) noexcept
     : m_x(std::move(other.m_x)), m_y(std::move(other.m_y)), m_z(std::move(other.m_z)), m_vx(std::move(other.m_vx)),
       m_vy(std::move(other.m_vy)), m_vz(std::move(other.m_vz)), m_sizes(std::move(other.m_sizes)),
-      m_ct(std::move(other.m_ct)), m_data(other.m_data), m_int_info(std::move(other.m_int_info)),
-      m_c_radius(std::move(other.m_c_radius)), m_d_radius(other.m_d_radius)
+      m_pars(std::move(other.m_pars)), m_ct(std::move(other.m_ct)), m_data(other.m_data),
+      m_int_info(std::move(other.m_int_info)), m_c_radius(std::move(other.m_c_radius)), m_d_radius(other.m_d_radius)
 {
     other.m_data = nullptr;
 }
@@ -205,6 +205,8 @@ sim &sim::operator=(sim &&other) noexcept
     m_vy = std::move(other.m_vy);
     m_vz = std::move(other.m_vz);
     m_sizes = std::move(other.m_sizes);
+
+    m_pars = std::move(other.m_pars);
 
     m_ct = std::move(other.m_ct);
 
@@ -238,7 +240,7 @@ void sim::set_ct(double ct)
     m_ct = ct;
 }
 
-void sim::set_new_state_impl(std::array<std::vector<double>, 7> &new_state)
+void sim::set_new_state_impl(std::array<std::vector<double>, 7> &new_state, std::vector<std::vector<double>> pars)
 {
     // Check the new state.
     oneapi::tbb::parallel_invoke(
@@ -281,6 +283,22 @@ void sim::set_new_state_impl(std::array<std::vector<double>, 7> &new_state)
                 });
         });
 
+    // Check the new pars.
+    if (pars.size() != m_pars.size()) {
+        throw std::invalid_argument(
+            fmt::format("The vector of vectors of values for the parameters has {} elements, but {} are expected",
+                        pars.size(), m_pars.size()));
+    }
+
+    // Check that all vectors in pars have the expected number of elements.
+    for (decltype(pars.size()) i = 0; i < pars.size(); ++i) {
+        if (pars[i].size() != new_state[0].size()) {
+            throw std::invalid_argument(
+                fmt::format("The vector of values for the parameter at index {} has {} elements, but {} are expected",
+                            i, pars[i].size(), new_state[0].size()));
+        }
+    }
+
     // Move it in.
     m_x = std::move(new_state[0]);
     m_y = std::move(new_state[1]);
@@ -289,10 +307,13 @@ void sim::set_new_state_impl(std::array<std::vector<double>, 7> &new_state)
     m_vy = std::move(new_state[4]);
     m_vz = std::move(new_state[5]);
     m_sizes = std::move(new_state[6]);
+
+    m_pars = std::move(pars);
 }
 
 void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>> dyn,
-                        std::variant<double, std::vector<double>> c_radius, double d_radius)
+                        std::vector<std::vector<double>> pars, std::variant<double, std::vector<double>> c_radius,
+                        double d_radius)
 {
     namespace hy = heyoka;
 
@@ -336,6 +357,9 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
             fmt::format("The collisional timestep must be finite and positive, but it is {} instead", m_ct));
     }
 
+    // Assign the pars.
+    m_pars = std::move(pars);
+
     if (dyn.empty()) {
         // Default is Keplerian dynamics with unitary mu.
         dyn = dynamics::kepler();
@@ -346,6 +370,9 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
         throw std::invalid_argument(
             fmt::format("6 dynamical equations are expected, but {} were provided instead", dyn.size()));
     }
+
+    // Record the number of pars in the dynamical equations.
+    std::uint32_t npars = 0;
 
     for (auto i = 0u; i < 6u; ++i) {
         const auto &[var, eq] = dyn[i];
@@ -358,9 +385,8 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                                                     i, detail::allowed_vars[i], var));
         }
 
-        if (hy::get_param_size(eq) != 0u) {
-            throw std::invalid_argument("Dynamical equations with runtime parameters are not supported at this time");
-        }
+        // Update the number of pars.
+        npars = std::max(npars, hy::get_param_size(eq));
 
         // Check the list of variables in the RHS.
         const auto eq_vars = hy::get_variables(eq);
@@ -372,6 +398,22 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                 fmt::format("The RHS of the differential equation for the variable \"{}\" contains the invalid "
                             "variables {} (the allowed variables are {})",
                             std::get<hy::variable>(var.value()).name(), set_diff, detail::allowed_vars_alph));
+        }
+    }
+
+    // Check the size of m_pars.
+    if (m_pars.size() != npars) {
+        throw std::invalid_argument(
+            fmt::format("The vector of vectors of values for the parameters has {} elements, but {} are expected",
+                        m_pars.size(), npars));
+    }
+
+    // Check that all vectors in m_pars have nparts elements.
+    for (decltype(m_pars.size()) i = 0; i < m_pars.size(); ++i) {
+        if (m_pars[i].size() != nparts) {
+            throw std::invalid_argument(
+                fmt::format("The vector of values for the parameter at index {} has {} elements, but {} are expected",
+                            i, m_pars[i].size(), nparts));
         }
     }
 

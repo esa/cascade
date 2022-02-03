@@ -51,6 +51,7 @@ namespace kw
 {
 
 IGOR_MAKE_NAMED_ARGUMENT(dyn);
+IGOR_MAKE_NAMED_ARGUMENT(pars);
 IGOR_MAKE_NAMED_ARGUMENT(c_radius);
 IGOR_MAKE_NAMED_ARGUMENT(d_radius);
 
@@ -61,6 +62,9 @@ IGOR_MAKE_NAMED_ARGUMENT(d_radius);
 template <typename T>
 CASCADE_CONCEPT_DECL di_range
     = std::ranges::input_range<T> &&std::convertible_to<std::ranges::range_reference_t<T>, double>;
+
+template <typename T>
+CASCADE_CONCEPT_DECL di_range_range = std::ranges::input_range<T> &&di_range<std::ranges::range_reference_t<T>>;
 
 #undef CASCADE_CONCEPT_DECL
 
@@ -75,15 +79,16 @@ private:
     struct sim_data;
 
     std::vector<double> m_x, m_y, m_z, m_vx, m_vy, m_vz, m_sizes;
+    std::vector<std::vector<double>> m_pars;
     double m_ct;
     sim_data *m_data = nullptr;
     std::optional<std::variant<std::array<size_type, 2>, size_type>> m_int_info;
     std::variant<double, std::vector<double>> m_c_radius;
     double m_d_radius = 0;
 
-    void finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>>,
+    void finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>>, std::vector<std::vector<double>>,
                        std::variant<double, std::vector<double>>, double);
-    void set_new_state_impl(std::array<std::vector<double>, 7> &);
+    void set_new_state_impl(std::array<std::vector<double>, 7> &, std::vector<std::vector<double>>);
     CASCADE_DLL_LOCAL void add_jit_functions();
     CASCADE_DLL_LOCAL void morton_encode_sort();
     CASCADE_DLL_LOCAL void construct_bvh_trees();
@@ -160,6 +165,27 @@ public:
             }
         }
 
+        // Values of runtime parameters.
+        std::vector<std::vector<double>> pars;
+        if constexpr (p.has(kw::pars)) {
+            if constexpr (di_range_range<decltype(p(kw::pars))>) {
+                // NOTE: turn it into an lvalue.
+                auto &&tmp_range = p(kw::pars);
+
+                for (auto &&rng : tmp_range) {
+                    pars.emplace_back();
+
+                    // NOTE: possible optimisation: reserve/move in if possible,
+                    // instead of push_back().
+                    for (auto &&val : rng) {
+                        pars.back().push_back(static_cast<double>(val));
+                    }
+                }
+            } else {
+                static_assert(detail::always_false_v<KwArgs...>, "The 'pars' keyword argument is of the wrong type.");
+            }
+        }
+
         // Radius of the central body.
         std::variant<double, std::vector<double>> c_radius(0.);
         if constexpr (p.has(kw::c_radius)) {
@@ -199,7 +225,7 @@ public:
                                        std::ref(m_vz), std::ref(m_sizes));
         state_set_impl(in_tup, out_tup, std::make_index_sequence<std::tuple_size_v<decltype(in_tup)>>{});
 
-        finalise_ctor(std::move(dyn), std::move(c_radius), d_radius);
+        finalise_ctor(std::move(dyn), std::move(pars), std::move(c_radius), d_radius);
     }
     sim(const sim &);
     sim(sim &&) noexcept;
@@ -241,6 +267,10 @@ public:
     {
         return m_vz;
     }
+    const auto &get_pars() const
+    {
+        return m_pars;
+    }
     const auto &get_sizes() const
     {
         return m_sizes;
@@ -252,7 +282,8 @@ public:
     void set_ct(double);
 
     template <di_range X, di_range Y, di_range Z, di_range VX, di_range VY, di_range VZ, di_range S>
-    void set_new_state(X &&x, Y &&y, Z &&z, VX &&vx, VY &&vy, VZ &&vz, S &&s)
+    void set_new_state(X &&x, Y &&y, Z &&z, VX &&vx, VY &&vy, VZ &&vz, S &&s,
+                       std::vector<std::vector<double>> pars = {})
     {
         auto in_tup
             = std::forward_as_tuple(std::forward<X>(x), std::forward<Y>(y), std::forward<Z>(z), std::forward<VX>(vx),
@@ -262,7 +293,7 @@ public:
 
         state_set_impl(in_tup, new_state, std::make_index_sequence<7>{});
 
-        set_new_state_impl(new_state);
+        set_new_state_impl(new_state, pars);
     }
 
     outcome step(double = 0);

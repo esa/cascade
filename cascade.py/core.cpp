@@ -70,7 +70,8 @@ PYBIND11_MODULE(core, m)
         .def(py::init([](std::vector<double> x, std::vector<double> y, std::vector<double> z, std::vector<double> vx,
                          std::vector<double> vy, std::vector<double> vz, std::vector<double> sizes, double ct,
                          std::vector<std::pair<hy::expression, hy::expression>> dyn,
-                         const std::variant<double, std::vector<double>> &c_radius, double d_radius) {
+                         const std::variant<double, std::vector<double>> &c_radius, double d_radius,
+                         std::vector<std::vector<double>> pars) {
                  // NOTE: might have to re-check this if we ever offer the
                  // option to define event callbacks in the dynamics.
                  py::gil_scoped_release release;
@@ -79,12 +80,12 @@ PYBIND11_MODULE(core, m)
                      [&](const auto &cr_val) {
                          return sim(std::move(x), std::move(y), std::move(z), std::move(vx), std::move(vy),
                                     std::move(vz), std::move(sizes), ct, kw::dyn = std::move(dyn),
-                                    kw::c_radius = cr_val, kw::d_radius = d_radius);
+                                    kw::c_radius = cr_val, kw::d_radius = d_radius, kw::pars = std::move(pars));
                      },
                      c_radius);
              }),
              "x"_a, "y"_a, "z"_a, "vx"_a, "vy"_a, "vz"_a, "sizes"_a, "ct"_a, "dyn"_a = py::list{}, "c_radius"_a = 0.,
-             "d_radius"_a = 0.)
+             "d_radius"_a = 0., "pars"_a = py::list{})
         .def_property_readonly("interrupt_info", &sim::get_interrupt_info)
         .def_property("time", &sim::get_time, &sim::set_time)
         .def_property("ct", &sim::get_ct, &sim::set_ct)
@@ -186,14 +187,34 @@ PYBIND11_MODULE(core, m)
 
                                    return ret;
                                })
-        .def("set_new_state",
-             [](sim &s, std::vector<double> x, std::vector<double> y, std::vector<double> z, std::vector<double> vx,
-                std::vector<double> vy, std::vector<double> vz, std::vector<double> sizes) {
-                 py::gil_scoped_release release;
+        .def_property_readonly("pars",
+                               [](const sim &s) {
+                                   auto ret_list = py::list{};
 
-                 s.set_new_state(std::move(x), std::move(y), std::move(z), std::move(vx), std::move(vy), std::move(vz),
-                                 std::move(sizes));
-             })
+                                   for (const auto &vec : s.get_pars()) {
+                                       auto ret = py::array_t<double>(
+                                           py::array::ShapeContainer{boost::numeric_cast<py::ssize_t>(s.get_nparts())},
+                                           vec.data());
+
+                                       // Ensure the returned array is read-only.
+                                       ret.attr("flags").attr("writeable") = false;
+
+                                       ret_list.append(ret);
+                                   }
+
+                                   return ret_list;
+                               })
+        .def(
+            "set_new_state",
+            [](sim &s, std::vector<double> x, std::vector<double> y, std::vector<double> z, std::vector<double> vx,
+               std::vector<double> vy, std::vector<double> vz, std::vector<double> sizes,
+               std::vector<std::vector<double>> pars) {
+                py::gil_scoped_release release;
+
+                s.set_new_state(std::move(x), std::move(y), std::move(z), std::move(vx), std::move(vy), std::move(vz),
+                                std::move(sizes), std::move(pars));
+            },
+            "x"_a, "y"_a, "z"_a, "vx"_a, "vy"_a, "vz"_a, "sizes"_a, "pars"_a = py::list{})
         // Repr.
         .def("__repr__", [](const sim &s) {
             std::ostringstream oss;

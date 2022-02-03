@@ -192,8 +192,6 @@ void sim::init_scalar_ta(T &ta, size_type pidx) const
     }
 
     // Copy over the state.
-    // NOTE: would need to take care of synching up the
-    // runtime parameters too.
     st_data[0] = m_x[pidx];
     st_data[1] = m_y[pidx];
     st_data[2] = m_z[pidx];
@@ -203,6 +201,12 @@ void sim::init_scalar_ta(T &ta, size_type pidx) const
 
     // NOTE: compute the radius on the fly from the x/y/z coords.
     st_data[6] = std::sqrt(st_data[0] * st_data[0] + st_data[1] * st_data[1] + st_data[2] * st_data[2]);
+
+    // Copy over the parameters.
+    auto pars_data = ta.get_pars_data();
+    for (decltype(m_pars.size()) i = 0; i < m_pars.size(); ++i) {
+        pars_data[i] = m_pars[i][pidx];
+    }
 }
 
 // Setup the batch integrator ta to integrate the trajectory for the particles
@@ -249,8 +253,6 @@ void sim::init_batch_ta(T &ta, size_type pidx_begin, size_type pidx_end) const
     }
 
     // Copy over the state.
-    // NOTE: would need to take care of synching up the
-    // runtime parameters too.
     std::copy(m_x.data() + pidx_begin, m_x.data() + pidx_end, st_data);
     std::copy(m_y.data() + pidx_begin, m_y.data() + pidx_end, st_data + batch_size);
     std::copy(m_z.data() + pidx_begin, m_z.data() + pidx_end, st_data + 2u * batch_size);
@@ -264,6 +266,12 @@ void sim::init_batch_ta(T &ta, size_type pidx_begin, size_type pidx_end) const
         st_data[6u * batch_size + i]
             = std::sqrt(st_data[i] * st_data[i] + st_data[batch_size + i] * st_data[batch_size + i]
                         + st_data[batch_size * 2u + i] * st_data[batch_size * 2u + i]);
+    }
+
+    // Copy over the parameters.
+    auto pars_data = ta.get_pars_data();
+    for (decltype(m_pars.size()) i = 0; i < m_pars.size(); ++i) {
+        std::copy(m_pars[i].data() + pidx_begin, m_pars[i].data() + pidx_end, pars_data + i * batch_size);
     }
 }
 
