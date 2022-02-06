@@ -58,7 +58,8 @@ PYBIND11_MODULE(core, m)
         .value("time_limit", outcome::time_limit)
         .value("collision", outcome::collision)
         .value("reentry", outcome::reentry)
-        .value("exit", outcome::exit);
+        .value("exit", outcome::exit)
+        .value("err_nf_state", outcome::err_nf_state);
 
     // Dynamics submodule.
     auto dynamics_module = m.def_submodule("dynamics");

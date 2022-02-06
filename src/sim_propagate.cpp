@@ -22,6 +22,9 @@
 
 #include <boost/numeric/conversion/cast.hpp>
 
+#include <fmt/format.h>
+#include <fmt/ostream.h>
+
 #include <oneapi/tbb/blocked_range.h>
 #include <oneapi/tbb/parallel_for.h>
 #include <oneapi/tbb/parallel_invoke.h>
@@ -677,9 +680,10 @@ outcome sim::step(double dt)
     // Narrow phase data.
     resize_if_needed(nchunks, m_data->np_caches);
 
-    // Reentry and exit vectors.
+    // Reentry, exit and err_nf_state vectors.
     m_data->reentry_vec.clear();
     m_data->exit_vec.clear();
+    m_data->err_nf_state_vec.clear();
 
     // Numerical integration and computation of the AABBs in batch mode.
     auto batch_int_aabb = [&](const auto &range) {
@@ -770,12 +774,26 @@ outcome sim::step(double dt)
 
             // Check for errors.
             for (std::uint32_t i = 0; i < batch_size; ++i) {
-                if (std::get<0>(ta.get_propagate_res()[i]) != hy::taylor_outcome::time_limit) {
-                    throw std::invalid_argument(fmt::format(
-                        "The numerical integration of the particle at index {} returned an error", pidx_begin + i));
-                }
-
                 const auto &tcoords = s_data[pidx_begin + i].tcoords;
+
+                // Fetch the outcome for the current particle.
+                const auto oc = std::get<0>(ta.get_propagate_res()[i]);
+
+                if (oc == hy::taylor_outcome::err_nf_state) {
+                    // The particle at the current batch index generated a non-finite state.
+                    // Record in err_nf_state_vec the particle index and the time coordinate
+                    // of the last successful step for the particle (relative to the beginning
+                    // of the superstep).
+                    const auto last_t = tcoords.empty() ? 0. : static_cast<double>(tcoords.back());
+                    m_data->err_nf_state_vec.emplace_back(pidx_begin + i, last_t);
+
+                    // Just exit, as there is no point in doing anything else.
+                    return;
+                } else if (oc != hy::taylor_outcome::time_limit) {
+                    throw std::invalid_argument(fmt::format(
+                        "The numerical integration of the particle at index {} returned an invalid outcome: {}",
+                        pidx_begin + i, oc));
+                }
 
                 // NOTE: tcoords can never be empty because that would mean that
                 // we took a superstep of zero size, which is prevented by the checks
@@ -940,13 +958,23 @@ outcome sim::step(double dt)
             // Integrate.
             const auto oc = std::get<0>(ta.propagate_for(delta_t, hy::kw::write_tc = true, hy::kw::callback = cbf));
 
-            // Check for errors.
-            if (oc != hy::taylor_outcome::time_limit) {
-                throw std::invalid_argument(
-                    fmt::format("The numerical integration of the particle at index {} returned an error", pidx));
-            }
-
             const auto &tcoords = s_data[pidx].tcoords;
+
+            // Check for errors.
+            if (oc == hy::taylor_outcome::err_nf_state) {
+                // The particle generated a non-finite state.
+                // Record in err_nf_state_vec the particle index and the time coordinate
+                // of the last successful step for the particle (relative to the beginning
+                // of the superstep).
+                const auto last_t = tcoords.empty() ? 0. : static_cast<double>(tcoords.back());
+                m_data->err_nf_state_vec.emplace_back(pidx, last_t);
+
+                // Just exit, as there is no point in doing anything else.
+                return;
+            } else if (oc != hy::taylor_outcome::time_limit) {
+                throw std::invalid_argument(fmt::format(
+                    "The numerical integration of the particle at index {} returned an invalid outcome: {}", pidx, oc));
+            }
 
             // NOTE: tcoords can never be empty because that would mean that
             // we took a superstep of zero size, which is prevented by the checks
@@ -1060,6 +1088,28 @@ outcome sim::step(double dt)
         });
 
     logger->trace("Propagation + AABB computation time: {}s", sw);
+
+    // Check if the dynamical propagation generated
+    // non-finite values.
+    if (!m_data->err_nf_state_vec.empty()) {
+        // Fetch the earliest element in err_nf_state_vec.
+        const auto nf_it = std::ranges::min_element(m_data->err_nf_state_vec, [](const auto &tup1, const auto &tup2) {
+            return std::get<1>(tup1) < std::get<1>(tup2);
+        });
+
+        // Setup the interrupt info.
+        m_int_info.emplace(std::get<0>(*nf_it));
+
+        logger->debug("The step function was interrupted due to particle {} generating a non-finite state during the "
+                      "dynamical propagation",
+                      std::get<0>(*nf_it));
+
+        logger->trace("Total propagation time: {}s", sw);
+
+        logger->trace("---- STEP END ---");
+
+        return outcome::err_nf_state;
+    }
 
 #if !defined(NDEBUG)
     verify_global_aabbs();
@@ -1579,7 +1629,7 @@ outcome sim::propagate_until_impl(const T &final_t, double dt)
 
                 return outcome::time_limit;
             }
-        } else {
+        } else if (cur_oc != outcome::err_nf_state) {
             // Successful step with interruption.
             assert(cur_oc > outcome::success);
 
@@ -1620,6 +1670,11 @@ outcome sim::propagate_until_impl(const T &final_t, double dt)
                 // has priority wrt final time.
                 return cur_oc;
             }
+        } else {
+            // Non-finite state detected: no need to set up
+            // anything as the state of the simulation has not
+            // changed since the last successful step.
+            return cur_oc;
         }
     }
 }
