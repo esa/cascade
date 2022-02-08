@@ -622,6 +622,27 @@ bool sim::with_exit_event() const
     return m_d_radius > 0;
 }
 
+// Helpers to compute the indices of the reentry/exit events.
+std::uint32_t sim::reentry_event_idx() const
+{
+    assert(with_reentry_event());
+
+    // NOTE: reentry event at index 0 or 1, depending
+    // on whether we have exit event or not.
+
+    return with_exit_event();
+}
+
+std::uint32_t sim::exit_event_idx() const
+{
+    assert(with_exit_event());
+
+    // NOTE: exit event is always at index 0, if
+    // it exists.
+
+    return 0;
+}
+
 // This function is meant to check the positions vectors of the particles
 // in the simulation. It will check that:
 // - the three input vectors have all the same size,

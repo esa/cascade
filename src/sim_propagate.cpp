@@ -172,12 +172,9 @@ void sim::init_scalar_ta(T &ta, size_type pidx) const
     ta.set_dtime(m_data->time.hi, m_data->time.lo);
 
     // Setup the exit callback data, if needed.
-    const auto with_exit = with_exit_event();
-    if (with_exit) {
-        // NOTE: exit callback is always at index 0, if
-        // it exists.
+    if (with_exit_event()) {
         assert(ta.get_nt_events().size() > 0u);
-        auto *cb = ta.get_nt_events()[0].get_callback().template extract<sim_data::exit_cb>();
+        auto *cb = ta.get_nt_events()[exit_event_idx()].get_callback().template extract<sim_data::exit_cb>();
         assert(cb != nullptr);
         cb->sdata = m_data;
         cb->pidx = pidx;
@@ -185,10 +182,8 @@ void sim::init_scalar_ta(T &ta, size_type pidx) const
 
     // Setup the reentry callback data, if needed.
     if (with_reentry_event()) {
-        // NOTE: reentry callback at index 0 or 1, depending
-        // on whether we have exit callback or not.
         assert(ta.get_nt_events().size() > 0u);
-        auto *cb = ta.get_nt_events()[with_exit].get_callback().template extract<sim_data::reentry_cb>();
+        auto *cb = ta.get_nt_events()[reentry_event_idx()].get_callback().template extract<sim_data::reentry_cb>();
         assert(cb != nullptr);
         cb->sdata = m_data;
         cb->pidx = pidx;
@@ -233,12 +228,9 @@ void sim::init_batch_ta(T &ta, size_type pidx_begin, size_type pidx_end) const
     ta.set_dtime(m_data->time.hi, m_data->time.lo);
 
     // Setup the exit callback data, if needed.
-    const auto with_exit = with_exit_event();
-    if (with_exit) {
-        // NOTE: exit callback is always at index 0, if
-        // it exists.
+    if (with_exit_event()) {
         assert(ta.get_nt_events().size() > 0u);
-        auto *cb = ta.get_nt_events()[0].get_callback().template extract<sim_data::exit_cb_batch>();
+        auto *cb = ta.get_nt_events()[exit_event_idx()].get_callback().template extract<sim_data::exit_cb_batch>();
         assert(cb != nullptr);
         cb->sdata = m_data;
         cb->pidx = pidx_begin;
@@ -246,10 +238,9 @@ void sim::init_batch_ta(T &ta, size_type pidx_begin, size_type pidx_end) const
 
     // Setup the reentry callback data, if needed.
     if (with_reentry_event()) {
-        // NOTE: reentry callback at index 0 or 1, depending
-        // on whether we have exit callback or not.
         assert(ta.get_nt_events().size() > 0u);
-        auto *cb = ta.get_nt_events()[with_exit].get_callback().template extract<sim_data::reentry_cb_batch>();
+        auto *cb
+            = ta.get_nt_events()[reentry_event_idx()].get_callback().template extract<sim_data::reentry_cb_batch>();
         assert(cb != nullptr);
         cb->sdata = m_data;
         cb->pidx = pidx_begin;

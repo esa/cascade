@@ -105,6 +105,8 @@ private:
                                            const std::vector<double> &) const;
     CASCADE_DLL_LOCAL bool with_reentry_event() const;
     CASCADE_DLL_LOCAL bool with_exit_event() const;
+    CASCADE_DLL_LOCAL std::uint32_t reentry_event_idx() const;
+    CASCADE_DLL_LOCAL std::uint32_t exit_event_idx() const;
 
     template <typename InTup, typename OutTup, std::size_t... I>
     static void state_set_impl(const InTup &in_tup, OutTup &out_tup, std::index_sequence<I...>)
