@@ -101,10 +101,10 @@ private:
     CASCADE_DLL_LOCAL void dense_propagate(double);
     template <typename T>
     CASCADE_DLL_LOCAL outcome propagate_until_impl(const T &, double);
-    CASCADE_DLL_LOCAL bool with_c_radius() const;
-    CASCADE_DLL_LOCAL bool with_d_radius() const;
     CASCADE_DLL_LOCAL void check_positions(const std::vector<double> &, const std::vector<double> &,
                                            const std::vector<double> &) const;
+    CASCADE_DLL_LOCAL bool with_reentry_event() const;
+    CASCADE_DLL_LOCAL bool with_exit_event() const;
 
     template <typename InTup, typename OutTup, std::size_t... I>
     static void state_set_impl(const InTup &in_tup, OutTup &out_tup, std::index_sequence<I...>)
