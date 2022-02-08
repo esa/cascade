@@ -488,14 +488,14 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                 using ev_t = hy::taylor_adaptive<double>::nt_event_t;
                 std::vector<ev_t> nt_events;
 
-                if (with_d_radius()) {
+                if (with_exit_event()) {
                     nt_events.emplace_back(
                         make_exit_eq(), sim_data::exit_cb{},
                         // NOTE: direction is positive in order to detect only domain exit (not entrance).
                         hy::kw::direction = hy::event_direction::positive);
                 }
 
-                if (with_c_radius()) {
+                if (with_reentry_event()) {
                     nt_events.emplace_back(make_reentry_eq(), sim_data::reentry_cb{},
                                            // NOTE: direction is negative in order to detect only crashing into.
                                            hy::kw::direction = hy::event_direction::negative);
@@ -514,14 +514,14 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                 using ev_t = hy::taylor_adaptive_batch<double>::nt_event_t;
                 std::vector<ev_t> nt_events;
 
-                if (with_d_radius()) {
+                if (with_exit_event()) {
                     nt_events.emplace_back(
                         make_exit_eq(), sim_data::exit_cb_batch{},
                         // NOTE: direction is positive in order to detect only domain exit (not entrance).
                         hy::kw::direction = hy::event_direction::positive);
                 }
 
-                if (with_c_radius()) {
+                if (with_reentry_event()) {
                     nt_events.emplace_back(make_reentry_eq(), sim_data::reentry_cb_batch{},
                                            // NOTE: direction is negative in order to detect only crashing into.
                                            hy::kw::direction = hy::event_direction::negative);
@@ -596,7 +596,7 @@ void sim::set_time(double t)
     m_data->time = decltype(m_data->time)(t);
 }
 
-bool sim::with_c_radius() const
+bool sim::with_reentry_event() const
 {
     if (auto dbl_ptr = std::get_if<double>(&m_c_radius)) {
         assert(std::isfinite(*dbl_ptr));
@@ -614,12 +614,33 @@ bool sim::with_c_radius() const
     }
 }
 
-bool sim::with_d_radius() const
+bool sim::with_exit_event() const
 {
     assert(std::isfinite(m_d_radius));
     assert(m_d_radius >= 0);
 
     return m_d_radius > 0;
+}
+
+// Helpers to compute the indices of the reentry/exit events.
+std::uint32_t sim::reentry_event_idx() const
+{
+    assert(with_reentry_event());
+
+    // NOTE: reentry event at index 0 or 1, depending
+    // on whether we have exit event or not.
+
+    return with_exit_event();
+}
+
+std::uint32_t sim::exit_event_idx() const
+{
+    assert(with_exit_event());
+
+    // NOTE: exit event is always at index 0, if
+    // it exists.
+
+    return 0;
 }
 
 // This function is meant to check the positions vectors of the particles
@@ -643,46 +664,47 @@ void sim::check_positions(const std::vector<double> &x, const std::vector<double
     }
 
     const auto nparts = x.size();
-    const auto with_cr = with_c_radius();
-    const auto with_dr = with_d_radius();
+    const auto with_reentry = with_reentry_event();
+    const auto with_exit = with_exit_event();
 
-    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<decltype(x.size())>(0, nparts), [with_cr, with_dr, &x, &y, &z,
-                                                                                          this](const auto &range) {
-        for (auto idx = range.begin(); idx != range.end(); ++idx) {
-            if (!std::isfinite(x[idx]) || !std::isfinite(y[idx]) || !std::isfinite(z[idx])) {
-                throw std::invalid_argument(
-                    fmt::format("A non-finite value was detected in the position vectors at index {}", idx));
-            }
-
-            if (with_cr) {
-                if (auto dbl_ptr = std::get_if<double>(&m_c_radius)) {
-                    if (x[idx] * x[idx] + y[idx] * y[idx] + z[idx] * z[idx] < *dbl_ptr * *dbl_ptr) {
-                        throw std::invalid_argument(
-                            fmt::format("The particle at index {} is inside the spherical central body", idx));
-                    }
-                } else {
-                    const auto &ax_vec = std::get<std::vector<double>>(m_c_radius);
-                    const auto ax_a = ax_vec[0];
-                    const auto ax_b = ax_vec[1];
-                    const auto ax_c = ax_vec[2];
-
-                    if (x[idx] * x[idx] / (ax_a * ax_a) + y[idx] * y[idx] / (ax_b * ax_b)
-                            + z[idx] * z[idx] / (ax_c * ax_c)
-                        < 1) {
-                        throw std::invalid_argument(
-                            fmt::format("The particle at index {} is inside the ellipsoidal central body", idx));
-                    }
-                }
-            }
-
-            if (with_dr) {
-                if (x[idx] * x[idx] + y[idx] * y[idx] + z[idx] * z[idx] >= m_d_radius * m_d_radius) {
+    oneapi::tbb::parallel_for(
+        oneapi::tbb::blocked_range<decltype(x.size())>(0, nparts),
+        [with_reentry, with_exit, &x, &y, &z, this](const auto &range) {
+            for (auto idx = range.begin(); idx != range.end(); ++idx) {
+                if (!std::isfinite(x[idx]) || !std::isfinite(y[idx]) || !std::isfinite(z[idx])) {
                     throw std::invalid_argument(
-                        fmt::format("The particle at index {} is outside the domain radius {}", idx, m_d_radius));
+                        fmt::format("A non-finite value was detected in the position vectors at index {}", idx));
+                }
+
+                if (with_reentry) {
+                    if (auto dbl_ptr = std::get_if<double>(&m_c_radius)) {
+                        if (x[idx] * x[idx] + y[idx] * y[idx] + z[idx] * z[idx] < *dbl_ptr * *dbl_ptr) {
+                            throw std::invalid_argument(
+                                fmt::format("The particle at index {} is inside the spherical central body", idx));
+                        }
+                    } else {
+                        const auto &ax_vec = std::get<std::vector<double>>(m_c_radius);
+                        const auto ax_a = ax_vec[0];
+                        const auto ax_b = ax_vec[1];
+                        const auto ax_c = ax_vec[2];
+
+                        if (x[idx] * x[idx] / (ax_a * ax_a) + y[idx] * y[idx] / (ax_b * ax_b)
+                                + z[idx] * z[idx] / (ax_c * ax_c)
+                            < 1) {
+                            throw std::invalid_argument(
+                                fmt::format("The particle at index {} is inside the ellipsoidal central body", idx));
+                        }
+                    }
+                }
+
+                if (with_exit) {
+                    if (x[idx] * x[idx] + y[idx] * y[idx] + z[idx] * z[idx] >= m_d_radius * m_d_radius) {
+                        throw std::invalid_argument(
+                            fmt::format("The particle at index {} is outside the domain radius {}", idx, m_d_radius));
+                    }
                 }
             }
-        }
-    });
+        });
 }
 
 std::ostream &operator<<(std::ostream &os, const sim &s)
