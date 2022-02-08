@@ -2,21 +2,20 @@
 # coding: utf-8
 
 # In[1]:
-print("Imports", flush = True)
-import pykep as pk
-import numpy as np
-import json
-import pickle as pkl
-
-from mpl_toolkits.mplot3d import Axes3D
+import heyoka as hy
+from tqdm.notebook import tqdm
+from copy import deepcopy
+import cascade as csc
 from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import pickle as pkl
+import json
+import numpy as np
+import pykep as pk
+print("Imports", flush=True)
 
 
 # In[2]:
-import cascade as csc
-from copy import deepcopy
-from tqdm.notebook import tqdm
-import heyoka as hy
 
 
 # # We import the simulation initial conditions and atmospheric density model
@@ -25,9 +24,9 @@ import heyoka as hy
 # * **best_fit_density.pk** - created by the notebook 1b
 
 # In[3]:
-print("Data load", flush = True)
+print("Data load", flush=True)
 with open("data/debris_simulation_ic.pk", "rb") as file:
-    r_ic,v_ic,c_radius,to_satcat,satcat,debris = pkl.load(file)
+    r_ic, v_ic, c_radius, to_satcat, satcat, debris = pkl.load(file)
 
 
 # * **r**: contains the initial position of all satellites to be simulated (SI units)
@@ -52,7 +51,7 @@ for idx in to_satcat:
 # We put the BSTAR in SI units
 BSTARS = np.array(BSTARS) / pk.EARTH_RADIUS
 # We remove negative BSTARS setting the value to zero in those occasions
-BSTARS[BSTARS<0] = 0.
+BSTARS[BSTARS < 0] = 0.
 
 
 # # We build the dynamical system to integrate
@@ -70,14 +69,14 @@ def compute_density(h, best_x):
     p2 = np.array(best_x[4:8]) / 1000
     p3 = np.array(best_x[8:]) * 1000
     retval = 0.
-    for alpha,beta, gamma in zip(p1,p2, p3):
+    for alpha, beta, gamma in zip(p1, p2, p3):
         retval += alpha*hy.exp(-(h-gamma)*beta)
     return retval
 
 
 # In[7]:
 # Dynamical variables.
-x,y,z,vx,vy,vz = hy.make_vars("x","y","z","vx","vy","vz")
+x, y, z, vx, vy, vz = hy.make_vars("x", "y", "z", "vx", "vy", "vz")
 
 # Constants.
 GMe = pk.MU_EARTH
@@ -87,7 +86,7 @@ S22 = -1.40016683654e-6
 Re = pk.EARTH_RADIUS
 
 # Create Keplerian dynamics.
-dyn = csc.dynamics.kepler(mu = GMe)
+dyn = csc.dynamics.kepler(mu=GMe)
 
 
 # In[8]:
@@ -107,11 +106,11 @@ dyn[5] = (dyn[5][0], dyn[5][1] + fJ2z)
 # In[9]:
 # Add the Earth's C22 and S22 terms.
 # This value represents the rotation of the Earth fixed system at t0
-theta_g = (np.pi/180)*280.4606 #[rad] 
+theta_g = (np.pi/180)*280.4606  # [rad]
 # This value represents the magnitude of the Earth rotation
-nu_e = (np.pi/180)*(4.178074622024230e-3) #[rad/sec]
+nu_e = (np.pi/180)*(4.178074622024230e-3)  # [rad/sec]
 
-X =  x*hy.cos(theta_g + nu_e*hy.time) + y*hy.sin(theta_g + nu_e*hy.time)
+X = x*hy.cos(theta_g + nu_e*hy.time) + y*hy.sin(theta_g + nu_e*hy.time)
 Y = -x*hy.sin(theta_g + nu_e*hy.time) + y*hy.cos(theta_g + nu_e*hy.time)
 Z = z
 
@@ -127,12 +126,16 @@ fS22X = -S22term1*(X**2)*Y + S22term2*Y
 fS22Y = -S22term1*X*(Y**2) + S22term2*X
 fS22Z = -S22term1*X*Y*Z
 
-fC22x = fC22X*hy.cos(theta_g + nu_e*hy.time) - fC22Y*hy.sin(theta_g + nu_e*hy.time)
-fC22y = fC22X*hy.sin(theta_g + nu_e*hy.time) + fC22Y*hy.cos(theta_g + nu_e*hy.time)
+fC22x = fC22X*hy.cos(theta_g + nu_e*hy.time) - fC22Y * \
+    hy.sin(theta_g + nu_e*hy.time)
+fC22y = fC22X*hy.sin(theta_g + nu_e*hy.time) + fC22Y * \
+    hy.cos(theta_g + nu_e*hy.time)
 fC22z = fC22Z
 
-fS22x = fS22X*hy.cos(theta_g + nu_e*hy.time) - fS22Y*hy.sin(theta_g + nu_e*hy.time)
-fS22y = fS22X*hy.sin(theta_g + nu_e*hy.time) + fS22Y*hy.cos(theta_g + nu_e*hy.time)
+fS22x = fS22X*hy.cos(theta_g + nu_e*hy.time) - fS22Y * \
+    hy.sin(theta_g + nu_e*hy.time)
+fS22y = fS22X*hy.sin(theta_g + nu_e*hy.time) + fS22Y * \
+    hy.cos(theta_g + nu_e*hy.time)
 fS22z = fS22Z
 
 dyn[3] = (dyn[3][0], dyn[3][1] + fC22x + fS22x)
@@ -164,7 +167,7 @@ csc.set_logger_level_info()
 
 
 # In[12]:
-def remove_particle(idx, r_ic, v_ic, BSTARS,to_satcat, c_radius):
+def remove_particle(idx, r_ic, v_ic, BSTARS, to_satcat, c_radius):
     r_ic = np.delete(r_ic, idx, axis=0)
     BSTARS = np.delete(BSTARS, idx, axis=0)
     v_ic = np.delete(v_ic, idx, axis=0)
@@ -176,34 +179,42 @@ def remove_particle(idx, r_ic, v_ic, BSTARS,to_satcat, c_radius):
 # In[13]:
 # Before starting we need to remove all particles inside our playing field
 min_radius = pk.EARTH_RADIUS+150000.
-inside_the_radius = np.where(np.linalg.norm(r_ic,axis=1) < min_radius)[0]
+inside_the_radius = np.where(np.linalg.norm(r_ic, axis=1) < min_radius)[0]
 print("Removing orbiting objects:", flush=True)
 for idx in inside_the_radius:
-    print(satcat[to_satcat[idx]]["OBJECT_NAME"], "-", satcat[to_satcat[idx]]["OBJECT_ID"])
-r_ic, v_ic, BSTARS,to_satcat, c_radius = remove_particle(inside_the_radius, r_ic, v_ic, BSTARS,to_satcat, c_radius)
+    print(satcat[to_satcat[idx]]["OBJECT_NAME"],
+          "-", satcat[to_satcat[idx]]["OBJECT_ID"])
+r_ic, v_ic, BSTARS, to_satcat, c_radius = remove_particle(
+    inside_the_radius, r_ic, v_ic, BSTARS, to_satcat, c_radius)
 # In[14]:
-print("Building the simulation:", flush = True)
-sim = csc.sim(r_ic[:,0],r_ic[:,1],r_ic[:,2],v_ic[:,0],v_ic[:,1],v_ic[:,2],c_radius,0.23 * 806.81,dyn=dyn,pars=[BSTARS], c_radius=min_radius)
+print("Building the simulation:", flush=True)
+sim = csc.sim(r_ic[:, 0], r_ic[:, 1], r_ic[:, 2], v_ic[:, 0], v_ic[:, 1], v_ic[:, 2],
+              c_radius, 0.23 * 806.81, dyn=dyn, pars=[BSTARS], c_radius=min_radius)
 
 
 # # We run the simulation
 
 # In[15]:
-new_r_ic  =deepcopy(r_ic)
-new_v_ic  =deepcopy(v_ic)
-new_c_radius  =deepcopy(c_radius)
-new_BSTARS  =deepcopy(BSTARS)
-new_to_satcat  =deepcopy(to_satcat)
+new_r_ic = deepcopy(r_ic)
+new_v_ic = deepcopy(v_ic)
+new_c_radius = deepcopy(c_radius)
+new_BSTARS = deepcopy(BSTARS)
+new_to_satcat = deepcopy(to_satcat)
 
 
 # In[ ]:
 final_t = 365.25 * pk.DAY2SEC * 20
 
-print("Starting the simulation:", flush = True)
+print("Starting the simulation:", flush=True)
+current_year = 0
 while sim.time < final_t:
-    orig_time = sim.time
-    
-    oc = sim.step()   
+    years_elapsed = sim.time * pk.SEC2DAY // 365.25
+    if years_elapsed == current_year:
+        current_year += 1
+        with open("out/year_"+str(current_year)+".pk", "wb") as file:
+            pkl.dump((new_r_ic, new_v_ic, new_c_radius,
+                     new_BSTARS, new_to_satcat), file)
+    oc = sim.step()
     if oc == csc.outcome.collision:
         pi, pj = sim.interrupt_info
         # We log the event to file
@@ -211,16 +222,20 @@ while sim.time < final_t:
         satcat_idx2 = to_satcat[pj]
         days_elapsed = sim.time * pk.SEC2DAY
         with open("out/collision_log.txt", "a") as file_object:
-            file_object.write(f"{days_elapsed}, {satcat_idx1}, {satcat_idx2}, {sim.vx[pi]}, {sim.vy[pi]}, {sim.vz[pi]}, {sim.vx[pj]}, {sim.vy[pj]}, {sim.vz[pj]}\n")
+            file_object.write(
+                f"{days_elapsed}, {satcat_idx1}, {satcat_idx2}, {sim.x[pi]}, {sim.y[pi]}, {sim.z[pi]}, {sim.vx[pi]}, {sim.vy[pi]}, {sim.vz[pi]}, {sim.x[pj]}, {sim.y[pj]}, {sim.z[pj]}, {sim.vx[pj]}, {sim.vy[pj]}, {sim.vz[pj]}\n")
         # We log the event to screen
         o1, o2 = satcat[satcat_idx1]["OBJECT_TYPE"], satcat[satcat_idx2]["OBJECT_TYPE"]
         s1, s2 = satcat[satcat_idx1]["RCS_SIZE"], satcat[satcat_idx2]["RCS_SIZE"]
-        print(f"\nCollision detected, {o1} ({s1}) and {o2} ({s2}) after {days_elapsed} days\n")
+        print(
+            f"\nCollision detected, {o1} ({s1}) and {o2} ({s2}) after {days_elapsed} days\n")
         # We remove the objects and restart the simulation
-        new_r_ic = np.vstack((sim.x,sim.y,sim.z)).transpose()
-        new_v_ic = np.vstack((sim.vx,sim.vy,sim.vz)).transpose()
-        new_r_ic, new_v_ic, new_BSTARS,new_to_satcat, new_c_radius = remove_particle([pi, pj], new_r_ic, new_v_ic, new_BSTARS,new_to_satcat, new_c_radius)
-        sim.set_new_state(new_r_ic[:,0],new_r_ic[:,1],new_r_ic[:,2],new_v_ic[:,0],new_v_ic[:,1],new_v_ic[:,2],new_c_radius, pars=[new_BSTARS])
+        new_r_ic = np.vstack((sim.x, sim.y, sim.z)).transpose()
+        new_v_ic = np.vstack((sim.vx, sim.vy, sim.vz)).transpose()
+        new_r_ic, new_v_ic, new_BSTARS, new_to_satcat, new_c_radius = remove_particle(
+            [pi, pj], new_r_ic, new_v_ic, new_BSTARS, new_to_satcat, new_c_radius)
+        sim.set_new_state(new_r_ic[:, 0], new_r_ic[:, 1], new_r_ic[:, 2], new_v_ic[:, 0],
+                          new_v_ic[:, 1], new_v_ic[:, 2], new_c_radius, pars=[new_BSTARS])
 
     elif oc == csc.outcome.reentry:
         pi = sim.interrupt_info
@@ -230,12 +245,12 @@ while sim.time < final_t:
         with open("out/decay_log.txt", "a") as file_object:
             file_object.write(f"{days_elapsed},{satcat_idx}\n")
         # We log the event to screen
-        print(satcat[satcat_idx]["OBJECT_NAME"].strip() + ", " + satcat[satcat_idx]["OBJECT_ID"].strip() + ", ", days_elapsed, "REMOVED")
+        print(satcat[satcat_idx]["OBJECT_NAME"].strip(
+        ) + ", " + satcat[satcat_idx]["OBJECT_ID"].strip() + ", ", days_elapsed, "REMOVED")
         # We remove the re-entered object and restart the simulation
-        new_r_ic = np.vstack((sim.x,sim.y,sim.z)).transpose()
-        new_v_ic = np.vstack((sim.vx,sim.vy,sim.vz)).transpose()
-        new_r_ic, new_v_ic, new_BSTARS,new_to_satcat, new_c_radius = remove_particle(pi, new_r_ic, new_v_ic, new_BSTARS,new_to_satcat, new_c_radius)
-        sim.set_new_state(new_r_ic[:,0],new_r_ic[:,1],new_r_ic[:,2],new_v_ic[:,0],new_v_ic[:,1],new_v_ic[:,2],new_c_radius, pars=[new_BSTARS])
-
-
-
+        new_r_ic = np.vstack((sim.x, sim.y, sim.z)).transpose()
+        new_v_ic = np.vstack((sim.vx, sim.vy, sim.vz)).transpose()
+        new_r_ic, new_v_ic, new_BSTARS, new_to_satcat, new_c_radius = remove_particle(
+            pi, new_r_ic, new_v_ic, new_BSTARS, new_to_satcat, new_c_radius)
+        sim.set_new_state(new_r_ic[:, 0], new_r_ic[:, 1], new_r_ic[:, 2], new_v_ic[:, 0],
+                          new_v_ic[:, 1], new_v_ic[:, 2], new_c_radius, pars=[new_BSTARS])
