@@ -210,10 +210,11 @@ current_year = 0
 while sim.time < final_t:
     years_elapsed = sim.time * pk.SEC2DAY // 365.25
     if years_elapsed == current_year:
-        current_year += 1
         with open("out/year_"+str(current_year)+".pk", "wb") as file:
             pkl.dump((new_r_ic, new_v_ic, new_c_radius,
                      new_BSTARS, new_to_satcat), file)
+        current_year += 1
+
     oc = sim.step()
     if oc == csc.outcome.collision:
         pi, pj = sim.interrupt_info
