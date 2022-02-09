@@ -275,6 +275,7 @@ template <typename T>
 void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const T &chunk_end, size_type pidx)
 {
     namespace hy = heyoka;
+    using dfloat = hy::detail::dfloat<double>;
 
     // Fetch pointers to the AABB data for the current chunk.
     const auto offset = get_nparts() * chunk_idx;
@@ -341,7 +342,7 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
         // Determine the initial time coordinate of the substep, relative
         // to init_time. If it is tcoords_begin, ss_start will be zero, otherwise
         // ss_start is given by the iterator preceding it.
-        const auto ss_start = (it == tcoords_begin) ? hy::detail::dfloat<double>(0) : *(it - 1);
+        const auto ss_start = (it == tcoords_begin) ? dfloat(0) : *(it - 1);
 
         // Determine lower/upper bounds of the evaluation interval,
         // relative to init_time.
@@ -728,7 +729,7 @@ outcome sim::step(double dt)
 
                     // Record the time coordinate at the end of the step, relative
                     // to the initial time.
-                    const auto time_f = hy::detail::dfloat<double>(ta.get_dtime().first[i], ta.get_dtime().second[i]);
+                    const auto time_f = dfloat(ta.get_dtime().first[i], ta.get_dtime().second[i]);
                     s_data[pidx_begin + i].tcoords.push_back(time_f - init_time);
                     if (!isfinite(s_data[pidx_begin + i].tcoords.back())) {
                         throw std::invalid_argument(fmt::format("A non-finite time coordinate was generated during the "
@@ -920,7 +921,7 @@ outcome sim::step(double dt)
             auto cb = [&](auto &) {
                 // Record the time coordinate at the end of the step, relative
                 // to the initial time.
-                const auto time_f = hy::detail::dfloat<double>(ta.get_dtime().first, ta.get_dtime().second);
+                const auto time_f = dfloat(ta.get_dtime().first, ta.get_dtime().second);
                 s_data[pidx].tcoords.push_back(time_f - init_time);
                 if (!isfinite(s_data[pidx].tcoords.back())) {
                     throw std::invalid_argument(fmt::format("A non-finite time coordinate was generated during the "
