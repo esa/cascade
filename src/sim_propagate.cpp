@@ -590,7 +590,8 @@ outcome sim::step(double dt)
     // Setup the number of chunks.
     m_data->nchunks = boost::numeric_cast<unsigned>(std::ceil(m_data->delta_t / m_ct));
     if (m_data->nchunks == 0u) {
-        throw std::invalid_argument("The number of chunks cannot be zero");
+        throw std::invalid_argument(
+            "The number of chunks cannot be zero (this likely indicates that a zero supertstep size was specified)");
     }
     logger->trace("Number of chunks: {}", m_data->nchunks);
 
@@ -1600,7 +1601,7 @@ outcome sim::propagate_until_impl(const T &final_t, double dt)
 
                 // Propagate the state of the system up
                 // to the final time, writing the new state
-                // into the m_final_* vectors.
+                // into the final_* vectors.
                 dense_propagate(static_cast<double>(final_t - orig_t));
 
                 // NOTE: everything noexcept from now on.
@@ -1634,7 +1635,7 @@ outcome sim::propagate_until_impl(const T &final_t, double dt)
 
                 // Propagate the state of the system up
                 // to the final time, writing the new state
-                // into the m_final_* vectors.
+                // into the final_* vectors.
                 dense_propagate(static_cast<double>(final_t - orig_t));
 
                 // NOTE: everything noexcept from now on.
