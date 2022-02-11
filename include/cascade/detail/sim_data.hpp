@@ -250,7 +250,7 @@ struct sim::sim_data {
     // if needed (e.g., chunk local concurrent queues of collision vectors).
     oneapi::tbb::concurrent_vector<std::tuple<size_type, size_type, double>> coll_vec;
 
-    // Structures record terminal events and nf_error conditions.
+    // Structures to record terminal events and nf_error conditions.
     // NOTE: these cannot be chunk-local because they are written to
     // during the dynamical propagation, which is not happening
     // chunk-by-chunk.

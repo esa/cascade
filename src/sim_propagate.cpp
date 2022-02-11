@@ -1166,7 +1166,7 @@ outcome sim::step(double dt)
         return outcome::err_nf_state;
     }
 
-    // Check if ran into stopping terminal events.
+    // Check if we ran into stopping terminal events.
     auto ste_it = m_data->ste_vec.end();
     if (!m_data->ste_vec.empty()) {
         // Fetch the earliest element in ste_vec.
@@ -1188,7 +1188,7 @@ outcome sim::step(double dt)
         assert(new_nchunks <= m_data->nchunks);
         m_data->nchunks = new_nchunks;
 
-        logger->trace("Number of chunks adjusted after stopping terminal event: {}", m_data->nchunks);
+        SPDLOG_LOGGER_DEBUG(logger, "Number of chunks adjusted after stopping terminal event: {}", m_data->nchunks);
     }
 
 #if !defined(NDEBUG)
