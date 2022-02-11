@@ -94,60 +94,6 @@ std::array<double, 2> sim::sim_data::get_chunk_begin_end(unsigned chunk_idx, dou
     return {cbegin, cend};
 }
 
-void sim::sim_data::exit_cb::operator()(heyoka::taylor_adaptive<double> &, double t, int) const
-{
-    assert(sdata != nullptr);
-
-    // NOTE: need to store only particle index and time.
-    // NOTE: the time t here is the integrator time, which
-    // coincides with the global simulation time as set up
-    // by init_scalar_ta(). We want to record the time coordinate
-    // *relative* to the start of the superstep, to be consistent
-    // with the time reported for particle-particle collisions.
-    sdata->exit_vec.emplace_back(pidx, static_cast<double>(t - sdata->time));
-}
-
-void sim::sim_data::exit_cb_batch::operator()(heyoka::taylor_adaptive_batch<double> &, double t, int,
-                                              std::uint32_t batch_idx) const
-{
-    assert(sdata != nullptr);
-
-    // NOTE: need to store only particle index and time.
-    // NOTE: the time t here is the integrator time, which
-    // coincides with the global simulation time as set up
-    // by init_batch_ta(). We want to record the time coordinate
-    // *relative* to the start of the superstep, to be consistent
-    // with the time reported for particle-particle collisions.
-    sdata->exit_vec.emplace_back(pidx + batch_idx, static_cast<double>(t - sdata->time));
-}
-
-void sim::sim_data::reentry_cb::operator()(heyoka::taylor_adaptive<double> &, double t, int) const
-{
-    assert(sdata != nullptr);
-
-    // NOTE: need to store only particle index and time.
-    // NOTE: the time t here is the integrator time, which
-    // coincides with the global simulation time as set up
-    // by init_scalar_ta(). We want to record the time coordinate
-    // *relative* to the start of the superstep, to be consistent
-    // with the time reported for particle-particle collisions.
-    sdata->reentry_vec.emplace_back(pidx, static_cast<double>(t - sdata->time));
-}
-
-void sim::sim_data::reentry_cb_batch::operator()(heyoka::taylor_adaptive_batch<double> &, double t, int,
-                                                 std::uint32_t batch_idx) const
-{
-    assert(sdata != nullptr);
-
-    // NOTE: need to store only particle index and time.
-    // NOTE: the time t here is the integrator time, which
-    // coincides with the global simulation time as set up
-    // by init_batch_ta(). We want to record the time coordinate
-    // *relative* to the start of the superstep, to be consistent
-    // with the time reported for particle-particle collisions.
-    sdata->reentry_vec.emplace_back(pidx + batch_idx, static_cast<double>(t - sdata->time));
-}
-
 sim::sim()
     : sim(std::vector<double>{}, std::vector<double>{}, std::vector<double>{}, std::vector<double>{},
           std::vector<double>{}, std::vector<double>{}, std::vector<double>{}, 1)
@@ -457,7 +403,7 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
     std::optional<hy::taylor_adaptive_batch<double>> b_ta;
 
     auto integrators_setup = [&]() {
-        // Helpers to create the event equations.
+        // Helpers to create the exit/reentry event equations.
         auto make_exit_eq = [&]() {
             assert(m_d_radius > 0);
 
@@ -485,23 +431,23 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
 
         oneapi::tbb::parallel_invoke(
             [&]() {
-                using ev_t = hy::taylor_adaptive<double>::nt_event_t;
-                std::vector<ev_t> nt_events;
+                using ev_t = hy::taylor_adaptive<double>::t_event_t;
+                std::vector<ev_t> t_events;
 
                 if (with_exit_event()) {
-                    nt_events.emplace_back(
-                        make_exit_eq(), sim_data::exit_cb{},
+                    t_events.emplace_back(
+                        make_exit_eq(),
                         // NOTE: direction is positive in order to detect only domain exit (not entrance).
                         hy::kw::direction = hy::event_direction::positive);
                 }
 
                 if (with_reentry_event()) {
-                    nt_events.emplace_back(make_reentry_eq(), sim_data::reentry_cb{},
-                                           // NOTE: direction is negative in order to detect only crashing into.
-                                           hy::kw::direction = hy::event_direction::negative);
+                    t_events.emplace_back(make_reentry_eq(),
+                                          // NOTE: direction is negative in order to detect only crashing into.
+                                          hy::kw::direction = hy::event_direction::negative);
                 }
 
-                s_ta.emplace(dyn, std::vector<double>(7u), hy::kw::nt_events = std::move(nt_events));
+                s_ta.emplace(dyn, std::vector<double>(7u), hy::kw::t_events = std::move(t_events));
             },
             [&]() {
                 const std::uint32_t batch_size = hy::recommended_simd_size<double>();
@@ -511,24 +457,24 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                         "An overflow as detected during the construction of the batch integrator");
                 }
 
-                using ev_t = hy::taylor_adaptive_batch<double>::nt_event_t;
-                std::vector<ev_t> nt_events;
+                using ev_t = hy::taylor_adaptive_batch<double>::t_event_t;
+                std::vector<ev_t> t_events;
 
                 if (with_exit_event()) {
-                    nt_events.emplace_back(
-                        make_exit_eq(), sim_data::exit_cb_batch{},
+                    t_events.emplace_back(
+                        make_exit_eq(),
                         // NOTE: direction is positive in order to detect only domain exit (not entrance).
                         hy::kw::direction = hy::event_direction::positive);
                 }
 
                 if (with_reentry_event()) {
-                    nt_events.emplace_back(make_reentry_eq(), sim_data::reentry_cb_batch{},
-                                           // NOTE: direction is negative in order to detect only crashing into.
-                                           hy::kw::direction = hy::event_direction::negative);
+                    t_events.emplace_back(make_reentry_eq(),
+                                          // NOTE: direction is negative in order to detect only crashing into.
+                                          hy::kw::direction = hy::event_direction::negative);
                 }
 
                 b_ta.emplace(dyn, std::vector<double>(7u * batch_size), batch_size,
-                             hy::kw::nt_events = std::move(nt_events));
+                             hy::kw::t_events = std::move(t_events));
             });
     };
 

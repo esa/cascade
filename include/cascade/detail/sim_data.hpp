@@ -123,7 +123,11 @@ struct sim::sim_data {
     // NOTE: the integrators in the caches are those
     // actually used in numerical propagations.
     oneapi::tbb::concurrent_queue<std::unique_ptr<heyoka::taylor_adaptive<double>>> s_ta_cache;
-    oneapi::tbb::concurrent_queue<std::unique_ptr<heyoka::taylor_adaptive_batch<double>>> b_ta_cache;
+    struct batch_data {
+        heyoka::taylor_adaptive_batch<double> ta;
+        std::vector<double> pfor_ts;
+    };
+    oneapi::tbb::concurrent_queue<std::unique_ptr<batch_data>> b_ta_cache;
 
     // The time coordinate.
     heyoka::detail::dfloat<double> time;
@@ -246,40 +250,12 @@ struct sim::sim_data {
     // if needed (e.g., chunk local concurrent queues of collision vectors).
     oneapi::tbb::concurrent_vector<std::tuple<size_type, size_type, double>> coll_vec;
 
-    // Structures to detect reentry, out-of-domain and nf_error conditions.
+    // Structures record terminal events and nf_error conditions.
     // NOTE: these cannot be chunk-local because they are written to
     // during the dynamical propagation, which is not happening
     // chunk-by-chunk.
-    oneapi::tbb::concurrent_vector<std::tuple<size_type, double>> reentry_vec;
-    oneapi::tbb::concurrent_vector<std::tuple<size_type, double>> exit_vec;
+    oneapi::tbb::concurrent_vector<std::tuple<size_type, double, std::uint32_t>> ste_vec;
     oneapi::tbb::concurrent_vector<std::tuple<size_type, double>> err_nf_state_vec;
-
-    // The callback functors for use when a particle exits the domain or
-    // crashes onto the central object.
-    struct exit_cb {
-        mutable sim_data *sdata = nullptr;
-        mutable size_type pidx = 0;
-
-        void operator()(heyoka::taylor_adaptive<double> &, double, int) const;
-    };
-    struct exit_cb_batch {
-        mutable sim_data *sdata = nullptr;
-        mutable size_type pidx = 0;
-
-        void operator()(heyoka::taylor_adaptive_batch<double> &, double, int, std::uint32_t) const;
-    };
-    struct reentry_cb {
-        mutable sim_data *sdata = nullptr;
-        mutable size_type pidx = 0;
-
-        void operator()(heyoka::taylor_adaptive<double> &, double, int) const;
-    };
-    struct reentry_cb_batch {
-        mutable sim_data *sdata = nullptr;
-        mutable size_type pidx = 0;
-
-        void operator()(heyoka::taylor_adaptive_batch<double> &, double, int, std::uint32_t) const;
-    };
 };
 
 } // namespace cascade

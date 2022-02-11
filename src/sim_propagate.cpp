@@ -171,24 +171,6 @@ void sim::init_scalar_ta(T &ta, size_type pidx) const
     }
     ta.set_dtime(m_data->time.hi, m_data->time.lo);
 
-    // Setup the exit callback data, if needed.
-    if (with_exit_event()) {
-        assert(ta.get_nt_events().size() > 0u);
-        auto *cb = ta.get_nt_events()[exit_event_idx()].get_callback().template extract<sim_data::exit_cb>();
-        assert(cb != nullptr);
-        cb->sdata = m_data;
-        cb->pidx = pidx;
-    }
-
-    // Setup the reentry callback data, if needed.
-    if (with_reentry_event()) {
-        assert(ta.get_nt_events().size() > 0u);
-        auto *cb = ta.get_nt_events()[reentry_event_idx()].get_callback().template extract<sim_data::reentry_cb>();
-        assert(cb != nullptr);
-        cb->sdata = m_data;
-        cb->pidx = pidx;
-    }
-
     // Copy over the state.
     st_data[0] = m_x[pidx];
     st_data[1] = m_y[pidx];
@@ -226,25 +208,6 @@ void sim::init_batch_ta(T &ta, size_type pidx_begin, size_type pidx_end) const
         ta.reset_cooldowns();
     }
     ta.set_dtime(m_data->time.hi, m_data->time.lo);
-
-    // Setup the exit callback data, if needed.
-    if (with_exit_event()) {
-        assert(ta.get_nt_events().size() > 0u);
-        auto *cb = ta.get_nt_events()[exit_event_idx()].get_callback().template extract<sim_data::exit_cb_batch>();
-        assert(cb != nullptr);
-        cb->sdata = m_data;
-        cb->pidx = pidx_begin;
-    }
-
-    // Setup the reentry callback data, if needed.
-    if (with_reentry_event()) {
-        assert(ta.get_nt_events().size() > 0u);
-        auto *cb
-            = ta.get_nt_events()[reentry_event_idx()].get_callback().template extract<sim_data::reentry_cb_batch>();
-        assert(cb != nullptr);
-        cb->sdata = m_data;
-        cb->pidx = pidx_begin;
-    }
 
     // Copy over the state.
     std::copy(m_x.data() + pidx_begin, m_x.data() + pidx_end, st_data);
@@ -328,11 +291,18 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
     auto ss_it_end = std::lower_bound(ss_it_begin, tcoords_end, chunk_end);
     // Bump it up by one to define a half-open range.
     // NOTE: don't bump it if it is already at the end.
-    // This could happen at the last chunk due to FP rounding.
+    // This could happen at the last chunk due to FP rounding,
+    // or if the integration for this particle was interrupted
+    // early due to a stopping terminal event.
     ss_it_end += (ss_it_end != tcoords_end);
 
     // Iterate over all substeps and update the bounding box
     // for the current particle.
+    // NOTE: if the particle has no steps covering the current chunk,
+    // then this loop will never be entered, and the AABB for the particle
+    // in the current chunk will remain inited with infinities. This is
+    // fine as, after integration + AABB computation, we will redefine the
+    // superstep size and number of chunks to avoid the current chunk.
     for (auto it = ss_it_begin; it != ss_it_end; ++it) {
         // it points to the end of a substep which overlaps
         // with the current chunk. The size of the polynomial evaluation
@@ -673,37 +643,44 @@ outcome sim::step(double dt)
     // Narrow phase data.
     resize_if_needed(nchunks, m_data->np_caches);
 
-    // Reentry, exit and err_nf_state vectors.
-    m_data->reentry_vec.clear();
-    m_data->exit_vec.clear();
+    // Stopping terminal events and err_nf_state vectors.
+    m_data->ste_vec.clear();
     m_data->err_nf_state_vec.clear();
 
     // Numerical integration and computation of the AABBs in batch mode.
     auto batch_int_aabb = [&](const auto &range) {
-        // Fetch an integrator from the cache, or create it.
-        std::unique_ptr<hy::taylor_adaptive_batch<double>> ta_ptr;
+        // Fetch batch data from the cache, or create it.
+        std::unique_ptr<sim_data::batch_data> bdata_ptr;
 
-        if (!m_data->b_ta_cache.try_pop(ta_ptr)) {
-            SPDLOG_LOGGER_DEBUG(logger, "Creating new batch integrator");
+        if (!m_data->b_ta_cache.try_pop(bdata_ptr)) {
+            SPDLOG_LOGGER_DEBUG(logger, "Creating new batch data");
 
-            ta_ptr = std::make_unique<hy::taylor_adaptive_batch<double>>(m_data->b_ta);
+            bdata_ptr = std::make_unique<sim_data::batch_data>(m_data->b_ta);
+            bdata_ptr->pfor_ts.resize(boost::numeric_cast<decltype(bdata_ptr->pfor_ts.size())>(batch_size));
+        } else {
+            assert(bdata_ptr->pfor_ts.size() == batch_size);
         }
 
         // Cache a few variables.
-        auto &ta = *ta_ptr;
+        auto &ta = bdata_ptr->ta;
+        auto &pfor_ts = bdata_ptr->pfor_ts;
         auto *st_data = ta.get_state_data();
         auto &s_data = m_data->s_data;
         const auto &ta_tc = ta.get_tc();
 
         // The first step is the numerical integration for all particles
         // in range throughout the entire superstep.
+        // NOTE: the idea here is that if a particle in a batch
+        // stops early due to a stopping terminal event, then
+        // we will still keep on integrating the other particles.
         for (auto idx = range.begin(); idx != range.end(); ++idx) {
             // Particle indices corresponding to the current batch.
             const auto pidx_begin = idx * batch_size;
             const auto pidx_end = pidx_begin + batch_size;
 
             // Clear up the Taylor coefficients and the times
-            // of the substeps for the current particle.
+            // of the substeps for the current particle, and fill in
+            // the pfor_ts vector.
             for (auto i = pidx_begin; i < pidx_end; ++i) {
                 s_data[i].tc_x.clear();
                 s_data[i].tc_y.clear();
@@ -714,6 +691,8 @@ outcome sim::step(double dt)
                 s_data[i].tc_r.clear();
 
                 s_data[i].tcoords.clear();
+
+                pfor_ts[i - pidx_begin] = delta_t;
             }
 
             // Setup the integrator.
@@ -762,40 +741,107 @@ outcome sim::step(double dt)
             };
             std::function<bool(hy::taylor_adaptive_batch<double> &)> cbf(std::cref(cb));
 
-            // Integrate.
-            ta.propagate_for(delta_t, hy::kw::write_tc = true, hy::kw::callback = cbf);
+            while (true) {
+                // Integrate.
+                ta.propagate_for(pfor_ts, hy::kw::write_tc = true, hy::kw::callback = cbf);
 
-            // Check for errors.
+                // Let's do a first check on the outcomes to determine if everything went
+                // to time_limit or a non-finite state was generated.
+                std::uint32_t n_tlimit = 0;
+                for (std::uint32_t i = 0; i < batch_size; ++i) {
+                    const auto oc = std::get<0>(ta.get_propagate_res()[i]);
+
+                    if (oc == hy::taylor_outcome::err_nf_state) {
+                        // Non-finite state detected.
+                        // Record in err_nf_state_vec the particle index and the time coordinate
+                        // of the last successful step for the particle (relative to the beginning
+                        // of the superstep).
+                        // NOTE: the propagate callback is NOT executed if a non-finite state
+                        // was detected, thus tcoords contains data only up to the last successful step.
+                        const auto &tcoords = s_data[pidx_begin + i].tcoords;
+                        const auto last_t = tcoords.empty() ? 0. : static_cast<double>(tcoords.back());
+                        m_data->err_nf_state_vec.emplace_back(pidx_begin + i, last_t);
+
+                        // Just exit, as there is no point in doing anything else.
+                        // NOTE: no need to run the overflow check on tcoords as we won't
+                        // be computing any AABB for this particle, nor we will be proceeding
+                        // past the integration + AABB computation phase.
+                        return;
+                    }
+
+                    n_tlimit += (oc == hy::taylor_outcome::time_limit);
+                }
+
+                if (n_tlimit == batch_size) {
+                    // The happy path, just break out of the endless loop.
+                    break;
+                }
+
+                // NOTE: at this point, we know that the propagate_for() exited before
+                // reaching the final time for at least 1 batch element. This means
+                // that at least 1 stopping terminal event occurred.
+                // We need to iterate again on the propagate results and perform different
+                // actions depending on the outcomes.
+
+#if !defined(NDEBUG)
+                // Keep track of the number of stopping terminal events detected
+                // for debug purposes.
+                std::uint32_t n_ste = 0;
+#endif
+
+                for (std::uint32_t i = 0; i < batch_size; ++i) {
+                    const auto oc = std::get<0>(ta.get_propagate_res()[i]);
+
+                    // Get the time coordinate for the current batch element in double-length format.
+                    const auto cur_t = dfloat(ta.get_dtime().first[i], ta.get_dtime().second[i]);
+
+                    if (oc < hy::taylor_outcome{0} && oc > hy::taylor_outcome::success) {
+                        // Stopping terminal event: set the integration time in
+                        // pfor_ts to zero, and record the event.
+                        // NOTE: setting pfor_ts to zero means that the next iteration
+                        // this batch element will return an outcome of time_limit.
+                        pfor_ts[i] = 0;
+                        m_data->ste_vec.emplace_back(pidx_begin + i,
+                                                     // Store the trigger time wrt
+                                                     // the beginning of the superstep.
+                                                     static_cast<double>(cur_t - init_time),
+                                                     // Compute the event index.
+                                                     static_cast<std::uint32_t>(-static_cast<std::int64_t>(oc) - 1));
+
+#if !defined(NDEBUG)
+                        ++n_ste;
+#endif
+                    } else {
+                        // For all the other possible outcomes, we will set pfor_ts
+                        // to the remaining time for the batch element (which could be zero).
+                        const auto rem_time = init_time + delta_t - cur_t;
+
+                        if (!isfinite(rem_time)) {
+                            throw std::invalid_argument(
+                                fmt::format("A non-finite time was generated during the integration of particle {}",
+                                            pidx_begin + i));
+                        }
+
+                        // NOTE: not sure if rem_time can be negative due to floating-point
+                        // rounding in corner cases, so let's stay on the safe side.
+                        pfor_ts[i] = std::max(0., static_cast<double>(rem_time));
+                    }
+                }
+
+                assert(n_ste > 0u);
+            }
+
+            // Overflow checks on tcoords: tcoords' size must fit in the
+            // iterator difference type. This is relied upon when computing
+            // the index of a substep within a chunk.
             for (std::uint32_t i = 0; i < batch_size; ++i) {
                 const auto &tcoords = s_data[pidx_begin + i].tcoords;
-
-                // Fetch the outcome for the current particle.
-                const auto oc = std::get<0>(ta.get_propagate_res()[i]);
-
-                if (oc == hy::taylor_outcome::err_nf_state) {
-                    // The particle at the current batch index generated a non-finite state.
-                    // Record in err_nf_state_vec the particle index and the time coordinate
-                    // of the last successful step for the particle (relative to the beginning
-                    // of the superstep).
-                    const auto last_t = tcoords.empty() ? 0. : static_cast<double>(tcoords.back());
-                    m_data->err_nf_state_vec.emplace_back(pidx_begin + i, last_t);
-
-                    // Just exit, as there is no point in doing anything else.
-                    return;
-                } else if (oc != hy::taylor_outcome::time_limit) {
-                    throw std::invalid_argument(fmt::format(
-                        "The numerical integration of the particle at index {} returned an invalid outcome: {}",
-                        pidx_begin + i, oc));
-                }
 
                 // NOTE: tcoords can never be empty because that would mean that
                 // we took a superstep of zero size, which is prevented by the checks
                 // at the beginning of the step() function.
                 assert(!tcoords.empty());
 
-                // Overflow check on tcoords: tcoords' size must fit in the
-                // iterator difference type. This is relied upon when computing
-                // the index of a substep within a chunk.
                 using it_diff_t = std::iter_difference_t<decltype(tcoords.begin())>;
                 using it_udiff_t = std::make_unsigned_t<it_diff_t>;
                 if (tcoords.size() > static_cast<it_udiff_t>(std::numeric_limits<it_diff_t>::max())) {
@@ -806,6 +852,9 @@ outcome sim::step(double dt)
             }
 
             // Fill in the state at the end of the superstep.
+            // NOTE: for those particles whose integration was interrupted early due
+            // to stopping terminal events, the final_* vectors will contain the
+            // state at the interruption time.
             std::copy(st_data, st_data + batch_size, m_data->final_x.data() + pidx_begin);
             std::copy(st_data + batch_size, st_data + 2u * batch_size, m_data->final_y.data() + pidx_begin);
             std::copy(st_data + 2u * batch_size, st_data + 3u * batch_size, m_data->final_z.data() + pidx_begin);
@@ -879,8 +928,8 @@ outcome sim::step(double dt)
             detail::ub_atomic_update(gub[3], local_ub[3]);
         }
 
-        // Put the integrator (back) into the cache.
-        m_data->b_ta_cache.push(std::move(ta_ptr));
+        // Put the integrator data (back) into the caches.
+        m_data->b_ta_cache.push(std::move(bdata_ptr));
     };
 
     // Numerical integration and computation of the AABBs for the scalar remainder.
@@ -965,8 +1014,18 @@ outcome sim::step(double dt)
                 // Just exit, as there is no point in doing anything else.
                 return;
             } else if (oc != hy::taylor_outcome::time_limit) {
-                throw std::invalid_argument(fmt::format(
-                    "The numerical integration of the particle at index {} returned an invalid outcome: {}", pidx, oc));
+                // Stopping terminal event detected, record it.
+                assert(oc < hy::taylor_outcome{0} && oc > hy::taylor_outcome::success);
+
+                // Get the time coordinate for the current batch element in double-length format.
+                const auto cur_t = dfloat(ta.get_dtime().first, ta.get_dtime().second);
+
+                m_data->ste_vec.emplace_back(pidx,
+                                             // Store the trigger time wrt
+                                             // the beginning of the superstep.
+                                             static_cast<double>(cur_t - init_time),
+                                             // Compute the event index.
+                                             static_cast<std::uint32_t>(-static_cast<std::int64_t>(oc) - 1));
             }
 
             // NOTE: tcoords can never be empty because that would mean that
@@ -985,6 +1044,9 @@ outcome sim::step(double dt)
             }
 
             // Fill in the state at the end of the superstep.
+            // NOTE: if the integration was was interrupted early due
+            // to a stopping terminal event, the final_* vectors will contain the
+            // state at the interruption time.
             m_data->final_x[pidx] = st_data[0];
             m_data->final_y[pidx] = st_data[1];
             m_data->final_z[pidx] = st_data[2];
@@ -1104,6 +1166,31 @@ outcome sim::step(double dt)
         return outcome::err_nf_state;
     }
 
+    // Check if ran into stopping terminal events.
+    auto ste_it = m_data->ste_vec.end();
+    if (!m_data->ste_vec.empty()) {
+        // Fetch the earliest element in ste_vec.
+        ste_it = std::ranges::min_element(
+            m_data->ste_vec, [](const auto &tup1, const auto &tup2) { return std::get<1>(tup1) < std::get<1>(tup2); });
+
+        // The earliest stopping terminal events redefines the superstep
+        // size and, by extension, the number of chunks.
+        // NOTE: use std::min() for FP paranoia.
+        m_data->delta_t = std::min(std::get<1>(*ste_it), m_data->delta_t);
+
+        // Setup the number of chunks.
+        const auto new_nchunks = boost::numeric_cast<unsigned>(std::ceil(m_data->delta_t / m_ct));
+        if (new_nchunks == 0u) {
+            throw std::invalid_argument("The recomputed number of chunks after the triggering of a stopping terminal "
+                                        "event cannot be zero (this likely indicates that the simulation was restarted "
+                                        "without resolving a stopping terminal event)");
+        }
+        assert(new_nchunks <= m_data->nchunks);
+        m_data->nchunks = new_nchunks;
+
+        logger->trace("Number of chunks adjusted after stopping terminal event: {}", m_data->nchunks);
+    }
+
 #if !defined(NDEBUG)
     verify_global_aabbs();
 #endif
@@ -1128,13 +1215,10 @@ outcome sim::step(double dt)
     // If there is no such event, this will remain null.
     const double *interrupt_time = nullptr;
 
-    // Iterators to the collision/exit/reentry vectors,
-    // initially set to end(). They will be set up to point
-    // to the earliest occurrence of the corresponding event
-    // within the step, if any.
+    // Iterator to the collision vector, initially set to end().
+    // It will be set up to point to the earliest collision
+    // within the superstep, if any.
     auto coll_it = m_data->coll_vec.end();
-    auto exit_it = m_data->exit_vec.end();
-    auto reentry_it = m_data->reentry_vec.end();
 
     // Check for particle-particle collisions.
     if (!m_data->coll_vec.empty()) {
@@ -1149,36 +1233,29 @@ outcome sim::step(double dt)
         oc = outcome::collision;
     }
 
-    // Check for particles exiting the domain.
-    if (!m_data->exit_vec.empty()) {
-        // Fetch the earliest domain exit event.
-        exit_it = std::ranges::min_element(
-            m_data->exit_vec, [](const auto &tup1, const auto &tup2) { return std::get<1>(tup1) < std::get<1>(tup2); });
+    // Check for stopping terminal events.
+    if (!m_data->ste_vec.empty()) {
+        // NOTE: ste_it was already set up.
+        assert(ste_it != m_data->ste_vec.end());
 
         // Fetch the corresponding time.
-        const double *new_itime_ptr = &std::get<1>(*exit_it);
+        const double *new_itime_ptr = &std::get<1>(*ste_it);
 
         // Update interrupt_time and oc, if needed.
         if (interrupt_time == nullptr || *new_itime_ptr < *interrupt_time) {
             interrupt_time = new_itime_ptr;
-            oc = outcome::exit;
-        }
-    }
 
-    // Check for particles hitting the central body.
-    if (!m_data->reentry_vec.empty()) {
-        // Fetch the earliest reentry event.
-        reentry_it = std::ranges::min_element(m_data->reentry_vec, [](const auto &tup1, const auto &tup2) {
-            return std::get<1>(tup1) < std::get<1>(tup2);
-        });
+            // Check which type of terminal event we ran into.
+            // NOTE: will have to modify this if we add support
+            // for arbitrary terminal events.
+            if (with_exit_event() && exit_event_idx() == std::get<2>(*ste_it)) {
+                oc = outcome::exit;
+            } else {
+                assert(with_reentry_event());
+                assert(reentry_event_idx() == std::get<2>(*ste_it));
 
-        // Fetch the corresponding time.
-        const double *new_itime_ptr = &std::get<1>(*reentry_it);
-
-        // Update interrupt_time and oc, if needed.
-        if (interrupt_time == nullptr || *new_itime_ptr < *interrupt_time) {
-            interrupt_time = new_itime_ptr;
-            oc = outcome::reentry;
+                oc = outcome::reentry;
+            }
         }
     }
 
@@ -1196,6 +1273,9 @@ outcome sim::step(double dt)
         // block is noexcept.
 
         // Update the time coordinate.
+        // NOTE: the original delta_t is fine,
+        // since we did not detect any stopping terminal
+        // event that would have redefined delta_t.
         m_data->time += delta_t;
 
         // Swap in the updated state.
@@ -1248,13 +1328,13 @@ outcome sim::step(double dt)
                 m_int_info.emplace(std::array{std::get<0>(*coll_it), std::get<1>(*coll_it)});
                 break;
             case outcome::exit:
-                assert(exit_it != m_data->exit_vec.end());
-                m_int_info.emplace(std::get<0>(*exit_it));
+                assert(ste_it != m_data->ste_vec.end());
+                m_int_info.emplace(std::get<0>(*ste_it));
                 break;
             default:
                 assert(oc == outcome::reentry);
-                assert(reentry_it != m_data->reentry_vec.end());
-                m_int_info.emplace(std::get<0>(*reentry_it));
+                assert(ste_it != m_data->ste_vec.end());
+                m_int_info.emplace(std::get<0>(*ste_it));
         }
     }
 
@@ -1308,17 +1388,20 @@ double sim::infer_superstep()
             const auto batch_res = oneapi::tbb::parallel_deterministic_reduce(
                 oneapi::tbb::blocked_range<size_type>(0, n_batches, 100), std::pair{0., size_type(0)},
                 [&](const auto &range, auto partial_sum) {
-                    // Fetch an integrator from the cache, or create it.
-                    std::unique_ptr<hy::taylor_adaptive_batch<double>> ta_ptr;
+                    // Fetch batch data from the cache, or create it.
+                    std::unique_ptr<sim_data::batch_data> bdata_ptr;
 
-                    if (!m_data->b_ta_cache.try_pop(ta_ptr)) {
-                        SPDLOG_LOGGER_DEBUG(logger, "Creating new batch integrator");
+                    if (!m_data->b_ta_cache.try_pop(bdata_ptr)) {
+                        SPDLOG_LOGGER_DEBUG(logger, "Creating new batch data");
 
-                        ta_ptr = std::make_unique<hy::taylor_adaptive_batch<double>>(m_data->b_ta);
+                        bdata_ptr = std::make_unique<sim_data::batch_data>(m_data->b_ta);
+                        bdata_ptr->pfor_ts.resize(boost::numeric_cast<decltype(bdata_ptr->pfor_ts.size())>(batch_size));
+                    } else {
+                        assert(bdata_ptr->pfor_ts.size() == batch_size);
                     }
 
                     // Cache a few variables.
-                    auto &ta = *ta_ptr;
+                    auto &ta = bdata_ptr->ta;
 
                     for (auto idx = range.begin(); idx < range.end(); idx += stride) {
                         // Particle indices corresponding to the current batch.
@@ -1329,20 +1412,14 @@ double sim::infer_superstep()
                         init_batch_ta(ta, pidx_begin, pidx_end);
 
                         // Integrate a single step.
-                        // NOTE: in case ta contains events, their callbacks
-                        // may end up writing into m_data vectors. This is ok,
-                        // as those vectors are cleaned up in the step() function
-                        // *after* infer_superstep() has been called.
                         ta.step();
 
-                        // Check for errors and accumulate into partial_sum.
+                        // Accumulate into partial_sum.
                         for (const auto &[oc, h] : ta.get_step_res()) {
-                            if (oc != hy::taylor_outcome::success) {
-                                // TODO here we should distinguish the following cases:
-                                // - nf_error (throw?),
-                                // - stopped by event -> ignore for timestep determination
-                                //   purposes.
-                                throw;
+                            // NOTE: ignore batch elements which did not end with success
+                            // or whose timestep is not finite.
+                            if (oc != hy::taylor_outcome::success || !std::isfinite(h)) {
+                                continue;
                             }
 
                             partial_sum.first += h;
@@ -1350,8 +1427,8 @@ double sim::infer_superstep()
                         }
                     }
 
-                    // Put the integrator (back) into the cache.
-                    m_data->b_ta_cache.push(std::move(ta_ptr));
+                    // Put the integrator data (back) into the caches.
+                    m_data->b_ta_cache.push(std::move(bdata_ptr));
 
                     return partial_sum;
                 },
@@ -1389,19 +1466,13 @@ double sim::infer_superstep()
                         init_scalar_ta(ta, pidx);
 
                         // Integrate for a single step
-                        // NOTE: in case ta contains events, their callbacks
-                        // may end up writing into m_data vectors. This is ok,
-                        // as those vectors are cleaned up in the step() function
-                        // *after* infer_superstep() has been called.
                         const auto [oc, h] = ta.step();
 
-                        // Check for errors and accumulate into partial_sum.
-                        if (oc != hy::taylor_outcome::success) {
-                            // TODO here we should distinguish the following cases:
-                            // - nf_error (throw?),
-                            // - stopped by event -> ignore for timestep determination
-                            //   purposes.
-                            throw;
+                        // Accumulate into partial_sum.
+                        if (oc != hy::taylor_outcome::success || !std::isfinite(h)) {
+                            // NOTE: ignore particles which did not end with success
+                            // or whose timestep is not finite.
+                            continue;
                         }
 
                         partial_sum.first += h;
