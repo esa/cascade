@@ -276,8 +276,6 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
     const auto tcoords_begin = tcoords.begin();
     const auto tcoords_end = tcoords.end();
 
-    assert(tcoords_begin != tcoords_end);
-
     // We need to locate the substep range that fully includes
     // the current chunk.
     // First we locate the first substep whose end is strictly
@@ -293,7 +291,7 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
     // NOTE: don't bump it if it is already at the end.
     // This could happen at the last chunk due to FP rounding,
     // or if the integration for this particle was interrupted
-    // early due to a stopping terminal event.
+    // early due to a stopping terminal event, or if tcoords is empty.
     ss_it_end += (ss_it_end != tcoords_end);
 
     // Iterate over all substeps and update the bounding box
@@ -842,11 +840,6 @@ outcome sim::step(double dt)
             for (std::uint32_t i = 0; i < batch_size; ++i) {
                 const auto &tcoords = s_data[pidx_begin + i].tcoords;
 
-                // NOTE: tcoords can never be empty because that would mean that
-                // we took a superstep of zero size, which is prevented by the checks
-                // at the beginning of the step() function.
-                assert(!tcoords.empty());
-
                 using it_diff_t = std::iter_difference_t<decltype(tcoords.begin())>;
                 using it_udiff_t = std::make_unsigned_t<it_diff_t>;
                 if (tcoords.size() > static_cast<it_udiff_t>(std::numeric_limits<it_diff_t>::max())) {
@@ -974,6 +967,11 @@ outcome sim::step(double dt)
 
             // Setup the propagate_for() callback.
             auto cb = [&](auto &) {
+                // NOTE: ignore if a zero timestep was taken.
+                if (ta.get_last_h() == 0.) {
+                    return true;
+                }
+
                 // Record the time coordinate at the end of the step, relative
                 // to the initial time.
                 const auto time_f = dfloat(ta.get_dtime().first, ta.get_dtime().second);
@@ -1032,11 +1030,6 @@ outcome sim::step(double dt)
                                              // Compute the event index.
                                              static_cast<std::uint32_t>(-static_cast<std::int64_t>(oc) - 1));
             }
-
-            // NOTE: tcoords can never be empty because that would mean that
-            // we took a superstep of zero size, which is prevented by the checks
-            // at the beginning of the step() function.
-            assert(!tcoords.empty());
 
             // Overflow check on tcoords: tcoords' size must fit in the
             // iterator difference type. This is relied upon when computing
@@ -1594,7 +1587,24 @@ void sim::dense_propagate(double t)
             const auto tcoords_begin = tcoords.begin();
             const auto tcoords_end = tcoords.end();
 
-            assert(tcoords_begin != tcoords_end);
+            if (tcoords_begin == tcoords_end) {
+                // NOTE: this should never happen because
+                // this would mean that some particle took only steps
+                // of zero size during the current superstep. I.e., either:
+                // - a zero superstep has been taken, but this is prevented
+                //   by checks, or
+                // - a stopping terminal event triggered exactly at the beginning
+                //   of the superstep.
+                // In the latter case, because the stopping terminal event triggers
+                // immediately, the superstep gets redefined to zero, which tiggers
+                // the zero chunks exception.
+                // However, this being FP arithmetics, I feel more safe
+                // leaving the cheap runtime check here (rather than putting an assertion).
+                throw std::invalid_argument(
+                    fmt::format("The computation of dense_propagate() for particle {} could not be performed because "
+                                "no timesteps have been taken for this particle",
+                                pidx));
+            }
 
             // Locate the first substep whose end is *greater than or
             // equal to* t.

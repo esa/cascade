@@ -371,6 +371,9 @@ void sim::narrow_phase()
                         ss_it_end_j += (ss_it_end_j != tcoords_end_j);
 
                         // Iterate until we get to the end of at least one range.
+                        // NOTE: if either range is empty, this loop is never entered.
+                        // This should never happen, but see the comments in
+                        // dense_propagate().
                         for (auto it_i = ss_it_begin_i, it_j = ss_it_begin_j;
                              it_i != ss_it_end_i && it_j != ss_it_end_j;) {
                             // Initial time coordinates of the substeps of i and j,
