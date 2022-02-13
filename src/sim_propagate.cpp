@@ -950,6 +950,8 @@ outcome sim::step(double dt)
         // The first step is the numerical integration for all particles
         // in range throughout the entire superstep.
         for (auto pidx = range.begin(); pidx != range.end(); ++pidx) {
+            auto &tcoords = s_data[pidx].tcoords;
+
             // Clear up the Taylor coefficients and the times
             // of the substeps for the current particle.
             s_data[pidx].tc_x.clear();
@@ -960,7 +962,7 @@ outcome sim::step(double dt)
             s_data[pidx].tc_vz.clear();
             s_data[pidx].tc_r.clear();
 
-            s_data[pidx].tcoords.clear();
+            tcoords.clear();
 
             // Setup the integrator.
             init_scalar_ta(ta, pidx);
@@ -975,8 +977,8 @@ outcome sim::step(double dt)
                 // Record the time coordinate at the end of the step, relative
                 // to the initial time.
                 const auto time_f = dfloat(ta.get_dtime().first, ta.get_dtime().second);
-                s_data[pidx].tcoords.push_back(time_f - init_time);
-                if (!isfinite(s_data[pidx].tcoords.back())) {
+                tcoords.push_back(time_f - init_time);
+                if (!isfinite(tcoords.back())) {
                     throw std::invalid_argument(fmt::format("A non-finite time coordinate was generated during the "
                                                             "numerical integration of the particle at index {}",
                                                             pidx));
@@ -1002,8 +1004,6 @@ outcome sim::step(double dt)
 
             // Integrate.
             const auto oc = std::get<0>(ta.propagate_for(delta_t, hy::kw::write_tc = true, hy::kw::callback = cbf));
-
-            const auto &tcoords = s_data[pidx].tcoords;
 
             // Check for errors.
             if (oc == hy::taylor_outcome::err_nf_state) {

@@ -176,6 +176,20 @@ double sim::get_ct() const
     return m_ct;
 }
 
+double sim::get_tol() const
+{
+    assert(m_data->s_ta.get_tol() == m_data->b_ta.get_tol());
+
+    return m_data->s_ta.get_tol();
+}
+
+bool sim::get_high_accuracy() const
+{
+    assert(m_data->s_ta.get_high_accuracy() == m_data->b_ta.get_high_accuracy());
+
+    return m_data->s_ta.get_high_accuracy();
+}
+
 void sim::set_ct(double ct)
 {
     if (!std::isfinite(ct) || ct <= 0) {
@@ -259,11 +273,17 @@ void sim::set_new_state_impl(std::array<std::vector<double>, 7> &new_state, std:
 
 void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>> dyn,
                         std::vector<std::vector<double>> pars, std::variant<double, std::vector<double>> c_radius,
-                        double d_radius)
+                        double d_radius, double tol, bool ha)
 {
     namespace hy = heyoka;
 
     auto *logger = detail::get_logger();
+
+    // Check the tolerance.
+    if (!std::isfinite(tol) || tol <= 0) {
+        throw std::invalid_argument(fmt::format(
+            "The integrator tolerance must be finite and positive, but a value of {} was specified instead", tol));
+    }
 
     // Check consistency of the particles' state vectors.
     const auto nparts = m_x.size();
@@ -447,7 +467,8 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                                           hy::kw::direction = hy::event_direction::negative);
                 }
 
-                s_ta.emplace(dyn, std::vector<double>(7u), hy::kw::t_events = std::move(t_events));
+                s_ta.emplace(dyn, std::vector<double>(7u), hy::kw::t_events = std::move(t_events), hy::kw::tol = tol,
+                             hy::kw::high_accuracy = ha);
             },
             [&]() {
                 const std::uint32_t batch_size = hy::recommended_simd_size<double>();
@@ -474,7 +495,7 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                 }
 
                 b_ta.emplace(dyn, std::vector<double>(7u * batch_size), batch_size,
-                             hy::kw::t_events = std::move(t_events));
+                             hy::kw::t_events = std::move(t_events), hy::kw::tol = tol, hy::kw::high_accuracy = ha);
             });
     };
 

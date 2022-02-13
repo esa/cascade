@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <optional>
 #include <ranges>
 #include <tuple>
@@ -54,6 +55,8 @@ IGOR_MAKE_NAMED_ARGUMENT(dyn);
 IGOR_MAKE_NAMED_ARGUMENT(pars);
 IGOR_MAKE_NAMED_ARGUMENT(c_radius);
 IGOR_MAKE_NAMED_ARGUMENT(d_radius);
+IGOR_MAKE_NAMED_ARGUMENT(tol);
+IGOR_MAKE_NAMED_ARGUMENT(high_accuracy);
 
 } // namespace kw
 
@@ -87,7 +90,7 @@ private:
     double m_d_radius = 0;
 
     void finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>>, std::vector<std::vector<double>>,
-                       std::variant<double, std::vector<double>>, double);
+                       std::variant<double, std::vector<double>>, double, double, bool);
     void set_new_state_impl(std::array<std::vector<double>, 7> &, std::vector<std::vector<double>>);
     CASCADE_DLL_LOCAL void add_jit_functions();
     CASCADE_DLL_LOCAL void morton_encode_sort();
@@ -227,7 +230,28 @@ public:
                                        std::ref(m_vz), std::ref(m_sizes));
         state_set_impl(in_tup, out_tup, std::make_index_sequence<std::tuple_size_v<decltype(in_tup)>>{});
 
-        finalise_ctor(std::move(dyn), std::move(pars), std::move(c_radius), d_radius);
+        // Integration tolerance (defaults to epsilon).
+        auto tol = std::numeric_limits<double>::epsilon();
+        if constexpr (p.has(kw::tol)) {
+            if constexpr (std::convertible_to<decltype(p(kw::tol)), double>) {
+                tol = static_cast<double>(std::forward<decltype(p(kw::tol))>(p(kw::tol)));
+            } else {
+                static_assert(detail::always_false_v<KwArgs...>, "The 'tol' keyword argument is of the wrong type.");
+            }
+        }
+
+        // High accuracy (defaults to false).
+        bool ha = false;
+        if constexpr (p.has(kw::high_accuracy)) {
+            if constexpr (std::convertible_to<decltype(p(kw::high_accuracy)), bool>) {
+                ha = static_cast<bool>(std::forward<decltype(p(kw::high_accuracy))>(p(kw::high_accuracy)));
+            } else {
+                static_assert(detail::always_false_v<KwArgs...>,
+                              "The 'high_accuracy' keyword argument is of the wrong type.");
+            }
+        }
+
+        finalise_ctor(std::move(dyn), std::move(pars), std::move(c_radius), d_radius, tol, ha);
     }
     sim(const sim &);
     sim(sim &&) noexcept;
@@ -282,6 +306,9 @@ public:
 
     double get_ct() const;
     void set_ct(double);
+
+    double get_tol() const;
+    bool get_high_accuracy() const;
 
     template <di_range X, di_range Y, di_range Z, di_range VX, di_range VY, di_range VZ, di_range S>
     void set_new_state(X &&x, Y &&y, Z &&z, VX &&vx, VY &&vy, VZ &&vz, S &&s,

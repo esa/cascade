@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <utility>
 #include <variant>
@@ -72,7 +73,7 @@ PYBIND11_MODULE(core, m)
                          std::vector<double> vy, std::vector<double> vz, std::vector<double> sizes, double ct,
                          std::vector<std::pair<hy::expression, hy::expression>> dyn,
                          const std::variant<double, std::vector<double>> &c_radius, double d_radius,
-                         std::vector<std::vector<double>> pars) {
+                         std::vector<std::vector<double>> pars, double tol, bool ha) {
                  // NOTE: might have to re-check this if we ever offer the
                  // option to define event callbacks in the dynamics.
                  py::gil_scoped_release release;
@@ -81,15 +82,19 @@ PYBIND11_MODULE(core, m)
                      [&](const auto &cr_val) {
                          return sim(std::move(x), std::move(y), std::move(z), std::move(vx), std::move(vy),
                                     std::move(vz), std::move(sizes), ct, kw::dyn = std::move(dyn),
-                                    kw::c_radius = cr_val, kw::d_radius = d_radius, kw::pars = std::move(pars));
+                                    kw::c_radius = cr_val, kw::d_radius = d_radius, kw::pars = std::move(pars),
+                                    kw::tol = tol, kw::high_accuracy = ha);
                      },
                      c_radius);
              }),
              "x"_a, "y"_a, "z"_a, "vx"_a, "vy"_a, "vz"_a, "sizes"_a, "ct"_a, "dyn"_a = py::list{}, "c_radius"_a = 0.,
-             "d_radius"_a = 0., "pars"_a = py::list{})
+             "d_radius"_a = 0., "pars"_a = py::list{}, "tol"_a = std::numeric_limits<double>::epsilon(),
+             "high_accuracy"_a = false)
         .def_property_readonly("interrupt_info", &sim::get_interrupt_info)
         .def_property("time", &sim::get_time, &sim::set_time)
         .def_property("ct", &sim::get_ct, &sim::set_ct)
+        .def_property_readonly("tol", &sim::get_tol)
+        .def_property_readonly("high_accuracy", &sim::get_high_accuracy)
         .def(
             "step",
             [](sim &s, double dt) {
