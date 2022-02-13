@@ -25,7 +25,7 @@ function(ADD_CASCADE_TESTCASE arg1)
   add_test(${arg1} ${arg1})
 endfunction()
 
-# Files needed for the bit flip test.
+# Data files needed by some tests.
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/x_lbf.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/y_lbf.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/z_lbf.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
@@ -33,6 +33,13 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/vx_lbf.txt" "${CMAKE_CURRENT_BINARY_
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/vy_lbf.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/vz_lbf.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/sizes_lbf.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/haumea_00_x.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/haumea_00_y.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/haumea_00_z.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/haumea_00_vx.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/haumea_00_vy.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/haumea_00_vz.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
 
 ADD_CASCADE_TESTCASE(single_collision)
 ADD_CASCADE_TESTCASE(same_morton_code)
@@ -45,3 +52,4 @@ ADD_CASCADE_TESTCASE(reentry)
 ADD_CASCADE_TESTCASE(domain_exit)
 ADD_CASCADE_TESTCASE(interrupt_order)
 ADD_CASCADE_TESTCASE(nf_state)
+ADD_CASCADE_TESTCASE(haumea_bug_00)
