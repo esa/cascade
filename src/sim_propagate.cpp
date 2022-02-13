@@ -747,12 +747,14 @@ outcome sim::step(double dt)
 
                 // Let's do a first check on the outcomes to determine if everything went
                 // to time_limit or a non-finite state was generated.
-                std::uint32_t n_tlimit = 0;
+                std::uint32_t n_tlimit = 0, n_err_nf_state = 0;
                 for (std::uint32_t i = 0; i < batch_size; ++i) {
                     const auto oc = std::get<0>(ta.get_propagate_res()[i]);
 
                     if (oc == hy::taylor_outcome::err_nf_state) {
                         // Non-finite state detected.
+                        ++n_err_nf_state;
+
                         // Record in err_nf_state_vec the particle index and the time coordinate
                         // of the last successful step for the particle (relative to the beginning
                         // of the superstep).
@@ -761,15 +763,18 @@ outcome sim::step(double dt)
                         const auto &tcoords = s_data[pidx_begin + i].tcoords;
                         const auto last_t = tcoords.empty() ? 0. : static_cast<double>(tcoords.back());
                         m_data->err_nf_state_vec.emplace_back(pidx_begin + i, last_t);
-
-                        // Just exit, as there is no point in doing anything else.
-                        // NOTE: no need to run the overflow check on tcoords as we won't
-                        // be computing any AABB for this particle, nor we will be proceeding
-                        // past the integration + AABB computation phase.
-                        return;
+                    } else {
+                        n_tlimit += (oc == hy::taylor_outcome::time_limit);
                     }
+                }
 
-                    n_tlimit += (oc == hy::taylor_outcome::time_limit);
+                if (n_err_nf_state != 0u) {
+                    // If any non-finite state in the batch was detected, just exit,
+                    // as there is no point in doing anything else.
+                    // NOTE: no need to run the overflow check on tcoords as we won't
+                    // be computing any AABB for this particle, nor we will be proceeding
+                    // past the integration + AABB computation phase.
+                    return;
                 }
 
                 if (n_tlimit == batch_size) {

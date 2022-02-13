@@ -26,6 +26,17 @@ TEST_CASE("nf state step")
 
     REQUIRE(oc == outcome::err_nf_state);
     REQUIRE(std::get<1>(*s.get_interrupt_info()) == 0u);
+
+    // Ensure correctness also when using the batch integrator.
+    s.set_new_state(std::vector<double>{1.01, -1.01, 1.02, 1.03, 1.04}, std::vector<double>(5u, 0.),
+                    std::vector<double>(5u, 0.), std::vector<double>{-100., 99., 1.02, 1.03, 1.04},
+                    std::vector<double>(5u, 0.), std::vector<double>(5u, 0.), std::vector<double>(5u, 0.));
+    s.set_time(0.);
+
+    oc = s.step(10.);
+
+    REQUIRE(oc == outcome::err_nf_state);
+    REQUIRE(std::get<1>(*s.get_interrupt_info()) == 0u);
 }
 
 TEST_CASE("nf state propagate")
@@ -38,4 +49,19 @@ TEST_CASE("nf state propagate")
 
     REQUIRE(oc == outcome::err_nf_state);
     REQUIRE(std::get<1>(*s.get_interrupt_info()) == 1u);
+
+    // Ensure correctness also when using the batch integrator.
+    s.set_new_state(std::vector<double>{1.01, -1.01, 1.02, 1.03, 1.04}, std::vector<double>(5u, 0.),
+                    std::vector<double>(5u, 0.), std::vector<double>{-100., 101, 1.02, 1.03, 1.04},
+                    std::vector<double>(5u, 0.), std::vector<double>(5u, 0.), std::vector<double>(5u, 0.));
+    s.set_time(0.);
+
+    oc = s.propagate_until(1000., 10.);
+
+    REQUIRE(oc == outcome::err_nf_state);
+    // NOTE: here the index is zero instead of 1 because both errors
+    // occurr within the same step, but the error for particle 0 is recorded
+    // *before* particle 1 in the status vector. Thus, all else being equa,
+    // std::min_element will return index 0.
+    REQUIRE(std::get<1>(*s.get_interrupt_info()) == 0u);
 }
