@@ -82,7 +82,7 @@ private:
     std::vector<std::vector<double>> m_pars;
     double m_ct;
     sim_data *m_data = nullptr;
-    std::optional<std::variant<std::array<size_type, 2>, size_type>> m_int_info;
+    std::optional<std::variant<std::array<size_type, 2>, size_type, std::tuple<size_type, double>>> m_int_info;
     std::variant<double, std::vector<double>> m_c_radius;
     double m_d_radius = 0;
 
@@ -237,7 +237,7 @@ public:
     sim &operator=(const sim &);
     sim &operator=(sim &&) noexcept;
 
-    const std::optional<std::variant<std::array<size_type, 2>, size_type>> &get_interrupt_info() const
+    const auto &get_interrupt_info() const
     {
         return m_int_info;
     }

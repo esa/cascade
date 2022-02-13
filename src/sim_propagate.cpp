@@ -1158,7 +1158,7 @@ outcome sim::step(double dt)
         });
 
         // Setup the interrupt info.
-        m_int_info.emplace(std::get<0>(*nf_it));
+        m_int_info.emplace(*nf_it);
 
         logger->debug("The step function was interrupted due to particle {} generating a non-finite state during the "
                       "dynamical propagation",
@@ -1503,7 +1503,9 @@ double sim::infer_superstep()
             }
         });
 
-    // NOTE: this can happen only if the simulation has zero particles.
+    // NOTE: this can happen only if the simulation has zero particles, or if
+    // no particle considered in the timestep determination ended with a success
+    // outcome.
     if (n_part_acc == 0u) {
         throw std::invalid_argument(
             "Cannot automatically determine the superstep size if there are no particles in the simulation");

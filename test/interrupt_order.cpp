@@ -99,7 +99,7 @@ TEST_CASE("interrupt order")
                     vec_t(3u, 0.), vec_t(3u, 1e-6));
     s.set_time(0.);
 
-    oc = s.propagate_until(1000.);
+    oc = s.propagate_until(1000., 10.);
 
     x0 = s.get_x()[0];
     y0 = s.get_y()[0];
@@ -114,7 +114,7 @@ TEST_CASE("interrupt order")
                     vec_t(3u, 0.), vec_t(3u, 1e-6));
     s.set_time(0.);
 
-    oc = s.propagate_until(1000.);
+    oc = s.propagate_until(1000., 10.);
 
     x2 = s.get_x()[2];
     y2 = s.get_y()[2];
