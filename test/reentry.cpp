@@ -8,8 +8,11 @@
 
 #include <cmath>
 #include <initializer_list>
+#include <stdexcept>
 #include <variant>
 #include <vector>
+
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <cascade/sim.hpp>
 
@@ -48,6 +51,14 @@ TEST_CASE("reentry sphere")
 
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.).epsilon(0.).margin(1e-14));
 
+    // Test possible re-trigger of the same event if we do not resolve it.
+    try {
+        s.step(.1);
+    } catch (const std::invalid_argument &ia) {
+        REQUIRE(boost::algorithm::contains(
+            ia.what(), "The recomputed number of chunks after the triggering of a stopping terminal"));
+    }
+
     // Ensure correctness also when using the batch integrator.
     s.set_new_state(std::vector<double>{1.1, 1.5, 1.1, 1.1, 1.1, 1.1}, std::vector<double>(6u, 0.),
                     std::vector<double>(6u, 0.), std::vector<double>(6u, 0.),
@@ -65,6 +76,14 @@ TEST_CASE("reentry sphere")
     z = s.get_z()[1];
 
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.).epsilon(0.).margin(1e-14));
+
+    // Test possible re-trigger of the same event if we do not resolve it.
+    try {
+        s.step(.1);
+    } catch (const std::invalid_argument &ia) {
+        REQUIRE(boost::algorithm::contains(
+            ia.what(), "The recomputed number of chunks after the triggering of a stopping terminal"));
+    }
 }
 
 TEST_CASE("reentry ellipsoid")
@@ -113,6 +132,13 @@ TEST_CASE("reentry ellipsoid")
 
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.2).epsilon(0.).margin(1e-14));
 
+    try {
+        s.step(.1);
+    } catch (const std::invalid_argument &ia) {
+        REQUIRE(boost::algorithm::contains(
+            ia.what(), "The recomputed number of chunks after the triggering of a stopping terminal"));
+    }
+
     // Ensure correctness also when using the batch integrator.
     s.set_new_state(std::vector<double>{1.1, 1.5, 1.1, 1.1, 1.1, 1.1}, std::vector<double>(6u, 0.),
                     std::vector<double>(6u, 0.), std::vector<double>(6u, 0.),
@@ -130,6 +156,13 @@ TEST_CASE("reentry ellipsoid")
     z = s.get_z()[1];
 
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.).epsilon(0.).margin(1e-14));
+
+    try {
+        s.step(.1);
+    } catch (const std::invalid_argument &ia) {
+        REQUIRE(boost::algorithm::contains(
+            ia.what(), "The recomputed number of chunks after the triggering of a stopping terminal"));
+    }
 
     s.set_new_state(std::vector<double>(6u, 0.), std::vector<double>(6u, 0.),
                     std::vector<double>{2.1, 1.5, 2.1, 2.1, 2.1, 2.1}, std::vector<double>{.69, 0., .69, .69, .69, .69},

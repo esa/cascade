@@ -4,14 +4,14 @@ channels:
 dependencies:
   - cmake
   - python
-  - heyoka-llvm-13
+  - heyoka-llvm-13>=0.17.1
   - heyoka.py
   - tbb-devel
   - tbb
   - pybind11
   - llvmdev=13.*
-  - gcc =10.*
-  - gxx =10.*
+  - gcc=10.*
+  - gxx=10.*
   - c-compiler
   - cxx-compiler
   - ipython
