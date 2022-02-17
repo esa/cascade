@@ -9,6 +9,7 @@
 #include <atomic>
 #include <cassert>
 #include <initializer_list>
+#include <memory>
 #include <set>
 #include <utility>
 #include <vector>
@@ -73,29 +74,35 @@ void sim::broad_phase()
             auto &bp_cv = m_data->bp_coll[chunk_idx];
             bp_cv.clear();
 
-            // Fetch a reference to the bp cache for the current chunk.
-            auto &bp_cache = m_data->bp_caches[chunk_idx];
-
-            // Fetch a reference to the stack cache for the current chunk.
-            auto &st_cache = m_data->stack_caches[chunk_idx];
+            // Fetch a reference to the bp data cache for the current chunk.
+            auto &bp_data_cache_ptr = m_data->bp_data_caches[chunk_idx];
+            // NOTE: the pointer will require initialisation the first time
+            // it is used.
+            if (!bp_data_cache_ptr) {
+                bp_data_cache_ptr
+                    = std::make_unique<typename decltype(m_data->bp_data_caches)::value_type::element_type>();
+            }
+            auto &bp_data_cache = *bp_data_cache_ptr;
 
             oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &r2) {
-                // Fetch a local collision vector from the cache.
-                std::vector<std::pair<size_type, size_type>> local_bp;
-                if (bp_cache.try_pop(local_bp)) {
-                    // Clear it.
-                    local_bp.clear();
+                // Fetch local data for broad phase collision detection.
+                std::unique_ptr<sim_data::bp_data> local_bp_data;
+                if (bp_data_cache.try_pop(local_bp_data)) {
+                    assert(local_bp_data);
                 } else {
-                    SPDLOG_LOGGER_DEBUG(logger, "Creating new local BP");
+                    SPDLOG_LOGGER_DEBUG(logger, "Creating new local BP data");
+
+                    local_bp_data = std::make_unique<sim_data::bp_data>();
                 }
 
-                // Fetch a local stack from the cache.
+                // Cache and clear the local list of collisions.
+                auto &local_bp = local_bp_data->bp;
+                local_bp.clear();
+
+                // Cache the stack.
                 // NOTE: this will be cleared at the beginning
                 // of the traversal for each particle.
-                std::vector<std::int32_t> stack;
-                if (!st_cache.try_pop(stack)) {
-                    SPDLOG_LOGGER_DEBUG(logger, "Creating new local stack");
-                }
+                auto &stack = local_bp_data->stack;
 
                 for (auto pidx = r2.begin(); pidx != r2.end(); ++pidx) {
                     // Reset the stack, and add the root node to it.
@@ -164,9 +171,8 @@ void sim::broad_phase()
                 // Atomically merge the local bp into the global one.
                 bp_cv.grow_by(local_bp.begin(), local_bp.end());
 
-                // Put local_bp and the stack (back) into the caches.
-                bp_cache.push(std::move(local_bp));
-                st_cache.push(std::move(stack));
+                // Put the local data back into the cache.
+                bp_data_cache.push(std::move(local_bp_data));
             });
 
             // Update tot_n_bp with the data from the current chunk.

@@ -635,8 +635,8 @@ outcome sim::step(double dt)
     // BVH data.
     resize_if_needed(nchunks, m_data->bvh_trees, m_data->nc_buffer, m_data->ps_buffer, m_data->nplc_buffer);
 
-    // Broad-phase data.
-    resize_if_needed(nchunks, m_data->bp_coll, m_data->bp_caches, m_data->stack_caches);
+    // Broad phase data.
+    resize_if_needed(nchunks, m_data->bp_coll, m_data->bp_data_caches);
 
     // Narrow phase data.
     resize_if_needed(nchunks, m_data->np_caches);
@@ -650,13 +650,14 @@ outcome sim::step(double dt)
         // Fetch batch data from the cache, or create it.
         std::unique_ptr<sim_data::batch_data> bdata_ptr;
 
-        if (!m_data->b_ta_cache.try_pop(bdata_ptr)) {
+        if (m_data->b_ta_cache.try_pop(bdata_ptr)) {
+            assert(bdata_ptr);
+            assert(bdata_ptr->pfor_ts.size() == batch_size);
+        } else {
             SPDLOG_LOGGER_DEBUG(logger, "Creating new batch data");
 
             bdata_ptr = std::make_unique<sim_data::batch_data>(m_data->b_ta);
             bdata_ptr->pfor_ts.resize(boost::numeric_cast<decltype(bdata_ptr->pfor_ts.size())>(batch_size));
-        } else {
-            assert(bdata_ptr->pfor_ts.size() == batch_size);
         }
 
         // Cache a few variables.
@@ -935,7 +936,9 @@ outcome sim::step(double dt)
         // Fetch an integrator from the cache, or create it.
         std::unique_ptr<hy::taylor_adaptive<double>> ta_ptr;
 
-        if (!m_data->s_ta_cache.try_pop(ta_ptr)) {
+        if (m_data->s_ta_cache.try_pop(ta_ptr)) {
+            assert(ta_ptr);
+        } else {
             SPDLOG_LOGGER_DEBUG(logger, "Creating new integrator");
 
             ta_ptr = std::make_unique<hy::taylor_adaptive<double>>(m_data->s_ta);
@@ -1389,13 +1392,14 @@ double sim::infer_superstep()
                     // Fetch batch data from the cache, or create it.
                     std::unique_ptr<sim_data::batch_data> bdata_ptr;
 
-                    if (!m_data->b_ta_cache.try_pop(bdata_ptr)) {
+                    if (m_data->b_ta_cache.try_pop(bdata_ptr)) {
+                        assert(bdata_ptr);
+                        assert(bdata_ptr->pfor_ts.size() == batch_size);
+                    } else {
                         SPDLOG_LOGGER_DEBUG(logger, "Creating new batch data");
 
                         bdata_ptr = std::make_unique<sim_data::batch_data>(m_data->b_ta);
                         bdata_ptr->pfor_ts.resize(boost::numeric_cast<decltype(bdata_ptr->pfor_ts.size())>(batch_size));
-                    } else {
-                        assert(bdata_ptr->pfor_ts.size() == batch_size);
                     }
 
                     // Cache a few variables.
@@ -1450,7 +1454,9 @@ double sim::infer_superstep()
                     // Fetch an integrator from the cache, or create it.
                     std::unique_ptr<hy::taylor_adaptive<double>> ta_ptr;
 
-                    if (!m_data->s_ta_cache.try_pop(ta_ptr)) {
+                    if (m_data->s_ta_cache.try_pop(ta_ptr)) {
+                        assert(ta_ptr);
+                    } else {
                         SPDLOG_LOGGER_DEBUG(logger, "Creating new integrator");
 
                         ta_ptr = std::make_unique<hy::taylor_adaptive<double>>(m_data->s_ta);
