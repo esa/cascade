@@ -246,15 +246,33 @@ sim::sim_data::np_data::pwrap::~pwrap()
 // using polynomial root finding.
 void sim::narrow_phase_parallel()
 {
-    namespace hy = heyoka;
-    using dfloat = hy::detail::dfloat<double>;
-
     spdlog::stopwatch sw;
 
     auto *logger = detail::get_logger();
 
+    // Reset the collision vector.
+    m_data->coll_vec.clear();
+
+    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, m_data->nchunks), [&](const auto &range) {
+        for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
+            narrow_phase_serial(chunk_idx);
+        }
+    });
+
+    logger->trace("Narrow phase collision detection time: {}s", sw);
+    logger->trace("Total number of collisions detected: {}", m_data->coll_vec.size());
+}
+
+void sim::narrow_phase_serial(unsigned chunk_idx)
+{
+    namespace hy = heyoka;
+    using dfloat = hy::detail::dfloat<double>;
+
+    assert(chunk_idx < m_data->nchunks);
+
+    auto *logger = detail::get_logger();
+
     // Cache a few bits.
-    const auto nchunks = m_data->nchunks;
     const auto order = m_data->s_ta.get_order();
     const auto &s_data = m_data->s_data;
     const auto pta = m_data->pta;
@@ -263,459 +281,441 @@ void sim::narrow_phase_parallel()
     const auto rtscc = m_data->rtscc;
     const auto pt1 = m_data->pt1;
 
-    // Reset the collision vector.
-    m_data->coll_vec.clear();
+    // Fetch a reference to the chunk-specific broad
+    // phase collision vector.
+    const auto &bpc = m_data->bp_coll[chunk_idx];
 
-    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
-        for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
-            // Fetch a reference to the chunk-specific broad
-            // phase collision vector.
-            const auto &bpc = m_data->bp_coll[chunk_idx];
+    // Fetch a reference to the chunk-specific caches.
+    auto &np_cache_ptr = m_data->np_caches[chunk_idx];
+    // NOTE: the pointer will require initialisation the first time
+    // it is used.
+    if (!np_cache_ptr) {
+        np_cache_ptr = std::make_unique<typename decltype(m_data->np_caches)::value_type::element_type>();
+    }
+    auto &np_cache = *np_cache_ptr;
 
-            // Fetch a reference to the chunk-specific caches.
-            auto &np_cache_ptr = m_data->np_caches[chunk_idx];
-            // NOTE: the pointer will require initialisation the first time
-            // it is used.
-            if (!np_cache_ptr) {
-                np_cache_ptr = std::make_unique<typename decltype(m_data->np_caches)::value_type::element_type>();
+    // The time coordinate, relative to init_time, of
+    // the chunk's begin/end.
+    const auto [c_begin, c_end] = m_data->get_chunk_begin_end(chunk_idx, m_ct);
+    const auto chunk_begin = dfloat(c_begin);
+    const auto chunk_end = dfloat(c_end);
+
+#if !defined(NDEBUG)
+    // Counter for the number of failed fast exclusion checks.
+    std::atomic<std::size_t> n_ffex(0);
+#endif
+
+    // Iterate over all collisions.
+    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(bpc.begin(), bpc.end()), [&](const auto &rn) {
+#if !defined(NDEBUG)
+        // Local version of n_ffex.
+        std::size_t local_n_ffex = 0;
+#endif
+
+        // Fetch the polynomial caches.
+        std::unique_ptr<sim_data::np_data> pcaches;
+
+        if (np_cache.try_pop(pcaches)) {
+#if !defined(NDEBUG)
+            assert(pcaches);
+
+            for (auto &v : pcaches->dist2) {
+                assert(v.size() == order + 1u);
             }
-            auto &np_cache = *np_cache_ptr;
-
-            // The time coordinate, relative to init_time, of
-            // the chunk's begin/end.
-            const auto [c_begin, c_end] = m_data->get_chunk_begin_end(chunk_idx, m_ct);
-            const auto chunk_begin = dfloat(c_begin);
-            const auto chunk_end = dfloat(c_end);
-
-#if !defined(NDEBUG)
-            // Counter for the number of failed fast exclusion checks.
-            std::atomic<std::size_t> n_ffex(0);
 #endif
+        } else {
+            SPDLOG_LOGGER_DEBUG(logger, "Creating new local polynomials for narrow phase collision detection");
 
-            // Iterate over all collisions.
-            oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(bpc.begin(), bpc.end()), [&](const auto &rn) {
-#if !defined(NDEBUG)
-                // Local version of n_ffex.
-                std::size_t local_n_ffex = 0;
-#endif
+            // Init pcaches.
+            pcaches = std::make_unique<sim_data::np_data>();
 
-                // Fetch the polynomial caches.
-                std::unique_ptr<sim_data::np_data> pcaches;
+            for (auto &v : pcaches->dist2) {
+                v.resize(boost::numeric_cast<decltype(v.size())>(order + 1u));
+            }
+        }
 
-                if (np_cache.try_pop(pcaches)) {
-#if !defined(NDEBUG)
-                    assert(pcaches);
+        // Cache a few quantities.
+        auto &[xi_temp, yi_temp, zi_temp, xj_temp, yj_temp, zj_temp, ss_diff] = pcaches->dist2;
+        auto &wlist = pcaches->wlist;
+        auto &isol = pcaches->isol;
+        auto &r_iso_cache = pcaches->r_iso_cache;
 
-                    for (auto &v : pcaches->dist2) {
-                        assert(v.size() == order + 1u);
+        // NOTE: bracket further so that the pwrap objects
+        // are destroyed *before* pcaches is moved into np_cache.
+        // This is essential, because otherwise these pwraps
+        // will be destroyed *after* pcaches has been already pushed
+        // back to the concurrent queue and possibly already in use by
+        // another thread.
+        {
+            // Temporary polynomials used in the bisection loop.
+            using pwrap = sim_data::np_data::pwrap;
+            pwrap tmp1(r_iso_cache, order), tmp2(r_iso_cache, order), tmp(r_iso_cache, order);
+
+            for (const auto &pc : rn) {
+                const auto [pi, pj] = pc;
+
+                assert(pi != pj);
+
+                // Fetch a reference to the substep data
+                // for the two particles.
+                const auto &sd_i = s_data[pi];
+                const auto &sd_j = s_data[pj];
+
+                // Load the particle radiuses.
+                const auto p_rad_i = m_sizes[pi];
+                const auto p_rad_j = m_sizes[pj];
+
+                // Cache the range of end times of the substeps.
+                const auto tcoords_begin_i = sd_i.tcoords.begin();
+                const auto tcoords_end_i = sd_i.tcoords.end();
+
+                const auto tcoords_begin_j = sd_j.tcoords.begin();
+                const auto tcoords_end_j = sd_j.tcoords.end();
+
+                // Determine, for both particles, the range of substeps
+                // that fully includes the current chunk.
+                // NOTE: same code as in sim_propagate.cpp.
+                const auto ss_it_begin_i = std::upper_bound(tcoords_begin_i, tcoords_end_i, chunk_begin);
+                auto ss_it_end_i = std::lower_bound(ss_it_begin_i, tcoords_end_i, chunk_end);
+                ss_it_end_i += (ss_it_end_i != tcoords_end_i);
+
+                const auto ss_it_begin_j = std::upper_bound(tcoords_begin_j, tcoords_end_j, chunk_begin);
+                auto ss_it_end_j = std::lower_bound(ss_it_begin_j, tcoords_end_j, chunk_end);
+                ss_it_end_j += (ss_it_end_j != tcoords_end_j);
+
+                // Iterate until we get to the end of at least one range.
+                // NOTE: if either range is empty, this loop is never entered.
+                // This should never happen, but see the comments in
+                // dense_propagate().
+                for (auto it_i = ss_it_begin_i, it_j = ss_it_begin_j; it_i != ss_it_end_i && it_j != ss_it_end_j;) {
+                    // Initial time coordinates of the substeps of i and j,
+                    // relative to init_time.
+                    const auto ss_start_i = (it_i == tcoords_begin_i) ? hy::detail::dfloat<double>(0) : *(it_i - 1);
+                    const auto ss_start_j = (it_j == tcoords_begin_j) ? hy::detail::dfloat<double>(0) : *(it_j - 1);
+
+                    // Determine the intersections of the two substeps
+                    // with the current chunk.
+                    // NOTE: min/max is fine here: values in tcoords are always checked
+                    // for finiteness, chunk_begin/end are also checked in
+                    // get_chunk_begin_end().
+                    const auto lb_i = std::max(chunk_begin, ss_start_i);
+                    const auto ub_i = std::min(chunk_end, *it_i);
+                    const auto lb_j = std::max(chunk_begin, ss_start_j);
+                    const auto ub_j = std::min(chunk_end, *it_j);
+
+                    // Determine the intersection between the two intervals
+                    // we just computed. This will be the time range
+                    // within which we need to do polynomial root finding.
+                    // NOTE: at this stage lb_rf/ub_rf are still time coordinates wrt
+                    // init_time.
+                    // NOTE: min/max fine here, all quantities are safe.
+                    const auto lb_rf = std::max(lb_i, lb_j);
+                    const auto ub_rf = std::min(ub_i, ub_j);
+
+                    // The Taylor polynomials for the two particles are time polynomials
+                    // in which time is counted from the beginning of the substep. In order to
+                    // create the polynomial representing the distance square, we need first to
+                    // translate the polynomials of both particles so that they refer to a
+                    // common time coordinate, the time elapsed from lb_rf.
+
+                    // Compute the translation amount for the two particles.
+                    const auto delta_i = static_cast<double>(lb_rf - ss_start_i);
+                    const auto delta_j = static_cast<double>(lb_rf - ss_start_j);
+
+                    // Compute the time interval within which we will be performing root finding.
+                    const auto rf_int = static_cast<double>(ub_rf - lb_rf);
+
+                    // Do some checking before moving on.
+                    if (!std::isfinite(delta_i) || !std::isfinite(delta_j) || !std::isfinite(rf_int) || delta_i < 0
+                        || delta_j < 0 || rf_int < 0) {
+                        // Bail out in case of errors.
+                        logger->warn("During the narrow-phase collision detection of particles {} and {}, "
+                                     "an invalid time interval for polynomial root finding was generated - the "
+                                     "collision will be skipped",
+                                     pi, pj);
+
+                        break;
                     }
-#endif
-                } else {
-                    SPDLOG_LOGGER_DEBUG(logger, "Creating new local polynomials for narrow phase collision detection");
 
-                    // Init pcaches.
-                    pcaches = std::make_unique<sim_data::np_data>();
+                    // Fetch pointers to the original Taylor polynomials for the two particles.
+                    // NOTE: static_cast because overflow checking and numeric cast are already
+                    // done in sim_propagate_for.
+                    const auto ss_idx_i = static_cast<decltype(s_data[pi].tc_x.size())>(it_i - tcoords_begin_i);
+                    const auto ss_idx_j = static_cast<decltype(s_data[pj].tc_x.size())>(it_j - tcoords_begin_j);
 
-                    for (auto &v : pcaches->dist2) {
-                        v.resize(boost::numeric_cast<decltype(v.size())>(order + 1u));
+                    const auto *poly_xi = s_data[pi].tc_x.data() + ss_idx_i * (order + 1u);
+                    const auto *poly_yi = s_data[pi].tc_y.data() + ss_idx_i * (order + 1u);
+                    const auto *poly_zi = s_data[pi].tc_z.data() + ss_idx_i * (order + 1u);
+
+                    const auto *poly_xj = s_data[pj].tc_x.data() + ss_idx_j * (order + 1u);
+                    const auto *poly_yj = s_data[pj].tc_y.data() + ss_idx_j * (order + 1u);
+                    const auto *poly_zj = s_data[pj].tc_z.data() + ss_idx_j * (order + 1u);
+
+                    // Perform the translations, if needed.
+                    // NOTE: perhaps we can write a dedicated function
+                    // that does the translation for all 3 coordinates
+                    // at once, for better performance?
+                    if (delta_i != 0) {
+                        poly_xi = pta(xi_temp.data(), poly_xi, delta_i);
+                        poly_yi = pta(yi_temp.data(), poly_yi, delta_i);
+                        poly_zi = pta(zi_temp.data(), poly_zi, delta_i);
                     }
-                }
 
-                // Cache a few quantities.
-                auto &[xi_temp, yi_temp, zi_temp, xj_temp, yj_temp, zj_temp, ss_diff] = pcaches->dist2;
-                auto &wlist = pcaches->wlist;
-                auto &isol = pcaches->isol;
-                auto &r_iso_cache = pcaches->r_iso_cache;
+                    if (delta_j != 0) {
+                        poly_xj = pta(xj_temp.data(), poly_xj, delta_j);
+                        poly_yj = pta(yj_temp.data(), poly_yj, delta_j);
+                        poly_zj = pta(zj_temp.data(), poly_zj, delta_j);
+                    }
 
-                // NOTE: bracket further so that the pwrap objects
-                // are destroyed *before* pcaches is moved into np_cache.
-                // This is essential, because otherwise these pwraps
-                // will be destroyed *after* pcaches has been already pushed
-                // back to the concurrent queue and possibly already in use by
-                // another thread.
-                {
-                    // Temporary polynomials used in the bisection loop.
-                    using pwrap = sim_data::np_data::pwrap;
-                    pwrap tmp1(r_iso_cache, order), tmp2(r_iso_cache, order), tmp(r_iso_cache, order);
+                    // We can now construct the polynomial for the
+                    // square of the distance.
+                    auto *ss_diff_ptr = ss_diff.data();
+                    pssdiff3(ss_diff_ptr, poly_xi, poly_yi, poly_zi, poly_xj, poly_yj, poly_zj);
 
-                    for (const auto &pc : rn) {
-                        const auto [pi, pj] = pc;
+                    // Modify the constant term of the polynomial to account for
+                    // particle sizes.
+                    ss_diff_ptr[0] -= (p_rad_i + p_rad_j) * (p_rad_i + p_rad_j);
 
-                        assert(pi != pj);
+                    // Run the fast exclusion check.
+                    std::uint32_t fex_check_res, back_flag = 0;
+                    fex_check(ss_diff_ptr, &rf_int, &back_flag, &fex_check_res);
+                    if (!fex_check_res) {
+                        // Fast exclusion check failed, we need to run the real root isolation algorithm.
 
-                        // Fetch a reference to the substep data
-                        // for the two particles.
-                        const auto &sd_i = s_data[pi];
-                        const auto &sd_j = s_data[pj];
+#if !defined(NDEBUG)
+                        // Update local_n_ffex.
+                        ++local_n_ffex;
+#endif
 
-                        // Load the particle radiuses.
-                        const auto p_rad_i = m_sizes[pi];
-                        const auto p_rad_j = m_sizes[pj];
+                        // Clear out the list of isolating intervals.
+                        isol.clear();
 
-                        // Cache the range of end times of the substeps.
-                        const auto tcoords_begin_i = sd_i.tcoords.begin();
-                        const auto tcoords_end_i = sd_i.tcoords.end();
+                        // Reset the working list.
+                        wlist.clear();
 
-                        const auto tcoords_begin_j = sd_j.tcoords.begin();
-                        const auto tcoords_end_j = sd_j.tcoords.end();
+                        // Helper to add a detected root to the global vector of collisions.
+                        // NOTE: the root here is expected to be already rescaled
+                        // to the [0, rf_int) range.
+                        auto add_root = [&](double root) {
+                            // NOTE: we do one last check on the root in order to
+                            // avoid non-finite event times.
+                            if (!std::isfinite(root)) {
+                                // LCOV_EXCL_START
+                                logger->warn("Polynomial root finding produced a non-finite root of {} - "
+                                             "skipping the collision between particles {} and {}",
+                                             root, pi, pj);
+                                return;
+                                // LCOV_EXCL_STOP
+                            }
 
-                        // Determine, for both particles, the range of substeps
-                        // that fully includes the current chunk.
-                        // NOTE: same code as in sim_propagate.cpp.
-                        const auto ss_it_begin_i = std::upper_bound(tcoords_begin_i, tcoords_end_i, chunk_begin);
-                        auto ss_it_end_i = std::lower_bound(ss_it_begin_i, tcoords_end_i, chunk_end);
-                        ss_it_end_i += (ss_it_end_i != tcoords_end_i);
+                            // Evaluate the derivative and its absolute value.
+                            const auto der = detail::poly_eval_1(ss_diff_ptr, root, order);
 
-                        const auto ss_it_begin_j = std::upper_bound(tcoords_begin_j, tcoords_end_j, chunk_begin);
-                        auto ss_it_end_j = std::lower_bound(ss_it_begin_j, tcoords_end_j, chunk_end);
-                        ss_it_end_j += (ss_it_end_j != tcoords_end_j);
+                            // Check it before proceeding.
+                            if (!std::isfinite(der)) {
+                                // LCOV_EXCL_START
+                                logger->warn("Polynomial root finding produced the root {} with "
+                                             "nonfinite derivative {} - "
+                                             "skipping the collision between particles {} and {}",
+                                             root, der, pi, pj);
+                                return;
+                                // LCOV_EXCL_STOP
+                            }
 
-                        // Iterate until we get to the end of at least one range.
-                        // NOTE: if either range is empty, this loop is never entered.
-                        // This should never happen, but see the comments in
-                        // dense_propagate().
-                        for (auto it_i = ss_it_begin_i, it_j = ss_it_begin_j;
-                             it_i != ss_it_end_i && it_j != ss_it_end_j;) {
-                            // Initial time coordinates of the substeps of i and j,
-                            // relative to init_time.
-                            const auto ss_start_i
-                                = (it_i == tcoords_begin_i) ? hy::detail::dfloat<double>(0) : *(it_i - 1);
-                            const auto ss_start_j
-                                = (it_j == tcoords_begin_j) ? hy::detail::dfloat<double>(0) : *(it_j - 1);
+                            // Compute sign of the derivative.
+                            const auto d_sgn = detail::sgn(der);
 
-                            // Determine the intersections of the two substeps
-                            // with the current chunk.
-                            // NOTE: min/max is fine here: values in tcoords are always checked
-                            // for finiteness, chunk_begin/end are also checked in
-                            // get_chunk_begin_end().
-                            const auto lb_i = std::max(chunk_begin, ss_start_i);
-                            const auto ub_i = std::min(chunk_end, *it_i);
-                            const auto lb_j = std::max(chunk_begin, ss_start_j);
-                            const auto ub_j = std::min(chunk_end, *it_j);
+                            // Record the collision only if the derivative
+                            // is negative.
+                            if (d_sgn < 0) {
+                                // Compute the time coordinate of the collision with respect
+                                // to the beginning of the superstep.
+                                const auto tcoll = static_cast<double>(lb_rf + root);
 
-                            // Determine the intersection between the two intervals
-                            // we just computed. This will be the time range
-                            // within which we need to do polynomial root finding.
-                            // NOTE: at this stage lb_rf/ub_rf are still time coordinates wrt
-                            // init_time.
-                            // NOTE: min/max fine here, all quantities are safe.
-                            const auto lb_rf = std::max(lb_i, lb_j);
-                            const auto ub_rf = std::min(ub_i, ub_j);
+                                if (!std::isfinite(tcoll)) {
+                                    // LCOV_EXCL_START
+                                    logger->warn("Polynomial root finding produced a non-finite collision time of {} - "
+                                                 "skipping the collision between particles {} and {}",
+                                                 tcoll, pi, pj);
+                                    return;
+                                    // LCOV_EXCL_STOP
+                                }
 
-                            // The Taylor polynomials for the two particles are time polynomials
-                            // in which time is counted from the beginning of the substep. In order to
-                            // create the polynomial representing the distance square, we need first to
-                            // translate the polynomials of both particles so that they refer to a
-                            // common time coordinate, the time elapsed from lb_rf.
+                                // Add it.
+                                m_data->coll_vec.emplace_back(pi, pj, tcoll);
+                            }
+                        };
 
-                            // Compute the translation amount for the two particles.
-                            const auto delta_i = static_cast<double>(lb_rf - ss_start_i);
-                            const auto delta_j = static_cast<double>(lb_rf - ss_start_j);
+                        // Rescale ss_diff so that the range [0, rf_int)
+                        // becomes [0, 1), and write the resulting polynomial into tmp.
+                        // NOTE: at the first iteration (i.e., for the first
+                        // substep of the first pair
+                        // of particles which requires real root isolation),
+                        // tmp has been constructed correctly outside the loop.
+                        // Below, tmp will first be moved into wlist (thus rendering
+                        // it invalid) but it will immediately be revived at the
+                        // first iteration of the do/while loop. Thus, when we get
+                        // here again, tmp will be again in a well-formed state.
+                        assert(!tmp.v.empty());             // LCOV_EXCL_LINE
+                        assert(tmp.v.size() - 1u == order); // LCOV_EXCL_LINE
+                        detail::poly_rescale(tmp.v.data(), ss_diff_ptr, rf_int, order);
 
-                            // Compute the time interval within which we will be performing root finding.
-                            const auto rf_int = static_cast<double>(ub_rf - lb_rf);
+                        // Place the first element in the working list.
+                        wlist.emplace_back(0, 1, std::move(tmp));
 
-                            // Do some checking before moving on.
-                            if (!std::isfinite(delta_i) || !std::isfinite(delta_j) || !std::isfinite(rf_int)
-                                || delta_i < 0 || delta_j < 0 || rf_int < 0) {
-                                // Bail out in case of errors.
-                                logger->warn("During the narrow-phase collision detection of particles {} and {}, "
-                                             "an invalid time interval for polynomial root finding was generated - the "
-                                             "collision will be skipped",
-                                             pi, pj);
+                        // Flag to signal that the do-while loop below failed.
+                        bool loop_failed = false;
+
+                        do {
+                            // Fetch the current interval and polynomial from the working list.
+                            // NOTE: from now on, tmp contains the polynomial referred
+                            // to as q(x) in the real-root isolation wikipedia page.
+                            // NOTE: q(x) is the transformed polynomial whose roots in the x range [0, 1) we
+                            // will be looking for. lb and ub represent what 0 and 1 correspond to in the
+                            // *original* [0, 1) range.
+                            auto lb = std::get<0>(wlist.back());
+                            auto ub = std::get<1>(wlist.back());
+                            // NOTE: this will either revive an invalid tmp (first iteration),
+                            // or it will replace it with one of the bisecting polynomials.
+                            tmp = std::move(std::get<2>(wlist.back()));
+                            wlist.pop_back();
+
+                            // Check for a root at the lower bound, which occurs
+                            // if the constant term of the polynomial is zero. We also
+                            // check for finiteness of all the other coefficients, otherwise
+                            // we cannot really claim to have detected a root.
+                            // When we do proper root finding below, the
+                            // algorithm should be able to detect non-finite
+                            // polynomials.
+                            if (tmp.v[0] == 0 // LCOV_EXCL_LINE
+                                && std::all_of(tmp.v.data() + 1, tmp.v.data() + 1 + order,
+                                               [](const auto &x) { return std::isfinite(x); })) {
+                                // NOTE: the original range had been rescaled wrt to rf_int.
+                                // Thus, we need to rescale back when adding the detected
+                                // root.
+                                add_root(lb * rf_int);
+                            }
+
+                            // Reverse tmp into tmp1, translate tmp1 by 1 with output
+                            // in tmp2, and count the sign changes in tmp2.
+                            std::uint32_t n_sc;
+                            rtscc(tmp1.v.data(), tmp2.v.data(), &n_sc, tmp.v.data());
+
+                            if (n_sc == 1u) {
+                                // Found isolating interval, add it to isol.
+                                isol.emplace_back(lb, ub);
+                            } else if (n_sc > 1u) {
+                                // No isolating interval found, bisect.
+
+                                // First we transform q into 2**n * q(x/2) and store the result
+                                // into tmp1.
+                                detail::poly_rescale_p2(tmp1.v.data(), tmp.v.data(), order);
+                                // Then we take tmp1 and translate it to produce 2**n * q((x+1)/2).
+                                pt1(tmp2.v.data(), tmp1.v.data());
+
+                                // Finally we add tmp1 and tmp2 to the working list.
+                                const auto mid = (lb + ub) / 2;
+
+                                wlist.emplace_back(lb, mid, std::move(tmp1));
+                                // Revive tmp1.
+                                tmp1 = pwrap(r_iso_cache, order);
+
+                                wlist.emplace_back(mid, ub, std::move(tmp2));
+                                // Revive tmp2.
+                                tmp2 = pwrap(r_iso_cache, order);
+                            }
+
+                            // LCOV_EXCL_START
+                            // We want to put limits in order to avoid an endless loop when the algorithm fails.
+                            // The first check is on the working list size and it is based
+                            // on heuristic observation of the algorithm's behaviour in pathological
+                            // cases. The second check is that we cannot possibly find more isolating
+                            // intervals than the degree of the polynomial.
+                            if (wlist.size() > 250u || isol.size() > order) {
+                                logger->warn("The polynomial root isolation algorithm failed during collision "
+                                             "detection: "
+                                             "the working list size is {} and the number of isolating intervals is {}",
+                                             wlist.size(), isol.size());
+
+                                loop_failed = true;
 
                                 break;
                             }
+                            // LCOV_EXCL_STOP
 
-                            // Fetch pointers to the original Taylor polynomials for the two particles.
-                            // NOTE: static_cast because overflow checking and numeric cast are already
-                            // done in sim_propagate_for.
-                            const auto ss_idx_i = static_cast<decltype(s_data[pi].tc_x.size())>(it_i - tcoords_begin_i);
-                            const auto ss_idx_j = static_cast<decltype(s_data[pj].tc_x.size())>(it_j - tcoords_begin_j);
+                        } while (!wlist.empty());
 
-                            const auto *poly_xi = s_data[pi].tc_x.data() + ss_idx_i * (order + 1u);
-                            const auto *poly_yi = s_data[pi].tc_y.data() + ss_idx_i * (order + 1u);
-                            const auto *poly_zi = s_data[pi].tc_z.data() + ss_idx_i * (order + 1u);
+                        // Don't do root finding if the loop failed,
+                        // or if the list of isolating intervals is empty. Just
+                        // move to the next substep.
+                        if (!isol.empty() && !loop_failed) {
+                            // Reconstruct a version of the original polynomial
+                            // in which the range [0, rf_int) is rescaled to [0, 1). We need
+                            // to do root finding on the rescaled polynomial because the
+                            // isolating intervals are also rescaled to [0, 1).
+                            // NOTE: tmp1 was either created with the correct size outside this
+                            // function, or it was re-created in the bisection above.
+                            detail::poly_rescale(tmp1.v.data(), ss_diff_ptr, rf_int, order);
 
-                            const auto *poly_xj = s_data[pj].tc_x.data() + ss_idx_j * (order + 1u);
-                            const auto *poly_yj = s_data[pj].tc_y.data() + ss_idx_j * (order + 1u);
-                            const auto *poly_zj = s_data[pj].tc_z.data() + ss_idx_j * (order + 1u);
+                            // Run the root finding in the isolating intervals.
+                            for (auto &[lb, ub] : isol) {
+                                // Run the root finding.
+                                const auto [root, cflag] = detail::bracketed_root_find(tmp1.v.data(), order, lb, ub);
 
-                            // Perform the translations, if needed.
-                            // NOTE: perhaps we can write a dedicated function
-                            // that does the translation for all 3 coordinates
-                            // at once, for better performance?
-                            if (delta_i != 0) {
-                                poly_xi = pta(xi_temp.data(), poly_xi, delta_i);
-                                poly_yi = pta(yi_temp.data(), poly_yi, delta_i);
-                                poly_zi = pta(zi_temp.data(), poly_zi, delta_i);
-                            }
-
-                            if (delta_j != 0) {
-                                poly_xj = pta(xj_temp.data(), poly_xj, delta_j);
-                                poly_yj = pta(yj_temp.data(), poly_yj, delta_j);
-                                poly_zj = pta(zj_temp.data(), poly_zj, delta_j);
-                            }
-
-                            // We can now construct the polynomial for the
-                            // square of the distance.
-                            auto *ss_diff_ptr = ss_diff.data();
-                            pssdiff3(ss_diff_ptr, poly_xi, poly_yi, poly_zi, poly_xj, poly_yj, poly_zj);
-
-                            // Modify the constant term of the polynomial to account for
-                            // particle sizes.
-                            ss_diff_ptr[0] -= (p_rad_i + p_rad_j) * (p_rad_i + p_rad_j);
-
-                            // Run the fast exclusion check.
-                            std::uint32_t fex_check_res, back_flag = 0;
-                            fex_check(ss_diff_ptr, &rf_int, &back_flag, &fex_check_res);
-                            if (!fex_check_res) {
-                                // Fast exclusion check failed, we need to run the real root isolation algorithm.
-
-#if !defined(NDEBUG)
-                                // Update local_n_ffex.
-                                ++local_n_ffex;
-#endif
-
-                                // Clear out the list of isolating intervals.
-                                isol.clear();
-
-                                // Reset the working list.
-                                wlist.clear();
-
-                                // Helper to add a detected root to the global vector of collisions.
-                                // NOTE: the root here is expected to be already rescaled
-                                // to the [0, rf_int) range.
-                                auto add_root = [&](double root) {
-                                    // NOTE: we do one last check on the root in order to
-                                    // avoid non-finite event times.
-                                    if (!std::isfinite(root)) {
-                                        // LCOV_EXCL_START
-                                        logger->warn("Polynomial root finding produced a non-finite root of {} - "
-                                                     "skipping the collision between particles {} and {}",
-                                                     root, pi, pj);
-                                        return;
-                                        // LCOV_EXCL_STOP
-                                    }
-
-                                    // Evaluate the derivative and its absolute value.
-                                    const auto der = detail::poly_eval_1(ss_diff_ptr, root, order);
-
-                                    // Check it before proceeding.
-                                    if (!std::isfinite(der)) {
-                                        // LCOV_EXCL_START
-                                        logger->warn("Polynomial root finding produced the root {} with "
-                                                     "nonfinite derivative {} - "
-                                                     "skipping the collision between particles {} and {}",
-                                                     root, der, pi, pj);
-                                        return;
-                                        // LCOV_EXCL_STOP
-                                    }
-
-                                    // Compute sign of the derivative.
-                                    const auto d_sgn = detail::sgn(der);
-
-                                    // Record the collision only if the derivative
-                                    // is negative.
-                                    if (d_sgn < 0) {
-                                        // Compute the time coordinate of the collision with respect
-                                        // to the beginning of the superstep.
-                                        const auto tcoll = static_cast<double>(lb_rf + root);
-
-                                        if (!std::isfinite(tcoll)) {
-                                            // LCOV_EXCL_START
-                                            logger->warn(
-                                                "Polynomial root finding produced a non-finite collision time of {} - "
-                                                "skipping the collision between particles {} and {}",
-                                                tcoll, pi, pj);
-                                            return;
-                                            // LCOV_EXCL_STOP
-                                        }
-
-                                        // Add it.
-                                        m_data->coll_vec.emplace_back(pi, pj, tcoll);
-                                    }
-                                };
-
-                                // Rescale ss_diff so that the range [0, rf_int)
-                                // becomes [0, 1), and write the resulting polynomial into tmp.
-                                // NOTE: at the first iteration (i.e., for the first
-                                // substep of the first pair
-                                // of particles which requires real root isolation),
-                                // tmp has been constructed correctly outside the loop.
-                                // Below, tmp will first be moved into wlist (thus rendering
-                                // it invalid) but it will immediately be revived at the
-                                // first iteration of the do/while loop. Thus, when we get
-                                // here again, tmp will be again in a well-formed state.
-                                assert(!tmp.v.empty());             // LCOV_EXCL_LINE
-                                assert(tmp.v.size() - 1u == order); // LCOV_EXCL_LINE
-                                detail::poly_rescale(tmp.v.data(), ss_diff_ptr, rf_int, order);
-
-                                // Place the first element in the working list.
-                                wlist.emplace_back(0, 1, std::move(tmp));
-
-                                // Flag to signal that the do-while loop below failed.
-                                bool loop_failed = false;
-
-                                do {
-                                    // Fetch the current interval and polynomial from the working list.
-                                    // NOTE: from now on, tmp contains the polynomial referred
-                                    // to as q(x) in the real-root isolation wikipedia page.
-                                    // NOTE: q(x) is the transformed polynomial whose roots in the x range [0, 1) we
-                                    // will be looking for. lb and ub represent what 0 and 1 correspond to in the
-                                    // *original* [0, 1) range.
-                                    auto lb = std::get<0>(wlist.back());
-                                    auto ub = std::get<1>(wlist.back());
-                                    // NOTE: this will either revive an invalid tmp (first iteration),
-                                    // or it will replace it with one of the bisecting polynomials.
-                                    tmp = std::move(std::get<2>(wlist.back()));
-                                    wlist.pop_back();
-
-                                    // Check for a root at the lower bound, which occurs
-                                    // if the constant term of the polynomial is zero. We also
-                                    // check for finiteness of all the other coefficients, otherwise
-                                    // we cannot really claim to have detected a root.
-                                    // When we do proper root finding below, the
-                                    // algorithm should be able to detect non-finite
-                                    // polynomials.
-                                    if (tmp.v[0] == 0 // LCOV_EXCL_LINE
-                                        && std::all_of(tmp.v.data() + 1, tmp.v.data() + 1 + order,
-                                                       [](const auto &x) { return std::isfinite(x); })) {
-                                        // NOTE: the original range had been rescaled wrt to rf_int.
-                                        // Thus, we need to rescale back when adding the detected
-                                        // root.
-                                        add_root(lb * rf_int);
-                                    }
-
-                                    // Reverse tmp into tmp1, translate tmp1 by 1 with output
-                                    // in tmp2, and count the sign changes in tmp2.
-                                    std::uint32_t n_sc;
-                                    rtscc(tmp1.v.data(), tmp2.v.data(), &n_sc, tmp.v.data());
-
-                                    if (n_sc == 1u) {
-                                        // Found isolating interval, add it to isol.
-                                        isol.emplace_back(lb, ub);
-                                    } else if (n_sc > 1u) {
-                                        // No isolating interval found, bisect.
-
-                                        // First we transform q into 2**n * q(x/2) and store the result
-                                        // into tmp1.
-                                        detail::poly_rescale_p2(tmp1.v.data(), tmp.v.data(), order);
-                                        // Then we take tmp1 and translate it to produce 2**n * q((x+1)/2).
-                                        pt1(tmp2.v.data(), tmp1.v.data());
-
-                                        // Finally we add tmp1 and tmp2 to the working list.
-                                        const auto mid = (lb + ub) / 2;
-
-                                        wlist.emplace_back(lb, mid, std::move(tmp1));
-                                        // Revive tmp1.
-                                        tmp1 = pwrap(r_iso_cache, order);
-
-                                        wlist.emplace_back(mid, ub, std::move(tmp2));
-                                        // Revive tmp2.
-                                        tmp2 = pwrap(r_iso_cache, order);
-                                    }
-
+                                if (cflag == 0) {
+                                    // Root finding finished successfully, record the root.
+                                    // The found root needs to be rescaled by h.
+                                    add_root(root * rf_int);
+                                } else {
                                     // LCOV_EXCL_START
-                                    // We want to put limits in order to avoid an endless loop when the algorithm fails.
-                                    // The first check is on the working list size and it is based
-                                    // on heuristic observation of the algorithm's behaviour in pathological
-                                    // cases. The second check is that we cannot possibly find more isolating
-                                    // intervals than the degree of the polynomial.
-                                    if (wlist.size() > 250u || isol.size() > order) {
-                                        logger->warn(
-                                            "The polynomial root isolation algorithm failed during collision "
-                                            "detection: "
-                                            "the working list size is {} and the number of isolating intervals is {}",
-                                            wlist.size(), isol.size());
-
-                                        loop_failed = true;
-
-                                        break;
+                                    // Root finding encountered some issue. Ignore the
+                                    // root and log the issue.
+                                    if (cflag == -1) {
+                                        logger->warn("Polynomial root finding during collision detection failed "
+                                                     "due to too many iterations");
+                                    } else {
+                                        logger->warn("Polynomial root finding during collision detection "
+                                                     "returned a nonzero errno with message '{}'",
+                                                     std::strerror(cflag));
                                     }
                                     // LCOV_EXCL_STOP
-
-                                } while (!wlist.empty());
-
-                                // Don't do root finding if the loop failed,
-                                // or if the list of isolating intervals is empty. Just
-                                // move to the next substep.
-                                if (!isol.empty() && !loop_failed) {
-                                    // Reconstruct a version of the original polynomial
-                                    // in which the range [0, rf_int) is rescaled to [0, 1). We need
-                                    // to do root finding on the rescaled polynomial because the
-                                    // isolating intervals are also rescaled to [0, 1).
-                                    // NOTE: tmp1 was either created with the correct size outside this
-                                    // function, or it was re-created in the bisection above.
-                                    detail::poly_rescale(tmp1.v.data(), ss_diff_ptr, rf_int, order);
-
-                                    // Run the root finding in the isolating intervals.
-                                    for (auto &[lb, ub] : isol) {
-                                        // Run the root finding.
-                                        const auto [root, cflag]
-                                            = detail::bracketed_root_find(tmp1.v.data(), order, lb, ub);
-
-                                        if (cflag == 0) {
-                                            // Root finding finished successfully, record the root.
-                                            // The found root needs to be rescaled by h.
-                                            add_root(root * rf_int);
-                                        } else {
-                                            // LCOV_EXCL_START
-                                            // Root finding encountered some issue. Ignore the
-                                            // root and log the issue.
-                                            if (cflag == -1) {
-                                                logger->warn(
-                                                    "Polynomial root finding during collision detection failed "
-                                                    "due to too many iterations");
-                                            } else {
-                                                logger->warn("Polynomial root finding during collision detection "
-                                                             "returned a nonzero errno with message '{}'",
-                                                             std::strerror(cflag));
-                                            }
-                                            // LCOV_EXCL_STOP
-                                        }
-                                    }
                                 }
-                            }
-
-                            // Update the substep iterators.
-                            if (*it_i < *it_j) {
-                                // The substep for particle i ends
-                                // before the substep for particle j.
-                                ++it_i;
-                            } else if (*it_j < *it_i) {
-                                // The substep for particle j ends
-                                // before the substep for particle i.
-                                ++it_j;
-                            } else {
-                                // Both substeps end at the same time.
-                                // This happens at the last substeps of a chunk
-                                // or in the very unlikely case in which both
-                                // steps end exactly at the same time.
-                                ++it_i;
-                                ++it_j;
                             }
                         }
                     }
-                }
 
-                // Put the polynomials back into the caches.
-                np_cache.push(std::move(pcaches));
+                    // Update the substep iterators.
+                    if (*it_i < *it_j) {
+                        // The substep for particle i ends
+                        // before the substep for particle j.
+                        ++it_i;
+                    } else if (*it_j < *it_i) {
+                        // The substep for particle j ends
+                        // before the substep for particle i.
+                        ++it_j;
+                    } else {
+                        // Both substeps end at the same time.
+                        // This happens at the last substeps of a chunk
+                        // or in the very unlikely case in which both
+                        // steps end exactly at the same time.
+                        ++it_i;
+                        ++it_j;
+                    }
+                }
+            }
+        }
+
+        // Put the polynomials back into the caches.
+        np_cache.push(std::move(pcaches));
 
 #if !defined(NDEBUG)
-                // Update n_ffex.
-                n_ffex.fetch_add(local_n_ffex, std::memory_order::relaxed);
+        // Update n_ffex.
+        n_ffex.fetch_add(local_n_ffex, std::memory_order::relaxed);
 #endif
-            });
-
-            SPDLOG_LOGGER_DEBUG(logger,
-                                "Number of failed fast exclusion checks for chunk {}: {} vs {} broad phase collisions",
-                                chunk_idx, n_ffex.load(std::memory_order::relaxed), bpc.size());
-        }
     });
 
-    logger->trace("Narrow phase collision detection time: {}s", sw);
-    logger->trace("Total number of collisions detected: {}", m_data->coll_vec.size());
+    SPDLOG_LOGGER_DEBUG(logger, "Number of failed fast exclusion checks for chunk {}: {} vs {} broad phase collisions",
+                        chunk_idx, n_ffex.load(std::memory_order::relaxed), bpc.size());
 }
 
 } // namespace cascade

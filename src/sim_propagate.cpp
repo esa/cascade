@@ -418,116 +418,119 @@ void sim::morton_encode_sort_parallel()
 
     auto *logger = detail::get_logger();
 
-    // Fetch the number of particles and chunks from m_data.
-    const auto nparts = get_nparts();
-    const auto nchunks = m_data->nchunks;
-
-    constexpr auto morton_enc = mortonnd::MortonNDLutEncoder<4, 16, 8>();
-
-    constexpr auto finf = std::numeric_limits<float>::infinity();
-
-    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
+    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, m_data->nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
-            // Fetch the global AABB for this chunk.
-            auto &glb = m_data->global_lb[chunk_idx];
-            auto &gub = m_data->global_ub[chunk_idx];
-
-            // Bump up the upper bounds to make absolutely sure that ub > lb, as required
-            // by the spatial discretisation function.
-            for (auto i = 0u; i < 4u; ++i) {
-                gub[i] = std::nextafter(gub[i], finf);
-
-                // Check that the interval size is finite.
-                // This also ensures that ub/lb are finite.
-                if (!std::isfinite(gub[i] - glb[i])) {
-                    throw std::invalid_argument(
-                        "A global bounding box with non-finite boundaries and/or size was generated");
-                }
-            }
-
-            // Computation of the Morton codes.
-            const auto offset = nparts * chunk_idx;
-
-            auto *CASCADE_RESTRICT x_lb_ptr = m_data->x_lb.data() + offset;
-            auto *CASCADE_RESTRICT y_lb_ptr = m_data->y_lb.data() + offset;
-            auto *CASCADE_RESTRICT z_lb_ptr = m_data->z_lb.data() + offset;
-            auto *CASCADE_RESTRICT r_lb_ptr = m_data->r_lb.data() + offset;
-
-            auto *CASCADE_RESTRICT x_ub_ptr = m_data->x_ub.data() + offset;
-            auto *CASCADE_RESTRICT y_ub_ptr = m_data->y_ub.data() + offset;
-            auto *CASCADE_RESTRICT z_ub_ptr = m_data->z_ub.data() + offset;
-            auto *CASCADE_RESTRICT r_ub_ptr = m_data->r_ub.data() + offset;
-
-            auto *CASCADE_RESTRICT mcodes_ptr = m_data->mcodes.data() + offset;
-
-            auto *CASCADE_RESTRICT srt_x_lb_ptr = m_data->srt_x_lb.data() + offset;
-            auto *CASCADE_RESTRICT srt_y_lb_ptr = m_data->srt_y_lb.data() + offset;
-            auto *CASCADE_RESTRICT srt_z_lb_ptr = m_data->srt_z_lb.data() + offset;
-            auto *CASCADE_RESTRICT srt_r_lb_ptr = m_data->srt_r_lb.data() + offset;
-
-            auto *CASCADE_RESTRICT srt_x_ub_ptr = m_data->srt_x_ub.data() + offset;
-            auto *CASCADE_RESTRICT srt_y_ub_ptr = m_data->srt_y_ub.data() + offset;
-            auto *CASCADE_RESTRICT srt_z_ub_ptr = m_data->srt_z_ub.data() + offset;
-            auto *CASCADE_RESTRICT srt_r_ub_ptr = m_data->srt_r_ub.data() + offset;
-
-            auto *CASCADE_RESTRICT srt_mcodes_ptr = m_data->srt_mcodes.data() + offset;
-
-            auto *CASCADE_RESTRICT vidx_ptr = m_data->vidx.data() + offset;
-
-            oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &r2) {
-                // NOTE: JIT optimisation opportunity here. Worth it?
-                for (auto pidx = r2.begin(); pidx != r2.end(); ++pidx) {
-                    // Compute the centre of the AABB.
-                    const auto x_ctr = x_lb_ptr[pidx] / 2 + x_ub_ptr[pidx] / 2;
-                    const auto y_ctr = y_lb_ptr[pidx] / 2 + y_ub_ptr[pidx] / 2;
-                    const auto z_ctr = z_lb_ptr[pidx] / 2 + z_ub_ptr[pidx] / 2;
-                    const auto r_ctr = r_lb_ptr[pidx] / 2 + r_ub_ptr[pidx] / 2;
-
-                    const auto n0 = detail::disc_single_coord(x_ctr, glb[0], gub[0]);
-                    const auto n1 = detail::disc_single_coord(y_ctr, glb[1], gub[1]);
-                    const auto n2 = detail::disc_single_coord(z_ctr, glb[2], gub[2]);
-                    const auto n3 = detail::disc_single_coord(r_ctr, glb[3], gub[3]);
-
-                    mcodes_ptr[pidx] = morton_enc.Encode(n0, n1, n2, n3);
-                }
-            });
-
-            // Indirect sorting of the indices for the current chunk
-            // according to the Morton codes.
-            oneapi::tbb::parallel_sort(vidx_ptr, vidx_ptr + nparts, [mcodes_ptr](auto idx1, auto idx2) {
-                return mcodes_ptr[idx1] < mcodes_ptr[idx2];
-            });
-
-            // Helper to apply the indirect sorting defined in vidx to the data in src.
-            // The sorted data will be written into out.
-            auto isort_apply = [vidx_ptr, nparts](auto *out, const auto *src) {
-                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &rn) {
-                    for (auto i = rn.begin(); i != rn.end(); ++i) {
-                        out[i] = src[vidx_ptr[i]];
-                    }
-                });
-            };
-
-            // NOTE: can do all of these in parallel in principle, but performance
-            // is bottlenecked by RAM speed anyway. Perhaps revisit on machines
-            // with larger core counts during performance tuning.
-            isort_apply(srt_x_lb_ptr, x_lb_ptr);
-            isort_apply(srt_y_lb_ptr, y_lb_ptr);
-            isort_apply(srt_z_lb_ptr, z_lb_ptr);
-            isort_apply(srt_r_lb_ptr, r_lb_ptr);
-
-            isort_apply(srt_x_ub_ptr, x_ub_ptr);
-            isort_apply(srt_y_ub_ptr, y_ub_ptr);
-            isort_apply(srt_z_ub_ptr, z_ub_ptr);
-            isort_apply(srt_r_ub_ptr, r_ub_ptr);
-
-            isort_apply(srt_mcodes_ptr, mcodes_ptr);
-
-            assert(std::is_sorted(srt_mcodes_ptr, srt_mcodes_ptr + nparts));
+            morton_encode_sort_serial(chunk_idx);
         }
     });
 
     logger->trace("Morton encoding and sorting time: {}s", sw);
+}
+
+void sim::morton_encode_sort_serial(unsigned chunk_idx)
+{
+    assert(chunk_idx < m_data->nchunks);
+
+    constexpr auto finf = std::numeric_limits<float>::infinity();
+    constexpr auto morton_enc = mortonnd::MortonNDLutEncoder<4, 16, 8>();
+
+    // Fetch the number of particles from m_data.
+    const auto nparts = get_nparts();
+
+    // Fetch the global AABB for this chunk.
+    auto &glb = m_data->global_lb[chunk_idx];
+    auto &gub = m_data->global_ub[chunk_idx];
+
+    // Bump up the upper bounds to make absolutely sure that ub > lb, as required
+    // by the spatial discretisation function.
+    for (auto i = 0u; i < 4u; ++i) {
+        gub[i] = std::nextafter(gub[i], finf);
+
+        // Check that the interval size is finite.
+        // This also ensures that ub/lb are finite.
+        if (!std::isfinite(gub[i] - glb[i])) {
+            throw std::invalid_argument("A global bounding box with non-finite boundaries and/or size was generated");
+        }
+    }
+
+    // Computation of the Morton codes.
+    const auto offset = nparts * chunk_idx;
+
+    auto *CASCADE_RESTRICT x_lb_ptr = m_data->x_lb.data() + offset;
+    auto *CASCADE_RESTRICT y_lb_ptr = m_data->y_lb.data() + offset;
+    auto *CASCADE_RESTRICT z_lb_ptr = m_data->z_lb.data() + offset;
+    auto *CASCADE_RESTRICT r_lb_ptr = m_data->r_lb.data() + offset;
+
+    auto *CASCADE_RESTRICT x_ub_ptr = m_data->x_ub.data() + offset;
+    auto *CASCADE_RESTRICT y_ub_ptr = m_data->y_ub.data() + offset;
+    auto *CASCADE_RESTRICT z_ub_ptr = m_data->z_ub.data() + offset;
+    auto *CASCADE_RESTRICT r_ub_ptr = m_data->r_ub.data() + offset;
+
+    auto *CASCADE_RESTRICT mcodes_ptr = m_data->mcodes.data() + offset;
+
+    auto *CASCADE_RESTRICT srt_x_lb_ptr = m_data->srt_x_lb.data() + offset;
+    auto *CASCADE_RESTRICT srt_y_lb_ptr = m_data->srt_y_lb.data() + offset;
+    auto *CASCADE_RESTRICT srt_z_lb_ptr = m_data->srt_z_lb.data() + offset;
+    auto *CASCADE_RESTRICT srt_r_lb_ptr = m_data->srt_r_lb.data() + offset;
+
+    auto *CASCADE_RESTRICT srt_x_ub_ptr = m_data->srt_x_ub.data() + offset;
+    auto *CASCADE_RESTRICT srt_y_ub_ptr = m_data->srt_y_ub.data() + offset;
+    auto *CASCADE_RESTRICT srt_z_ub_ptr = m_data->srt_z_ub.data() + offset;
+    auto *CASCADE_RESTRICT srt_r_ub_ptr = m_data->srt_r_ub.data() + offset;
+
+    auto *CASCADE_RESTRICT srt_mcodes_ptr = m_data->srt_mcodes.data() + offset;
+
+    auto *CASCADE_RESTRICT vidx_ptr = m_data->vidx.data() + offset;
+
+    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &r2) {
+        // NOTE: JIT optimisation opportunity here. Worth it?
+        for (auto pidx = r2.begin(); pidx != r2.end(); ++pidx) {
+            // Compute the centre of the AABB.
+            const auto x_ctr = x_lb_ptr[pidx] / 2 + x_ub_ptr[pidx] / 2;
+            const auto y_ctr = y_lb_ptr[pidx] / 2 + y_ub_ptr[pidx] / 2;
+            const auto z_ctr = z_lb_ptr[pidx] / 2 + z_ub_ptr[pidx] / 2;
+            const auto r_ctr = r_lb_ptr[pidx] / 2 + r_ub_ptr[pidx] / 2;
+
+            const auto n0 = detail::disc_single_coord(x_ctr, glb[0], gub[0]);
+            const auto n1 = detail::disc_single_coord(y_ctr, glb[1], gub[1]);
+            const auto n2 = detail::disc_single_coord(z_ctr, glb[2], gub[2]);
+            const auto n3 = detail::disc_single_coord(r_ctr, glb[3], gub[3]);
+
+            mcodes_ptr[pidx] = morton_enc.Encode(n0, n1, n2, n3);
+        }
+    });
+
+    // Indirect sorting of the indices for the current chunk
+    // according to the Morton codes.
+    oneapi::tbb::parallel_sort(vidx_ptr, vidx_ptr + nparts,
+                               [mcodes_ptr](auto idx1, auto idx2) { return mcodes_ptr[idx1] < mcodes_ptr[idx2]; });
+
+    // Helper to apply the indirect sorting defined in vidx to the data in src.
+    // The sorted data will be written into out.
+    auto isort_apply = [vidx_ptr, nparts](auto *out, const auto *src) {
+        oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &rn) {
+            for (auto i = rn.begin(); i != rn.end(); ++i) {
+                out[i] = src[vidx_ptr[i]];
+            }
+        });
+    };
+
+    // NOTE: can do all of these in parallel in principle, but performance
+    // is bottlenecked by RAM speed anyway. Perhaps revisit on machines
+    // with larger core counts during performance tuning.
+    isort_apply(srt_x_lb_ptr, x_lb_ptr);
+    isort_apply(srt_y_lb_ptr, y_lb_ptr);
+    isort_apply(srt_z_lb_ptr, z_lb_ptr);
+    isort_apply(srt_r_lb_ptr, r_lb_ptr);
+
+    isort_apply(srt_x_ub_ptr, x_ub_ptr);
+    isort_apply(srt_y_ub_ptr, y_ub_ptr);
+    isort_apply(srt_z_ub_ptr, z_ub_ptr);
+    isort_apply(srt_r_ub_ptr, r_ub_ptr);
+
+    isort_apply(srt_mcodes_ptr, mcodes_ptr);
+
+    assert(std::is_sorted(srt_mcodes_ptr, srt_mcodes_ptr + nparts));
 }
 
 // NOTE: exception-wise: no user-visible data is altered
@@ -1196,17 +1199,34 @@ outcome sim::step(double dt)
     verify_global_aabbs();
 #endif
 
-    // Computation of the Morton codes and sorting.
-    morton_encode_sort_parallel();
+    if (false) {
+        // Computation of the Morton codes and sorting.
+        morton_encode_sort_parallel();
 
-    // Construction of the BVH trees.
-    construct_bvh_trees_parallel();
+        // Construction of the BVH trees.
+        construct_bvh_trees_parallel();
 
-    // Broad phase collision detection.
-    broad_phase_parallel();
+        // Broad phase collision detection.
+        broad_phase_parallel();
 
-    // Narrow phase collision detection.
-    narrow_phase_parallel();
+        // Narrow phase collision detection.
+        narrow_phase_parallel();
+    } else {
+        for (auto chunk_idx = 0u; chunk_idx < m_data->nchunks; ++chunk_idx) {
+            morton_encode_sort_serial(chunk_idx);
+
+            construct_bvh_trees_serial(chunk_idx);
+
+            broad_phase_serial(chunk_idx);
+
+            m_data->coll_vec.clear();
+            narrow_phase_serial(chunk_idx);
+
+            if (!m_data->coll_vec.empty()) {
+                break;
+            }
+        }
+    }
 
     // Data to determine and setup the outcome of the step.
     outcome oc = outcome::success;

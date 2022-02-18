@@ -94,11 +94,17 @@ private:
     void set_new_state_impl(std::array<std::vector<double>, 7> &, std::vector<std::vector<double>>);
     CASCADE_DLL_LOCAL void add_jit_functions();
     CASCADE_DLL_LOCAL void morton_encode_sort_parallel();
+    CASCADE_DLL_LOCAL void morton_encode_sort_serial(unsigned);
     CASCADE_DLL_LOCAL void construct_bvh_trees_parallel();
+    CASCADE_DLL_LOCAL void construct_bvh_trees_serial(unsigned);
     CASCADE_DLL_LOCAL void verify_bvh_trees_parallel() const;
+    CASCADE_DLL_LOCAL void verify_bvh_trees_serial(unsigned) const;
     CASCADE_DLL_LOCAL void broad_phase_parallel();
+    CASCADE_DLL_LOCAL std::size_t broad_phase_serial(unsigned);
     CASCADE_DLL_LOCAL void verify_broad_phase_parallel() const;
+    CASCADE_DLL_LOCAL void verify_broad_phase_serial(unsigned) const;
     CASCADE_DLL_LOCAL void narrow_phase_parallel();
+    CASCADE_DLL_LOCAL void narrow_phase_serial(unsigned);
     CASCADE_DLL_LOCAL double infer_superstep();
     CASCADE_DLL_LOCAL void verify_global_aabbs() const;
     CASCADE_DLL_LOCAL void dense_propagate(double);

@@ -19,6 +19,8 @@
 
 #include <boost/math/constants/constants.hpp>
 
+#include <oneapi/tbb/global_control.h>
+
 #include <xtensor-blas/xlinalg.hpp>
 #include <xtensor/xfixed.hpp>
 #include <xtensor/xio.hpp>
@@ -77,7 +79,11 @@ int main()
 {
     namespace hy = heyoka;
 
-    set_logger_level_trace();
+    oneapi::tbb::global_control gc(oneapi::tbb::global_control::max_allowed_parallelism, 8);
+
+    create_logger();
+
+    // set_logger_level_trace();
 
     // Create the dynamics.
     const auto G = 6.674e-11;
@@ -97,7 +103,7 @@ int main()
     const auto e_s = 0.05;
     const auto inc_s = 55. * 2 * boost::math::constants::pi<double>() / 360;
 
-    const auto ct = 5000.;
+    const auto ct = 5000. / 4;
     const auto radius = 10e3 / 3;
     const auto dt = 10000.;
 
