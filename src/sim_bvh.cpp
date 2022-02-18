@@ -81,7 +81,7 @@ int first_diff_bit(T n1, T n2)
 } // namespace detail
 
 // Construct the BVH tree for each chunk.
-void sim::construct_bvh_trees()
+void sim::construct_bvh_trees_parallel()
 {
     spdlog::stopwatch sw;
 
@@ -482,11 +482,11 @@ void sim::construct_bvh_trees()
     logger->trace("BVH construction time: {}s", sw);
 
 #if !defined(NDEBUG)
-    verify_bvh_trees();
+    verify_bvh_trees_parallel();
 #endif
 }
 
-void sim::verify_bvh_trees() const
+void sim::verify_bvh_trees_parallel() const
 {
     const auto nparts = get_nparts();
     const auto nchunks = m_data->nchunks;

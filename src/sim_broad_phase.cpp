@@ -36,7 +36,7 @@ namespace cascade
 
 // Broad phase collision detection - i.e., collision
 // detection between the AABBs of the particles' trajectories.
-void sim::broad_phase()
+void sim::broad_phase_parallel()
 {
     spdlog::stopwatch sw;
 
@@ -187,12 +187,12 @@ void sim::broad_phase()
                       / static_cast<double>(nparts));
 
 #if !defined(NDEBUG)
-    verify_broad_phase();
+    verify_broad_phase_parallel();
 #endif
 }
 
 // Debug checks on the broad phase collision detection.
-void sim::verify_broad_phase() const
+void sim::verify_broad_phase_parallel() const
 {
     const auto nparts = get_nparts();
     const auto nchunks = m_data->nchunks;

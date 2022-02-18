@@ -244,7 +244,7 @@ sim::sim_data::np_data::pwrap::~pwrap()
 // of the particle pairs identified during broad
 // phase collision detection are tested for intersection
 // using polynomial root finding.
-void sim::narrow_phase()
+void sim::narrow_phase_parallel()
 {
     namespace hy = heyoka;
     using dfloat = hy::detail::dfloat<double>;

@@ -412,7 +412,7 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
 
 // Perform the Morton encoding of the centres of the AABBs of the particles
 // and sort the AABB data according to the codes.
-void sim::morton_encode_sort()
+void sim::morton_encode_sort_parallel()
 {
     spdlog::stopwatch sw;
 
@@ -1197,16 +1197,16 @@ outcome sim::step(double dt)
 #endif
 
     // Computation of the Morton codes and sorting.
-    morton_encode_sort();
+    morton_encode_sort_parallel();
 
     // Construction of the BVH trees.
-    construct_bvh_trees();
+    construct_bvh_trees_parallel();
 
     // Broad phase collision detection.
-    broad_phase();
+    broad_phase_parallel();
 
     // Narrow phase collision detection.
-    narrow_phase();
+    narrow_phase_parallel();
 
     // Data to determine and setup the outcome of the step.
     outcome oc = outcome::success;
