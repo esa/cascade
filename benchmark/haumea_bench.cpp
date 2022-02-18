@@ -213,5 +213,10 @@ int main()
             std::cout << "Interrupting due to terminal event detected\n";
             break;
         }
+
+        if (s.get_time() > 30. * 86400) {
+            std::cout << "Final time reached, exiting\n";
+            break;
+        }
     }
 }
