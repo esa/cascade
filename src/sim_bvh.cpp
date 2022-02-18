@@ -246,6 +246,26 @@ void sim::construct_bvh_trees()
 
                                 // Update the leaf nodes counter.
                                 ++n_leaf_nodes;
+
+                                // NOTE: check that the initial value of the AABB
+                                // was properly set.
+                                assert(cur_node.lb == default_lb);
+                                assert(cur_node.ub == default_ub);
+
+                                // Compute the AABB for this leaf node.
+                                for (auto pidx = cur_node.begin; pidx != cur_node.end; ++pidx) {
+                                    // NOTE: min/max is fine here, we already checked
+                                    // that all AABBs are finite.
+                                    cur_node.lb[0] = std::min(cur_node.lb[0], x_lb_ptr[pidx]);
+                                    cur_node.lb[1] = std::min(cur_node.lb[1], y_lb_ptr[pidx]);
+                                    cur_node.lb[2] = std::min(cur_node.lb[2], z_lb_ptr[pidx]);
+                                    cur_node.lb[3] = std::min(cur_node.lb[3], r_lb_ptr[pidx]);
+
+                                    cur_node.ub[0] = std::max(cur_node.ub[0], x_ub_ptr[pidx]);
+                                    cur_node.ub[1] = std::max(cur_node.ub[1], y_ub_ptr[pidx]);
+                                    cur_node.ub[2] = std::max(cur_node.ub[2], z_ub_ptr[pidx]);
+                                    cur_node.ub[3] = std::max(cur_node.ub[3], r_ub_ptr[pidx]);
+                                }
                             } else {
                                 // An internal node has 2 children.
                                 nc_buf[node_idx - n_begin] = 2;
@@ -264,8 +284,10 @@ void sim::construct_bvh_trees()
                 assert(n_leaf_nodes * 2u <= nn_next_level);
                 nn_next_level -= n_leaf_nodes * 2u;
 
-                // Step 2: prepare the tree for the new nodes.
-                // NOTE: nn_next_level was computed in the previous step.
+                // Step 2: prepare the tree for the new children nodes. This will add
+                // new nodes at the end of the tree containing indeterminate
+                // values. The properties of these new nodes will be set up
+                // in step 4.
                 if (nn_next_level > std::numeric_limits<decltype(cur_tree_size)>::max() - cur_tree_size) {
                     throw std::overflow_error(overflow_err_msg);
                 }
@@ -291,7 +313,8 @@ void sim::construct_bvh_trees()
                     std::plus<>{});
 
                 // Step 4: finalise the nodes in the range with the children pointers,
-                // and perform the initial setup of the children nodes.
+                // and perform the initial setup of the children nodes that were
+                // added in step 2.
                 oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(n_begin, n_end), [&](const auto &rn) {
                     for (auto node_idx = rn.begin(); node_idx != rn.end(); ++node_idx) {
                         assert(node_idx - n_begin < cur_n_nodes);
@@ -305,13 +328,12 @@ void sim::construct_bvh_trees()
                         // regardless of whether the node is internal or a leaf.
                         cur_node.nn_level = cur_n_nodes;
 
-                        // NOTE: for a leaf node, the left/right indices are already set to -1:
-                        // if cur_node is the root node, it was inited properly
-                        // by the initial insertion in the tree, otherwise,
-                        // when inserting new children nodes in the tree below, we ensure
-                        // to prepare children nodes with left/right already set to -1.
-
-                        if (nc != 0u) {
+                        if (nc == 0u) {
+                            // NOTE: no need for further finalisation of leaf nodes.
+                            // Ensure that the AABB was correctly set up.
+                            assert(cur_node.lb != default_lb);
+                            assert(cur_node.ub != default_ub);
+                        } else {
                             // Internal node.
 
                             // Fetch the number of particles in the left child.
@@ -379,47 +401,77 @@ void sim::construct_bvh_trees()
             auto n_begin = tree.size() - tree.back().nn_level;
             auto n_end = tree.size();
 
-            while (true) {
-                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(n_begin, n_end), [&](const auto &rn) {
-                    for (auto node_idx = rn.begin(); node_idx != rn.end(); ++node_idx) {
-                        auto &cur_node = tree[node_idx];
+#if !defined(NDEBUG)
+            // Double check that all nodes in the last level are
+            // indeed leaves.
+            assert(std::all_of(tree.data() + n_begin, tree.data() + n_end,
+                               [](const auto &cur_node) { return cur_node.left == -1; }));
+#endif
 
-                        if (cur_node.left == -1) {
-                            // Leaf node, compute the bounding box.
-                            for (auto pidx = cur_node.begin; pidx != cur_node.end; ++pidx) {
-                                // NOTE: min/max is fine here, we already checked
-                                // that all AABBs are finite.
-                                cur_node.lb[0] = std::min(cur_node.lb[0], x_lb_ptr[pidx]);
-                                cur_node.lb[1] = std::min(cur_node.lb[1], y_lb_ptr[pidx]);
-                                cur_node.lb[2] = std::min(cur_node.lb[2], z_lb_ptr[pidx]);
-                                cur_node.lb[3] = std::min(cur_node.lb[3], r_lb_ptr[pidx]);
+            // NOTE: because the AABBs for the leaf nodes were already computed,
+            // we can skip the AABB computation for the nodes in the last level,
+            // which are all guaranteed to be leaf nodes.
+            // NOTE: if n_begin == 0u, it means the tree consists
+            // only of the root node, which is itself a leaf.
+            if (n_begin == 0u) {
+                assert(n_end == 1u);
+            } else {
+                // Compute the range of the penultimate level.
+                auto new_n_end = n_begin;
+                n_begin -= tree[n_begin - 1u].nn_level;
+                n_end = new_n_end;
 
-                                cur_node.ub[0] = std::max(cur_node.ub[0], x_ub_ptr[pidx]);
-                                cur_node.ub[1] = std::max(cur_node.ub[1], y_ub_ptr[pidx]);
-                                cur_node.ub[2] = std::max(cur_node.ub[2], z_ub_ptr[pidx]);
-                                cur_node.ub[3] = std::max(cur_node.ub[3], r_ub_ptr[pidx]);
-                            }
-                        } else {
-                            // Internal node, compute its AABB from the children.
-                            auto &lc = tree[static_cast<decltype(tree.size())>(cur_node.left)];
-                            auto &rc = tree[static_cast<decltype(tree.size())>(cur_node.right)];
+                while (true) {
+                    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(n_begin, n_end), [&](const auto &rn) {
+                        for (auto node_idx = rn.begin(); node_idx != rn.end(); ++node_idx) {
+                            auto &cur_node = tree[node_idx];
 
-                            for (auto j = 0u; j < 4u; ++j) {
-                                // NOTE: min/max is fine here, we already checked
-                                // that all AABBs are finite.
-                                cur_node.lb[j] = std::min(lc.lb[j], rc.lb[j]);
-                                cur_node.ub[j] = std::max(lc.ub[j], rc.ub[j]);
+                            if (cur_node.left == -1) {
+                                // Leaf node, the bounding box was computed earlier.
+                                // Just verify it in debug mode.
+#if !defined(NDEBUG)
+                                auto dbg_lb = default_lb, dbg_ub = default_ub;
+
+                                for (auto pidx = cur_node.begin; pidx != cur_node.end; ++pidx) {
+                                    dbg_lb[0] = std::min(dbg_lb[0], x_lb_ptr[pidx]);
+                                    dbg_lb[1] = std::min(dbg_lb[1], y_lb_ptr[pidx]);
+                                    dbg_lb[2] = std::min(dbg_lb[2], z_lb_ptr[pidx]);
+                                    dbg_lb[3] = std::min(dbg_lb[3], r_lb_ptr[pidx]);
+
+                                    dbg_ub[0] = std::max(dbg_ub[0], x_ub_ptr[pidx]);
+                                    dbg_ub[1] = std::max(dbg_ub[1], y_ub_ptr[pidx]);
+                                    dbg_ub[2] = std::max(dbg_ub[2], z_ub_ptr[pidx]);
+                                    dbg_ub[3] = std::max(dbg_ub[3], r_ub_ptr[pidx]);
+                                }
+
+                                assert(cur_node.lb == dbg_lb);
+                                assert(cur_node.ub == dbg_ub);
+#endif
+                            } else {
+                                // Internal node, compute its AABB from the children.
+                                auto &lc = tree[static_cast<decltype(tree.size())>(cur_node.left)];
+                                auto &rc = tree[static_cast<decltype(tree.size())>(cur_node.right)];
+
+                                for (auto j = 0u; j < 4u; ++j) {
+                                    // NOTE: min/max is fine here, we already checked
+                                    // that all AABBs are finite.
+                                    cur_node.lb[j] = std::min(lc.lb[j], rc.lb[j]);
+                                    cur_node.ub[j] = std::max(lc.ub[j], rc.ub[j]);
+                                }
                             }
                         }
-                    }
-                });
+                    });
 
-                if (n_begin == 0u) {
-                    break;
-                } else {
-                    const auto new_n_end = n_begin;
-                    n_begin -= tree[n_begin - 1u].nn_level;
-                    n_end = new_n_end;
+                    if (n_begin == 0u) {
+                        // We reached the root node, break out.
+                        assert(n_end == 1u);
+                        break;
+                    } else {
+                        // Compute the range of the previous level.
+                        new_n_end = n_begin;
+                        n_begin -= tree[n_begin - 1u].nn_level;
+                        n_end = new_n_end;
+                    }
                 }
             }
 
