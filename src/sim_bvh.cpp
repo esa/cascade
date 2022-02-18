@@ -165,107 +165,135 @@ void sim::construct_bvh_trees()
                 ps_buf.resize(boost::numeric_cast<decltype(ps_buf.size())>(cur_n_nodes));
                 nplc_buf.resize(boost::numeric_cast<decltype(nplc_buf.size())>(cur_n_nodes));
 
-                // For each node in a range, this function will:
-                // - determine if the node is a leaf, and
-                // - if it is *not* a leaf, how many particles
-                //   are in the left child.
-                // The return value is the total number
-                // of leaf nodes detected in the range.
-                auto node_split = [&](auto rbegin, auto rend) {
-                    // Local accumulator for the number of leaf nodes
-                    // detected in the range.
-                    std::uint32_t n_leaf_nodes = 0;
+                // Step 1: determine, for each node in the range,
+                // if the node is a leaf or not, and, for an internal node,
+                // the number of particles in the left child.
+                const auto n_leaf_nodes = oneapi::tbb::parallel_reduce(
+                    oneapi::tbb::blocked_range(n_begin, n_end), std::uint32_t(0),
+                    [&](const auto &rn, std::uint32_t init) {
+                        // Local accumulator for the number of leaf nodes
+                        // detected in the range.
+                        std::uint32_t n_leaf_nodes = 0;
 
-                    // NOTE: this for loop can *probably* be written in a vectorised
-                    // fashion, using the gather primitives as done in heyoka.
-                    for (auto node_idx = rbegin; node_idx != rend; ++node_idx) {
-                        assert(node_idx - n_begin < cur_n_nodes);
+                        // NOTE: this for loop can *probably* be written in a vectorised
+                        // fashion, using the gather primitives as done in heyoka.
+                        for (auto node_idx = rn.begin(); node_idx != rn.end(); ++node_idx) {
+                            assert(node_idx - n_begin < cur_n_nodes);
 
-                        auto &cur_node = tree[node_idx];
+                            auto &cur_node = tree[node_idx];
 
-                        // Flag to signal that this is a leaf node.
-                        bool is_leaf_node = false;
+                            // Flag to signal that this is a leaf node.
+                            bool is_leaf_node = false;
 
-                        const std::uint64_t *split_ptr;
+                            const std::uint64_t *split_ptr;
 
-                        const auto mcodes_begin = mcodes_ptr + cur_node.begin;
-                        const auto mcodes_end = mcodes_ptr + cur_node.end;
+                            const auto mcodes_begin = mcodes_ptr + cur_node.begin;
+                            const auto mcodes_end = mcodes_ptr + cur_node.end;
 
-                        if (cur_node.end - cur_node.begin > 1u && cur_node.split_idx <= 63) {
-                            // The node contains more than 1 particle,
-                            // and the initial value for split_idx is within
-                            // the bit width of a 64-bit integer.
-                            // Figure out where the bit at index cur_node.split_idx
-                            // (counted from MSB) flips from 0 to 1
-                            // for the Morton codes in the range.
-                            assert(cur_node.split_idx <= 63);
-                            split_ptr = std::lower_bound(
-                                mcodes_begin, mcodes_end, 1u,
-                                [mask = std::uint64_t(1) << (63 - cur_node.split_idx)](
-                                    std::uint64_t mcode, unsigned val) { return (mcode & mask) < val; });
-
-                            while (split_ptr == mcodes_begin || split_ptr == mcodes_end) {
-                                // There is no bit flip at the current index.
-                                // We will try the next bit index.
-
-                                if (cur_node.split_idx == 63) {
-                                    // No more bit indices are available.
-                                    // This will be a leaf node containing more than 1 particle.
-                                    is_leaf_node = true;
-
-                                    break;
-                                }
-
-                                // Bump up the bit index and look
-                                // again for the bit flip.
-                                ++cur_node.split_idx;
+                            if (cur_node.end - cur_node.begin > 1u && cur_node.split_idx <= 63) {
+                                // The node contains more than 1 particle,
+                                // and the initial value for split_idx is within
+                                // the bit width of a 64-bit integer.
+                                // Figure out where the bit at index cur_node.split_idx
+                                // (counted from MSB) flips from 0 to 1
+                                // for the Morton codes in the range.
                                 assert(cur_node.split_idx <= 63);
                                 split_ptr = std::lower_bound(
                                     mcodes_begin, mcodes_end, 1u,
                                     [mask = std::uint64_t(1) << (63 - cur_node.split_idx)](
                                         std::uint64_t mcode, unsigned val) { return (mcode & mask) < val; });
+
+                                while (split_ptr == mcodes_begin || split_ptr == mcodes_end) {
+                                    // There is no bit flip at the current index.
+                                    // We will try the next bit index.
+
+                                    if (cur_node.split_idx == 63) {
+                                        // No more bit indices are available.
+                                        // This will be a leaf node containing more than 1 particle.
+                                        is_leaf_node = true;
+
+                                        break;
+                                    }
+
+                                    // Bump up the bit index and look
+                                    // again for the bit flip.
+                                    ++cur_node.split_idx;
+                                    assert(cur_node.split_idx <= 63);
+                                    split_ptr = std::lower_bound(
+                                        mcodes_begin, mcodes_end, 1u,
+                                        [mask = std::uint64_t(1) << (63 - cur_node.split_idx)](
+                                            std::uint64_t mcode, unsigned val) { return (mcode & mask) < val; });
+                                }
+                            } else {
+                                // Node with either:
+                                // - a single particle, or
+                                // - a value of split_idx which is > 63.
+                                // The latter means that the node resulted
+                                // from splitting a node whose particles'
+                                // Morton codes differred at the least significant
+                                // bit. This also implies that all the particles
+                                // in the node have the same Morton code (this is checked
+                                // in the BVH verification function).
+                                // In either case, we cannot split any further
+                                // and the node is a leaf.
+                                is_leaf_node = true;
                             }
-                        } else {
-                            // Node with either:
-                            // - a single particle, or
-                            // - a value of split_idx which is > 63.
-                            // The latter means that the node resulted
-                            // from splitting a node whose particles'
-                            // Morton codes differred at the least significant
-                            // bit. This also implies that all the particles
-                            // in the node have the same Morton code (this is checked
-                            // in the BVH verification function).
-                            // In either case, we cannot split any further
-                            // and the node is a leaf.
-                            is_leaf_node = true;
+
+                            if (is_leaf_node) {
+                                // A leaf node has no children.
+                                nc_buf[node_idx - n_begin] = 0;
+                                nplc_buf[node_idx - n_begin] = 0;
+
+                                // Update the leaf nodes counter.
+                                ++n_leaf_nodes;
+                            } else {
+                                // An internal node has 2 children.
+                                nc_buf[node_idx - n_begin] = 2;
+                                // NOTE: if we are here, it means that is_leaf_node is false,
+                                // which implies that split_ptr was written to at least once.
+                                nplc_buf[node_idx - n_begin]
+                                    = boost::numeric_cast<std::uint32_t>(split_ptr - mcodes_begin);
+                            }
                         }
 
-                        if (is_leaf_node) {
-                            // A leaf node has no children.
-                            nc_buf[node_idx - n_begin] = 0;
-                            nplc_buf[node_idx - n_begin] = 0;
+                        return init + n_leaf_nodes;
+                    },
+                    std::plus<>{});
 
-                            // Update the leaf nodes counter.
-                            ++n_leaf_nodes;
-                        } else {
-                            // An internal node has 2 children.
-                            nc_buf[node_idx - n_begin] = 2;
-                            // NOTE: if we are here, it means that is_leaf_node is false,
-                            // which implies that split_ptr was written to at least once.
-                            nplc_buf[node_idx - n_begin] = boost::numeric_cast<std::uint32_t>(split_ptr - mcodes_begin);
+                // Decrease nn_next_level by n_leaf_nodes * 2.
+                assert(n_leaf_nodes * 2u <= nn_next_level);
+                nn_next_level -= n_leaf_nodes * 2u;
+
+                // Step 2: prepare the tree for the new nodes.
+                // NOTE: nn_next_level was computed in the previous step.
+                if (nn_next_level > std::numeric_limits<decltype(cur_tree_size)>::max() - cur_tree_size) {
+                    throw std::overflow_error(overflow_err_msg);
+                }
+                tree.resize(cur_tree_size + nn_next_level);
+
+                // Step 3: prefix sum over the number of children for each
+                // node in the range.
+                oneapi::tbb::parallel_scan(
+                    oneapi::tbb::blocked_range<decltype(nc_buf.size())>(0, nc_buf.size()), std::uint32_t(0),
+                    [&](const auto &r, auto sum, bool is_final_scan) {
+                        auto temp = sum;
+
+                        for (auto i = r.begin(); i < r.end(); ++i) {
+                            temp = temp + nc_buf[i];
+
+                            if (is_final_scan) {
+                                ps_buf[i] = temp;
+                            }
                         }
-                    }
 
-                    return n_leaf_nodes;
-                };
+                        return temp;
+                    },
+                    std::plus<>{});
 
-                // For each node in a range, and using the
-                // data gathered in the temp buffers,
-                // this function will compute:
-                // - the pointers to the children, if any, and
-                // - the children's initial properties.
-                auto node_writer = [&](auto rbegin, auto rend) {
-                    for (auto node_idx = rbegin; node_idx != rend; ++node_idx) {
+                // Step 4: finalise the nodes in the range with the children pointers,
+                // and perform the initial setup of the children nodes.
+                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(n_begin, n_end), [&](const auto &rn) {
+                    for (auto node_idx = rn.begin(); node_idx != rn.end(); ++node_idx) {
                         assert(node_idx - n_begin < cur_n_nodes);
 
                         auto &cur_node = tree[node_idx];
@@ -331,50 +359,7 @@ void sim::construct_bvh_trees()
                             rc.split_idx = cur_node.split_idx + 1;
                         }
                     }
-                };
-
-                // Step 1: determine, for each node in the range,
-                // if the node is a leaf or not, and, if so, the number
-                // of particles in the left child.
-                const auto n_leaf_nodes = oneapi::tbb::parallel_reduce(
-                    oneapi::tbb::blocked_range(n_begin, n_end), std::uint32_t(0),
-                    [&](const auto &rn, std::uint32_t init) { return init + node_split(rn.begin(), rn.end()); },
-                    std::plus<>{});
-
-                // Decrease nn_next_level by n_leaf_nodes * 2.
-                assert(n_leaf_nodes * 2u <= nn_next_level);
-                nn_next_level -= n_leaf_nodes * 2u;
-
-                // Step 2: prepare the tree for the new nodes.
-                // NOTE: nn_next_level was computed in the previous step.
-                if (nn_next_level > std::numeric_limits<decltype(cur_tree_size)>::max() - cur_tree_size) {
-                    throw std::overflow_error(overflow_err_msg);
-                }
-                tree.resize(cur_tree_size + nn_next_level);
-
-                // Step 3: prefix sum over the number of children for each
-                // node in the range.
-                oneapi::tbb::parallel_scan(
-                    oneapi::tbb::blocked_range<decltype(nc_buf.size())>(0, nc_buf.size()), std::uint32_t(0),
-                    [&](const auto &r, auto sum, bool is_final_scan) {
-                        auto temp = sum;
-
-                        for (auto i = r.begin(); i < r.end(); ++i) {
-                            temp = temp + nc_buf[i];
-
-                            if (is_final_scan) {
-                                ps_buf[i] = temp;
-                            }
-                        }
-
-                        return temp;
-                    },
-                    std::plus<>{});
-
-                // Step 4: finalise the nodes in the range with the children pointers,
-                // and perform the initial setup of the children nodes.
-                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(n_begin, n_end),
-                                          [&](const auto &rn) { node_writer(rn.begin(), rn.end()); });
+                });
 
                 // Assign the next value for cur_n_nodes.
                 // If nn_next_level is zero, this means that
