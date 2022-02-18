@@ -91,8 +91,8 @@ TEST_CASE("haumea bug 00")
 
     const auto dcs_m3 = hy::pow(x_s * x_s + y_s * y_s + z_s * z_s, -3. / 2);
 
-    // # Perturbations on a ring particle due to Hi'iaka and
-    // # the non-inertial reference frame.
+    // Perturbations on a ring particle due to Hi'iaka and
+    // the non-inertial reference frame.
     auto pert_x_s = mu_s * ((x_s - x) * dps_m3 - x_s * dcs_m3);
     auto pert_y_s = mu_s * ((y_s - y) * dps_m3 - y_s * dcs_m3);
     auto pert_z_s = mu_s * ((z_s - z) * dps_m3 - z_s * dcs_m3);
