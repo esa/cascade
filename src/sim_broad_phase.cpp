@@ -182,7 +182,7 @@ void sim::broad_phase_parallel()
 
     logger->trace("Broad phase collision detection time: {}s", sw);
 
-    logger->trace("Average number of collisions per particle per chunk: {}",
+    logger->trace("Average number of AABB collisions per particle per chunk: {}",
                   static_cast<double>(tot_n_bp.load(std::memory_order::relaxed)) / static_cast<double>(nchunks)
                       / static_cast<double>(nparts));
 
