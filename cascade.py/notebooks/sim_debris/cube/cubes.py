@@ -147,7 +147,7 @@ def simulate(debris, to_satcat, q, seed, sim_time=20, time_grid=5, t0=8073.60399
             Pij = s1*s2*Vrel*sigma*U*time_grid*pk.DAY2SEC
             # Store
             if Pij > np.random.random():
-                print(f"Collision! pair: {pair}, years: {i*5/365.25}")
+                print(f"Collision! pair: {pair}, years: {i*time_grid/365.25}")
                 n_collisions += 1
     q.put(n_collisions)
 
@@ -161,9 +161,9 @@ if __name__ == '__main__':
         r_ic, v_ic, c_radius, to_satcat, satcat, debris = pkl.load(file)
 
     q = mp.Queue()
-    keywords = {'time_grid': 5, 'Lcube': 10, 'sim_time': 1}
+    keywords = {'time_grid': 5, 'Lcube': 10, 'sim_time': 20}
 
-    n_jobs=4
+    n_jobs=100
     seeds  = np.random.randint(0, 123456789, (n_jobs, ))
     process_l = []
     for seed in seeds:
