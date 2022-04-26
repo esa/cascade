@@ -1,0 +1,5 @@
+Second simulation made of the debris population.
+Collisions and Decays are logged and result (both) in removal.
+
+Only the J2 term affects the dynamics. The simulation was done to compare the collision detection
+of heyoka to that of cube.

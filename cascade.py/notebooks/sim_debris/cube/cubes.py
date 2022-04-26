@@ -147,7 +147,7 @@ def simulate(debris, to_satcat, q, seed, sim_time=20, time_grid=5, t0=8073.60399
             Pij = s1*s2*Vrel*sigma*U*time_grid*pk.DAY2SEC
             # Store
             if Pij > np.random.random():
-                print(f"Collision! pair: {pair}, years: {i*5/365.25}")
+                print(f"Collision! pair: {pair}, years: {i*time_grid/365.25}")
                 n_collisions += 1
     q.put(n_collisions)
 
