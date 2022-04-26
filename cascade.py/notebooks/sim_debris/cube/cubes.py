@@ -161,9 +161,9 @@ if __name__ == '__main__':
         r_ic, v_ic, c_radius, to_satcat, satcat, debris = pkl.load(file)
 
     q = mp.Queue()
-    keywords = {'time_grid': 5, 'Lcube': 10, 'sim_time': 1}
+    keywords = {'time_grid': 5, 'Lcube': 10, 'sim_time': 20}
 
-    n_jobs=4
+    n_jobs=100
     seeds  = np.random.randint(0, 123456789, (n_jobs, ))
     process_l = []
     for seed in seeds:
