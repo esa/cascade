@@ -174,7 +174,7 @@ dyn[5] = (dyn[5][0], dyn[5][1] + fdragz)
 # # We setup the simulation
 
 # In[11]:
-csc.set_logger_level_info()
+csc.set_logger_level_trace()
 
 
 # In[12]:
@@ -214,7 +214,7 @@ new_to_satcat = deepcopy(to_satcat)
 
 
 # In[ ]:
-final_t = 365.25 * pk.DAY2SEC * 20
+final_t = 365.25 * pk.DAY2SEC * 0.1
 
 print("Starting the simulation:", flush=True)
 current_year = 0
