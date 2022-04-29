@@ -7,6 +7,7 @@ try:
     seed = int(sys.argv[1])
     cpus = int(sys.argv[2])
     folder_name = 'out'+str(seed)
+    print("output folder: ", folder_name)
     os.mkdir(folder_name)
 except: 
     print("USAGE:")
