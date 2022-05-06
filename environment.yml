@@ -25,3 +25,4 @@ dependencies:
   - ipympl
   - xtensor
   - xtensor-blas
+  - sgp4
