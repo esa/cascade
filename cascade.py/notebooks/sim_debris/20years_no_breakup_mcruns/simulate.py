@@ -175,8 +175,6 @@ dyn[5] = (dyn[5][0], dyn[5][1] + fdragz)
 
 # In[11]:
 #csc.set_logger_level_info()
-csc.set_logger_level_trace()
-
 
 # In[12]:
 def remove_particle(idx, r_ic, v_ic, BSTARS, to_satcat, c_radius):
@@ -198,10 +196,19 @@ for idx in inside_the_radius:
           "-", satcat[to_satcat[idx]]["OBJECT_ID"])
 r_ic, v_ic, BSTARS, to_satcat, c_radius = remove_particle(
     inside_the_radius, r_ic, v_ic, BSTARS, to_satcat, c_radius)
-# In[14]:
+
+
+#----------------------------- We setup the simulation--------------------------------
 print("Building the simulation:", flush=True)
 sim = csc.sim(r_ic[:, 0], r_ic[:, 1], r_ic[:, 2], v_ic[:, 0], v_ic[:, 1], v_ic[:, 2],
               c_radius, 0.23 * 806.81, dyn=dyn, pars=[BSTARS], c_radius=min_radius)
+#final_t = 365.25 * pk.DAY2SEC * 20
+final_t = 1
+
+# csc.set_logger_level_info()
+csc.set_logger_level_trace()
+
+#------------------------------------------------------------------------------------------
 
 
 # # We run the simulation
@@ -217,6 +224,7 @@ new_to_satcat = deepcopy(to_satcat)
 # In[ ]:
 final_t = 365.25 * pk.DAY2SEC * 20
 #final_t = 1 * pk.DAY2SEC
+
 
 print("Starting the simulation:", flush=True)
 current_year = 0
