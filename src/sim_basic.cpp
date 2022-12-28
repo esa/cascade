@@ -44,18 +44,6 @@
 #include <cascade/detail/sim_data.hpp>
 #include <cascade/sim.hpp>
 
-#if defined(_MSC_VER) && !defined(__clang__)
-
-// NOTE: MSVC has issues with the other "using"
-// statement form.
-using namespace fmt::literals;
-
-#else
-
-using fmt::literals::operator""_format;
-
-#endif
-
 namespace cascade
 {
 
@@ -289,33 +277,45 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
     const auto nparts = m_x.size();
 
     if (m_y.size() != nparts) {
-        throw std::invalid_argument("Inconsistent number of particles detected: the number of x coordinates is {}, "
-                                    "but the number of y coordinates is {}"_format(nparts, m_y.size()));
+        throw std::invalid_argument(
+            fmt::format("Inconsistent number of particles detected: the number of x coordinates is {}, "
+                        "but the number of y coordinates is {}",
+                        nparts, m_y.size()));
     }
 
     if (m_z.size() != nparts) {
-        throw std::invalid_argument("Inconsistent number of particles detected: the number of x coordinates is {}, "
-                                    "but the number of z coordinates is {}"_format(nparts, m_z.size()));
+        throw std::invalid_argument(
+            fmt::format("Inconsistent number of particles detected: the number of x coordinates is {}, "
+                        "but the number of z coordinates is {}",
+                        nparts, m_z.size()));
     }
 
     if (m_vx.size() != nparts) {
-        throw std::invalid_argument("Inconsistent number of particles detected: the number of x coordinates is {}, "
-                                    "but the number of x velocities is {}"_format(nparts, m_vx.size()));
+        throw std::invalid_argument(
+            fmt::format("Inconsistent number of particles detected: the number of x coordinates is {}, "
+                        "but the number of x velocities is {}",
+                        nparts, m_vx.size()));
     }
 
     if (m_vy.size() != nparts) {
-        throw std::invalid_argument("Inconsistent number of particles detected: the number of x coordinates is {}, "
-                                    "but the number of y velocities is {}"_format(nparts, m_vy.size()));
+        throw std::invalid_argument(
+            fmt::format("Inconsistent number of particles detected: the number of x coordinates is {}, "
+                        "but the number of y velocities is {}",
+                        nparts, m_vy.size()));
     }
 
     if (m_vz.size() != nparts) {
-        throw std::invalid_argument("Inconsistent number of particles detected: the number of x coordinates is {}, "
-                                    "but the number of z velocities is {}"_format(nparts, m_vz.size()));
+        throw std::invalid_argument(
+            fmt::format("Inconsistent number of particles detected: the number of x coordinates is {}, "
+                        "but the number of z velocities is {}",
+                        nparts, m_vz.size()));
     }
 
     if (m_sizes.size() != nparts) {
-        throw std::invalid_argument("Inconsistent number of particles detected: the number of x coordinates is {}, "
-                                    "but the number of particle radiuses is {}"_format(nparts, m_sizes.size()));
+        throw std::invalid_argument(
+            fmt::format("Inconsistent number of particles detected: the number of x coordinates is {}, "
+                        "but the number of particle radiuses is {}",
+                        nparts, m_sizes.size()));
     }
 
     if (!std::isfinite(m_ct) || m_ct <= 0) {
@@ -506,7 +506,7 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
             for (const auto &val : range) {
                 if (!std::isfinite(val)) {
                     throw std::invalid_argument(
-                        "The non-finite value {} was detected in the particle states"_format(val));
+                        fmt::format("The non-finite value {} was detected in the particle states",val));
                 }
             }
         });
@@ -527,11 +527,11 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                 oneapi::tbb::blocked_range(m_sizes.begin(), m_sizes.end()), [](const auto &range) {
                     for (const auto &val : range) {
                         if (!std::isfinite(val)) {
-                            throw std::invalid_argument("A non-finite particle radius of {} was detected"_format(val));
+                            throw std::invalid_argument(fmt::format("A non-finite particle radius of {} was detected",val));
                         }
 
                         if (val < 0) {
-                            throw std::invalid_argument("A negative particle radius of {} was detected"_format(val));
+                            throw std::invalid_argument(fmt::format("A negative particle radius of {} was detected",val));
                         }
                     }
                 });
