@@ -23,4 +23,6 @@ dependencies:
   - ipywidgets
   - tqdm
   - ipympl
+  - xtensor
+  - xtensor-blas
   - sgp4

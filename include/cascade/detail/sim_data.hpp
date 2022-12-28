@@ -188,13 +188,19 @@ struct sim::sim_data {
     std::vector<std::vector<std::uint32_t, detail::no_init_alloc<std::uint32_t>>> ps_buffer;
     std::vector<std::vector<std::uint32_t, detail::no_init_alloc<std::uint32_t>>> nplc_buffer;
 
-    // Vectors of broad phase collisions between AABBs.
+    // Chunk-local vectors of detected broad phase collisions between AABBs.
     std::vector<oneapi::tbb::concurrent_vector<std::pair<size_type, size_type>>> bp_coll;
-    // Caches of collision vectors between AABBs.
-    std::vector<oneapi::tbb::concurrent_queue<std::vector<std::pair<size_type, size_type>>>> bp_caches;
-    // Caches of stacks for the tree traversal during broad
-    // phase collision detection.
-    std::vector<oneapi::tbb::concurrent_queue<std::vector<std::int32_t>>> stack_caches;
+    // Data structure used during parallel broad phase collision detection.
+    struct bp_data {
+        // Local list of detected AABBs collisions.
+        std::vector<std::pair<size_type, size_type>> bp;
+        // Local stack for the BVH tree traversal.
+        std::vector<std::int32_t> stack;
+    };
+    // Chunk-local caches of data used during BP collision detection.
+    // NOTE: indirect concurrent queue through a unique_ptr because otherwise
+    // TBB puts a copy constructor requirement on the inner unique_ptr.
+    std::vector<std::unique_ptr<oneapi::tbb::concurrent_queue<std::unique_ptr<bp_data>>>> bp_data_caches;
 
     // Struct for holding polynomial caches used during
     // narrow phase collision detection.

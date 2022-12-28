@@ -81,7 +81,7 @@ int first_diff_bit(T n1, T n2)
 } // namespace detail
 
 // Construct the BVH tree for each chunk.
-void sim::construct_bvh_trees()
+void sim::construct_bvh_trees_parallel()
 {
     spdlog::stopwatch sw;
 
@@ -165,107 +165,158 @@ void sim::construct_bvh_trees()
                 ps_buf.resize(boost::numeric_cast<decltype(ps_buf.size())>(cur_n_nodes));
                 nplc_buf.resize(boost::numeric_cast<decltype(nplc_buf.size())>(cur_n_nodes));
 
-                // For each node in a range, this function will:
-                // - determine if the node is a leaf, and
-                // - if it is *not* a leaf, how many particles
-                //   are in the left child.
-                // The return value is the total number
-                // of leaf nodes detected in the range.
-                auto node_split = [&](auto rbegin, auto rend) {
-                    // Local accumulator for the number of leaf nodes
-                    // detected in the range.
-                    std::uint32_t n_leaf_nodes = 0;
+                // Step 1: determine, for each node in the range,
+                // if the node is a leaf or not, and, for an internal node,
+                // the number of particles in the left child.
+                const auto n_leaf_nodes = oneapi::tbb::parallel_reduce(
+                    oneapi::tbb::blocked_range(n_begin, n_end), std::uint32_t(0),
+                    [&](const auto &rn, std::uint32_t init) {
+                        // Local accumulator for the number of leaf nodes
+                        // detected in the range.
+                        std::uint32_t n_leaf_nodes = 0;
 
-                    // NOTE: this for loop can *probably* be written in a vectorised
-                    // fashion, using the gather primitives as done in heyoka.
-                    for (auto node_idx = rbegin; node_idx != rend; ++node_idx) {
-                        assert(node_idx - n_begin < cur_n_nodes);
+                        // NOTE: this for loop can *probably* be written in a vectorised
+                        // fashion, using the gather primitives as done in heyoka.
+                        for (auto node_idx = rn.begin(); node_idx != rn.end(); ++node_idx) {
+                            assert(node_idx - n_begin < cur_n_nodes);
 
-                        auto &cur_node = tree[node_idx];
+                            auto &cur_node = tree[node_idx];
 
-                        // Flag to signal that this is a leaf node.
-                        bool is_leaf_node = false;
+                            // Flag to signal that this is a leaf node.
+                            bool is_leaf_node = false;
 
-                        const std::uint64_t *split_ptr;
+                            const std::uint64_t *split_ptr;
 
-                        const auto mcodes_begin = mcodes_ptr + cur_node.begin;
-                        const auto mcodes_end = mcodes_ptr + cur_node.end;
+                            const auto mcodes_begin = mcodes_ptr + cur_node.begin;
+                            const auto mcodes_end = mcodes_ptr + cur_node.end;
 
-                        if (cur_node.end - cur_node.begin > 1u && cur_node.split_idx <= 63) {
-                            // The node contains more than 1 particle,
-                            // and the initial value for split_idx is within
-                            // the bit width of a 64-bit integer.
-                            // Figure out where the bit at index cur_node.split_idx
-                            // (counted from MSB) flips from 0 to 1
-                            // for the Morton codes in the range.
-                            assert(cur_node.split_idx <= 63);
-                            split_ptr = std::lower_bound(
-                                mcodes_begin, mcodes_end, 1u,
-                                [mask = std::uint64_t(1) << (63 - cur_node.split_idx)](
-                                    std::uint64_t mcode, unsigned val) { return (mcode & mask) < val; });
-
-                            while (split_ptr == mcodes_begin || split_ptr == mcodes_end) {
-                                // There is no bit flip at the current index.
-                                // We will try the next bit index.
-
-                                if (cur_node.split_idx == 63) {
-                                    // No more bit indices are available.
-                                    // This will be a leaf node containing more than 1 particle.
-                                    is_leaf_node = true;
-
-                                    break;
-                                }
-
-                                // Bump up the bit index and look
-                                // again for the bit flip.
-                                ++cur_node.split_idx;
+                            if (cur_node.end - cur_node.begin > 1u && cur_node.split_idx <= 63) {
+                                // The node contains more than 1 particle,
+                                // and the initial value for split_idx is within
+                                // the bit width of a 64-bit integer.
+                                // Figure out where the bit at index cur_node.split_idx
+                                // (counted from MSB) flips from 0 to 1
+                                // for the Morton codes in the range.
                                 assert(cur_node.split_idx <= 63);
                                 split_ptr = std::lower_bound(
                                     mcodes_begin, mcodes_end, 1u,
                                     [mask = std::uint64_t(1) << (63 - cur_node.split_idx)](
                                         std::uint64_t mcode, unsigned val) { return (mcode & mask) < val; });
+
+                                while (split_ptr == mcodes_begin || split_ptr == mcodes_end) {
+                                    // There is no bit flip at the current index.
+                                    // We will try the next bit index.
+
+                                    if (cur_node.split_idx == 63) {
+                                        // No more bit indices are available.
+                                        // This will be a leaf node containing more than 1 particle.
+                                        is_leaf_node = true;
+
+                                        break;
+                                    }
+
+                                    // Bump up the bit index and look
+                                    // again for the bit flip.
+                                    ++cur_node.split_idx;
+                                    assert(cur_node.split_idx <= 63);
+                                    split_ptr = std::lower_bound(
+                                        mcodes_begin, mcodes_end, 1u,
+                                        [mask = std::uint64_t(1) << (63 - cur_node.split_idx)](
+                                            std::uint64_t mcode, unsigned val) { return (mcode & mask) < val; });
+                                }
+                            } else {
+                                // Node with either:
+                                // - a single particle, or
+                                // - a value of split_idx which is > 63.
+                                // The latter means that the node resulted
+                                // from splitting a node whose particles'
+                                // Morton codes differred at the least significant
+                                // bit. This also implies that all the particles
+                                // in the node have the same Morton code (this is checked
+                                // in the BVH verification function).
+                                // In either case, we cannot split any further
+                                // and the node is a leaf.
+                                is_leaf_node = true;
                             }
-                        } else {
-                            // Node with either:
-                            // - a single particle, or
-                            // - a value of split_idx which is > 63.
-                            // The latter means that the node resulted
-                            // from splitting a node whose particles'
-                            // Morton codes differred at the least significant
-                            // bit. This also implies that all the particles
-                            // in the node have the same Morton code (this is checked
-                            // in the BVH verification function).
-                            // In either case, we cannot split any further
-                            // and the node is a leaf.
-                            is_leaf_node = true;
+
+                            if (is_leaf_node) {
+                                // A leaf node has no children.
+                                nc_buf[node_idx - n_begin] = 0;
+                                nplc_buf[node_idx - n_begin] = 0;
+
+                                // Update the leaf nodes counter.
+                                ++n_leaf_nodes;
+
+                                // NOTE: check that the initial value of the AABB
+                                // was properly set.
+                                assert(cur_node.lb == default_lb);
+                                assert(cur_node.ub == default_ub);
+
+                                // Compute the AABB for this leaf node.
+                                for (auto pidx = cur_node.begin; pidx != cur_node.end; ++pidx) {
+                                    // NOTE: min/max is fine here, we already checked
+                                    // that all AABBs are finite.
+                                    cur_node.lb[0] = std::min(cur_node.lb[0], x_lb_ptr[pidx]);
+                                    cur_node.lb[1] = std::min(cur_node.lb[1], y_lb_ptr[pidx]);
+                                    cur_node.lb[2] = std::min(cur_node.lb[2], z_lb_ptr[pidx]);
+                                    cur_node.lb[3] = std::min(cur_node.lb[3], r_lb_ptr[pidx]);
+
+                                    cur_node.ub[0] = std::max(cur_node.ub[0], x_ub_ptr[pidx]);
+                                    cur_node.ub[1] = std::max(cur_node.ub[1], y_ub_ptr[pidx]);
+                                    cur_node.ub[2] = std::max(cur_node.ub[2], z_ub_ptr[pidx]);
+                                    cur_node.ub[3] = std::max(cur_node.ub[3], r_ub_ptr[pidx]);
+                                }
+                            } else {
+                                // An internal node has 2 children.
+                                nc_buf[node_idx - n_begin] = 2;
+                                // NOTE: if we are here, it means that is_leaf_node is false,
+                                // which implies that split_ptr was written to at least once.
+                                nplc_buf[node_idx - n_begin]
+                                    = boost::numeric_cast<std::uint32_t>(split_ptr - mcodes_begin);
+                            }
                         }
 
-                        if (is_leaf_node) {
-                            // A leaf node has no children.
-                            nc_buf[node_idx - n_begin] = 0;
-                            nplc_buf[node_idx - n_begin] = 0;
+                        return init + n_leaf_nodes;
+                    },
+                    std::plus<>{});
 
-                            // Update the leaf nodes counter.
-                            ++n_leaf_nodes;
-                        } else {
-                            // An internal node has 2 children.
-                            nc_buf[node_idx - n_begin] = 2;
-                            // NOTE: if we are here, it means that is_leaf_node is false,
-                            // which implies that split_ptr was written to at least once.
-                            nplc_buf[node_idx - n_begin] = boost::numeric_cast<std::uint32_t>(split_ptr - mcodes_begin);
+                // Decrease nn_next_level by n_leaf_nodes * 2.
+                assert(n_leaf_nodes * 2u <= nn_next_level);
+                nn_next_level -= n_leaf_nodes * 2u;
+
+                // Step 2: prepare the tree for the new children nodes. This will add
+                // new nodes at the end of the tree containing indeterminate
+                // values. The properties of these new nodes will be set up
+                // in step 4.
+                if (nn_next_level > std::numeric_limits<decltype(cur_tree_size)>::max() - cur_tree_size) {
+                    throw std::overflow_error(overflow_err_msg);
+                }
+                tree.resize(cur_tree_size + nn_next_level);
+
+                // Step 3: prefix sum over the number of children for each
+                // node in the range.
+                oneapi::tbb::parallel_scan(
+                    oneapi::tbb::blocked_range<decltype(nc_buf.size())>(0, nc_buf.size()), std::uint32_t(0),
+                    [&](const auto &r, auto sum, bool is_final_scan) {
+                        auto temp = sum;
+
+                        for (auto i = r.begin(); i < r.end(); ++i) {
+                            temp = temp + nc_buf[i];
+
+                            if (is_final_scan) {
+                                ps_buf[i] = temp;
+                            }
                         }
-                    }
 
-                    return n_leaf_nodes;
-                };
+                        return temp;
+                    },
+                    std::plus<>{});
 
-                // For each node in a range, and using the
-                // data gathered in the temp buffers,
-                // this function will compute:
-                // - the pointers to the children, if any, and
-                // - the children's initial properties.
-                auto node_writer = [&](auto rbegin, auto rend) {
-                    for (auto node_idx = rbegin; node_idx != rend; ++node_idx) {
+                // Step 4: finalise the nodes in the range with the children pointers,
+                // and perform the initial setup of the children nodes that were
+                // added in step 2.
+                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(n_begin, n_end), [&](const auto &rn) {
+                    for (auto node_idx = rn.begin(); node_idx != rn.end(); ++node_idx) {
                         assert(node_idx - n_begin < cur_n_nodes);
 
                         auto &cur_node = tree[node_idx];
@@ -277,13 +328,12 @@ void sim::construct_bvh_trees()
                         // regardless of whether the node is internal or a leaf.
                         cur_node.nn_level = cur_n_nodes;
 
-                        // NOTE: for a leaf node, the left/right indices are already set to -1:
-                        // if cur_node is the root node, it was inited properly
-                        // by the initial insertion in the tree, otherwise,
-                        // when inserting new children nodes in the tree below, we ensure
-                        // to prepare children nodes with left/right already set to -1.
-
-                        if (nc != 0u) {
+                        if (nc == 0u) {
+                            // NOTE: no need for further finalisation of leaf nodes.
+                            // Ensure that the AABB was correctly set up.
+                            assert(cur_node.lb != default_lb);
+                            assert(cur_node.ub != default_ub);
+                        } else {
                             // Internal node.
 
                             // Fetch the number of particles in the left child.
@@ -331,50 +381,7 @@ void sim::construct_bvh_trees()
                             rc.split_idx = cur_node.split_idx + 1;
                         }
                     }
-                };
-
-                // Step 1: determine, for each node in the range,
-                // if the node is a leaf or not, and, if so, the number
-                // of particles in the left child.
-                const auto n_leaf_nodes = oneapi::tbb::parallel_reduce(
-                    oneapi::tbb::blocked_range(n_begin, n_end), std::uint32_t(0),
-                    [&](const auto &rn, std::uint32_t init) { return init + node_split(rn.begin(), rn.end()); },
-                    std::plus<>{});
-
-                // Decrease nn_next_level by n_leaf_nodes * 2.
-                assert(n_leaf_nodes * 2u <= nn_next_level);
-                nn_next_level -= n_leaf_nodes * 2u;
-
-                // Step 2: prepare the tree for the new nodes.
-                // NOTE: nn_next_level was computed in the previous step.
-                if (nn_next_level > std::numeric_limits<decltype(cur_tree_size)>::max() - cur_tree_size) {
-                    throw std::overflow_error(overflow_err_msg);
-                }
-                tree.resize(cur_tree_size + nn_next_level);
-
-                // Step 3: prefix sum over the number of children for each
-                // node in the range.
-                oneapi::tbb::parallel_scan(
-                    oneapi::tbb::blocked_range<decltype(nc_buf.size())>(0, nc_buf.size()), std::uint32_t(0),
-                    [&](const auto &r, auto sum, bool is_final_scan) {
-                        auto temp = sum;
-
-                        for (auto i = r.begin(); i < r.end(); ++i) {
-                            temp = temp + nc_buf[i];
-
-                            if (is_final_scan) {
-                                ps_buf[i] = temp;
-                            }
-                        }
-
-                        return temp;
-                    },
-                    std::plus<>{});
-
-                // Step 4: finalise the nodes in the range with the children pointers,
-                // and perform the initial setup of the children nodes.
-                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(n_begin, n_end),
-                                          [&](const auto &rn) { node_writer(rn.begin(), rn.end()); });
+                });
 
                 // Assign the next value for cur_n_nodes.
                 // If nn_next_level is zero, this means that
@@ -394,47 +401,77 @@ void sim::construct_bvh_trees()
             auto n_begin = tree.size() - tree.back().nn_level;
             auto n_end = tree.size();
 
-            while (true) {
-                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(n_begin, n_end), [&](const auto &rn) {
-                    for (auto node_idx = rn.begin(); node_idx != rn.end(); ++node_idx) {
-                        auto &cur_node = tree[node_idx];
+#if !defined(NDEBUG)
+            // Double check that all nodes in the last level are
+            // indeed leaves.
+            assert(std::all_of(tree.data() + n_begin, tree.data() + n_end,
+                               [](const auto &cur_node) { return cur_node.left == -1; }));
+#endif
 
-                        if (cur_node.left == -1) {
-                            // Leaf node, compute the bounding box.
-                            for (auto pidx = cur_node.begin; pidx != cur_node.end; ++pidx) {
-                                // NOTE: min/max is fine here, we already checked
-                                // that all AABBs are finite.
-                                cur_node.lb[0] = std::min(cur_node.lb[0], x_lb_ptr[pidx]);
-                                cur_node.lb[1] = std::min(cur_node.lb[1], y_lb_ptr[pidx]);
-                                cur_node.lb[2] = std::min(cur_node.lb[2], z_lb_ptr[pidx]);
-                                cur_node.lb[3] = std::min(cur_node.lb[3], r_lb_ptr[pidx]);
+            // NOTE: because the AABBs for the leaf nodes were already computed,
+            // we can skip the AABB computation for the nodes in the last level,
+            // which are all guaranteed to be leaf nodes.
+            // NOTE: if n_begin == 0u, it means the tree consists
+            // only of the root node, which is itself a leaf.
+            if (n_begin == 0u) {
+                assert(n_end == 1u);
+            } else {
+                // Compute the range of the penultimate level.
+                auto new_n_end = n_begin;
+                n_begin -= tree[n_begin - 1u].nn_level;
+                n_end = new_n_end;
 
-                                cur_node.ub[0] = std::max(cur_node.ub[0], x_ub_ptr[pidx]);
-                                cur_node.ub[1] = std::max(cur_node.ub[1], y_ub_ptr[pidx]);
-                                cur_node.ub[2] = std::max(cur_node.ub[2], z_ub_ptr[pidx]);
-                                cur_node.ub[3] = std::max(cur_node.ub[3], r_ub_ptr[pidx]);
-                            }
-                        } else {
-                            // Internal node, compute its AABB from the children.
-                            auto &lc = tree[static_cast<decltype(tree.size())>(cur_node.left)];
-                            auto &rc = tree[static_cast<decltype(tree.size())>(cur_node.right)];
+                while (true) {
+                    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(n_begin, n_end), [&](const auto &rn) {
+                        for (auto node_idx = rn.begin(); node_idx != rn.end(); ++node_idx) {
+                            auto &cur_node = tree[node_idx];
 
-                            for (auto j = 0u; j < 4u; ++j) {
-                                // NOTE: min/max is fine here, we already checked
-                                // that all AABBs are finite.
-                                cur_node.lb[j] = std::min(lc.lb[j], rc.lb[j]);
-                                cur_node.ub[j] = std::max(lc.ub[j], rc.ub[j]);
+                            if (cur_node.left == -1) {
+                                // Leaf node, the bounding box was computed earlier.
+                                // Just verify it in debug mode.
+#if !defined(NDEBUG)
+                                auto dbg_lb = default_lb, dbg_ub = default_ub;
+
+                                for (auto pidx = cur_node.begin; pidx != cur_node.end; ++pidx) {
+                                    dbg_lb[0] = std::min(dbg_lb[0], x_lb_ptr[pidx]);
+                                    dbg_lb[1] = std::min(dbg_lb[1], y_lb_ptr[pidx]);
+                                    dbg_lb[2] = std::min(dbg_lb[2], z_lb_ptr[pidx]);
+                                    dbg_lb[3] = std::min(dbg_lb[3], r_lb_ptr[pidx]);
+
+                                    dbg_ub[0] = std::max(dbg_ub[0], x_ub_ptr[pidx]);
+                                    dbg_ub[1] = std::max(dbg_ub[1], y_ub_ptr[pidx]);
+                                    dbg_ub[2] = std::max(dbg_ub[2], z_ub_ptr[pidx]);
+                                    dbg_ub[3] = std::max(dbg_ub[3], r_ub_ptr[pidx]);
+                                }
+
+                                assert(cur_node.lb == dbg_lb);
+                                assert(cur_node.ub == dbg_ub);
+#endif
+                            } else {
+                                // Internal node, compute its AABB from the children.
+                                auto &lc = tree[static_cast<decltype(tree.size())>(cur_node.left)];
+                                auto &rc = tree[static_cast<decltype(tree.size())>(cur_node.right)];
+
+                                for (auto j = 0u; j < 4u; ++j) {
+                                    // NOTE: min/max is fine here, we already checked
+                                    // that all AABBs are finite.
+                                    cur_node.lb[j] = std::min(lc.lb[j], rc.lb[j]);
+                                    cur_node.ub[j] = std::max(lc.ub[j], rc.ub[j]);
+                                }
                             }
                         }
-                    }
-                });
+                    });
 
-                if (n_begin == 0u) {
-                    break;
-                } else {
-                    const auto new_n_end = n_begin;
-                    n_begin -= tree[n_begin - 1u].nn_level;
-                    n_end = new_n_end;
+                    if (n_begin == 0u) {
+                        // We reached the root node, break out.
+                        assert(n_end == 1u);
+                        break;
+                    } else {
+                        // Compute the range of the previous level.
+                        new_n_end = n_begin;
+                        n_begin -= tree[n_begin - 1u].nn_level;
+                        n_end = new_n_end;
+                    }
                 }
             }
 
@@ -445,11 +482,11 @@ void sim::construct_bvh_trees()
     logger->trace("BVH construction time: {}s", sw);
 
 #if !defined(NDEBUG)
-    verify_bvh_trees();
+    verify_bvh_trees_parallel();
 #endif
 }
 
-void sim::verify_bvh_trees() const
+void sim::verify_bvh_trees_parallel() const
 {
     const auto nparts = get_nparts();
     const auto nchunks = m_data->nchunks;

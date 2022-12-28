@@ -244,7 +244,7 @@ sim::sim_data::np_data::pwrap::~pwrap()
 // of the particle pairs identified during broad
 // phase collision detection are tested for intersection
 // using polynomial root finding.
-void sim::narrow_phase()
+void sim::narrow_phase_parallel()
 {
     namespace hy = heyoka;
     using dfloat = hy::detail::dfloat<double>;
@@ -302,7 +302,15 @@ void sim::narrow_phase()
                 // Fetch the polynomial caches.
                 std::unique_ptr<sim_data::np_data> pcaches;
 
-                if (!np_cache.try_pop(pcaches)) {
+                if (np_cache.try_pop(pcaches)) {
+#if !defined(NDEBUG)
+                    assert(pcaches);
+
+                    for (auto &v : pcaches->dist2) {
+                        assert(v.size() == order + 1u);
+                    }
+#endif
+                } else {
                     SPDLOG_LOGGER_DEBUG(logger, "Creating new local polynomials for narrow phase collision detection");
 
                     // Init pcaches.
@@ -311,14 +319,6 @@ void sim::narrow_phase()
                     for (auto &v : pcaches->dist2) {
                         v.resize(boost::numeric_cast<decltype(v.size())>(order + 1u));
                     }
-                } else {
-#if !defined(NDEBUG)
-                    assert(pcaches);
-
-                    for (auto &v : pcaches->dist2) {
-                        assert(v.size() == order + 1u);
-                    }
-#endif
                 }
 
                 // Cache a few quantities.
