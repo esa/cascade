@@ -39,14 +39,14 @@ namespace detail
 template <typename... Args>
 inline constexpr bool always_false_v = false;
 
-}
+} // namespace detail
 
 namespace dynamics
 {
 
 CASCADE_DLL_PUBLIC std::vector<std::pair<heyoka::expression, heyoka::expression>> kepler(double = 1.);
 
-}
+} // namespace dynamics
 
 namespace kw
 {
@@ -64,10 +64,10 @@ IGOR_MAKE_NAMED_ARGUMENT(high_accuracy);
 
 template <typename T>
 CASCADE_CONCEPT_DECL di_range
-    = std::ranges::input_range<T> &&std::convertible_to<std::ranges::range_reference_t<T>, double>;
+    = std::ranges::input_range<T> && std::convertible_to<std::ranges::range_reference_t<T>, double>;
 
 template <typename T>
-CASCADE_CONCEPT_DECL di_range_range = std::ranges::input_range<T> &&di_range<std::ranges::range_reference_t<T>>;
+CASCADE_CONCEPT_DECL di_range_range = std::ranges::input_range<T> && di_range<std::ranges::range_reference_t<T>>;
 
 #undef CASCADE_CONCEPT_DECL
 
