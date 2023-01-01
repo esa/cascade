@@ -24,6 +24,8 @@
 #include <variant>
 #include <vector>
 
+#include <boost/safe_numerics/safe_integer.hpp>
+
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <fmt/ranges.h>
@@ -388,7 +390,7 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
     dyn.push_back(hy::prime(r) = hy::sum({x * vx, y * vy, z * vz}) / r);
 
     // Check and assign c_radius.
-    if (auto vcr_ptr = std::get_if<std::vector<double>>(&c_radius)) {
+    if (auto *vcr_ptr = std::get_if<std::vector<double>>(&c_radius)) {
         if (vcr_ptr->size() != 3u) {
             throw std::invalid_argument(fmt::format(
                 "The c_radius argument must be either a scalar (for a spherical central body) "
@@ -431,7 +433,7 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
         };
 
         auto make_reentry_eq = [&]() {
-            if (auto dbl_ptr = std::get_if<double>(&m_c_radius)) {
+            if (auto *dbl_ptr = std::get_if<double>(&m_c_radius)) {
                 assert(*dbl_ptr > 0);
 
                 return hy::sum_sq({x, y, z}) - *dbl_ptr * *dbl_ptr;
@@ -473,11 +475,6 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
             [&]() {
                 const std::uint32_t batch_size = hy::recommended_simd_size<double>();
 
-                if (batch_size > std::numeric_limits<std::vector<double>::size_type>::max() / 7u) {
-                    throw std::overflow_error(
-                        "An overflow as detected during the construction of the batch integrator");
-                }
-
                 using ev_t = hy::taylor_adaptive_batch<double>::t_event_t;
                 std::vector<ev_t> t_events;
 
@@ -494,8 +491,10 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                                           hy::kw::direction = hy::event_direction::negative);
                 }
 
-                b_ta.emplace(dyn, std::vector<double>(7u * batch_size), batch_size,
-                             hy::kw::t_events = std::move(t_events), hy::kw::tol = tol, hy::kw::high_accuracy = ha);
+                using safe_size_t = boost::safe_numerics::safe<std::vector<double>::size_type>;
+                const std::vector<double>::size_type state_size = safe_size_t(7) * batch_size;
+                b_ta.emplace(dyn, std::vector<double>(state_size), batch_size, hy::kw::t_events = std::move(t_events),
+                             hy::kw::tol = tol, hy::kw::high_accuracy = ha);
             });
     };
 
