@@ -3,3 +3,6 @@ build*
 
 # Notebooks bits.
 .ipynb_checkpoints
+
+# clangd bits.
+.cache
