@@ -189,7 +189,8 @@ find_package(TBB REQUIRED CONFIG)
 target_link_libraries(cascade PRIVATE TBB::tbb)
 
 # Boost.
-find_package(Boost 1.60 REQUIRED)
+# NOTE: need 1.69 for safe numerics.
+find_package(Boost 1.69 REQUIRED)
 target_link_libraries(cascade PUBLIC Boost::boost)
 
 # fmt.
