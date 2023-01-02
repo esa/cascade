@@ -56,7 +56,7 @@ namespace
 {
 
 // The list of allowed dynamical symbols, first in dynamical order then in alphabetical order.
-const std::array<std::string, 6> allowed_vars = {"x", "y", "z", "vx", "vy", "vz"};
+constexpr std::array<std::string, 6> allowed_vars = {"x", "y", "z", "vx", "vy", "vz"};
 
 const std::set<std::string> allowed_vars_alph(allowed_vars.begin(), allowed_vars.end());
 
