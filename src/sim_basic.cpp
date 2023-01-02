@@ -564,7 +564,7 @@ void sim::set_time(double t)
 
 bool sim::with_reentry_event() const
 {
-    if (auto dbl_ptr = std::get_if<double>(&m_c_radius)) {
+    if (const auto *dbl_ptr = std::get_if<double>(&m_c_radius)) {
         assert(std::isfinite(*dbl_ptr));
         assert(*dbl_ptr >= 0);
 
