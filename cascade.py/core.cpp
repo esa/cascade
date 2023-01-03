@@ -36,7 +36,7 @@ namespace
 
 std::optional<oneapi::tbb::global_control> tbb_gc;
 
-}
+} // namespace
 
 } // namespace cascade_py::detail
 
