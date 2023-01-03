@@ -59,7 +59,7 @@ void add_poly_translator_a(hy::llvm_state &s, std::uint32_t order)
 
     // Helper to fetch the (i, j) binomial coefficient from
     // a precomputed global array.
-    auto get_bc = [&, bc_ptr = hy::detail::llvm_add_bc_array<double>(s, order)](llvm::Value *i, llvm::Value *j) {
+    auto get_bc = [&, bc_ptr = hy::detail::llvm_add_bc_array(s, fp_t, order)](llvm::Value *i, llvm::Value *j) {
         // NOTE: overflow checking for the indexing into bc_ptr is already
         // done in llvm_add_bc_array().
         auto idx = builder.CreateMul(i, builder.getInt32(order + 1u));
@@ -298,10 +298,12 @@ void sim::add_jit_functions()
 {
     auto &state = m_data->state;
 
+    auto *fp_t = heyoka::detail::to_llvm_type<double>(state.context());
+
     detail::add_poly_translator_a(state, m_data->s_ta.get_order());
     detail::add_poly_ssdiff3(state, m_data->s_ta.get_order());
-    heyoka::detail::llvm_add_fex_check<double>(state, m_data->s_ta.get_order(), 1);
-    heyoka::detail::llvm_add_poly_rtscc<double>(state, m_data->s_ta.get_order(), 1);
+    heyoka::detail::llvm_add_fex_check(state, fp_t, m_data->s_ta.get_order(), 1);
+    heyoka::detail::llvm_add_poly_rtscc(state, fp_t, m_data->s_ta.get_order(), 1);
 
     state.optimise();
 
