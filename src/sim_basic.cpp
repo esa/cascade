@@ -227,12 +227,6 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
 
     auto *logger = detail::get_logger();
 
-    // Check the tolerance.
-    if (!std::isfinite(tol) || tol <= 0) {
-        throw std::invalid_argument(fmt::format(
-            "The integrator tolerance must be finite and positive, but a value of {} was specified instead", tol));
-    }
-
     // Check that the state vector's size is a multiple of 7
     // (i.e., the state vector of each particle contains 7 values:
     // cartesian pos/vel + size).

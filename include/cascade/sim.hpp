@@ -14,7 +14,6 @@
 #include <cstddef>
 #include <functional>
 #include <iostream>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <ranges>
@@ -191,8 +190,9 @@ public:
             }
         }
 
-        // Integration tolerance (defaults to epsilon).
-        auto tol = std::numeric_limits<double>::epsilon();
+        // Integration tolerance (defaults to zero, which means
+        // auto-detected).
+        auto tol = 0.;
         if constexpr (p.has(kw::tol)) {
             if constexpr (std::convertible_to<decltype(p(kw::tol)), double>) {
                 tol = static_cast<double>(std::forward<decltype(p(kw::tol))>(p(kw::tol)));
