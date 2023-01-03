@@ -298,6 +298,7 @@ if(CASCADE_BUILD_PYTHON_BINDINGS)
 
     set(CASCADE_PY_INSTALL_PATH "" CACHE STRING "cascade module installation path")
     mark_as_advanced(CASCADE_PY_INSTALL_PATH)
+    unset(_CASCADE_PY_PYTHON3_COMPONENTS)
 
     # pybind11.
     find_package(pybind11 REQUIRED CONFIG)
