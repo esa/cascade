@@ -217,8 +217,8 @@ PYBIND11_MODULE(core, m)
                std::vector<std::vector<double>> pars) {
                 py::gil_scoped_release release;
 
-                s.set_state(std::move(x), std::move(y), std::move(z), std::move(vx), std::move(vy), std::move(vz),
-                            std::move(sizes), std::move(pars));
+                s.set_new_state(std::move(x), std::move(y), std::move(z), std::move(vx), std::move(vy), std::move(vz),
+                                std::move(sizes), std::move(pars));
             },
             "x"_a, "y"_a, "z"_a, "vx"_a, "vy"_a, "vz"_a, "sizes"_a, "pars"_a = py::list{})
         // Repr.

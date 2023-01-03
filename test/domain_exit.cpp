@@ -54,8 +54,8 @@ TEST_CASE("domain exit")
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(10.).epsilon(0.).margin(1e-14));
 
     // Ensure correctness also when using the batch integrator.
-    s.set_state({1.1, 0, 0, 0, .953, 0, 0, 1.5, 0, 0, 0, .953, 0, 0, 1.1, 0, 0, 0, .953, 0, 0,
-                 1.1, 0, 0, 0, 150,  0, 0, 1.1, 0, 0, 0, .953, 0, 0, 1.1, 0, 0, 0, .953, 0, 0});
+    s.set_new_state({1.1, 0, 0, 0, .953, 0, 0, 1.5, 0, 0, 0, .953, 0, 0, 1.1, 0, 0, 0, .953, 0, 0,
+                     1.1, 0, 0, 0, 150,  0, 0, 1.1, 0, 0, 0, .953, 0, 0, 1.1, 0, 0, 0, .953, 0, 0});
 
     s.set_time(0.);
 

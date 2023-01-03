@@ -28,8 +28,8 @@ TEST_CASE("nf state step")
     REQUIRE(std::get<1>(std::get<2>(*s.get_interrupt_info())) != 0);
 
     // Ensure correctness also when using the batch integrator.
-    s.set_state({1.01, 0, 0, -100., 0, 0, 0,    -1.01, 0, 0, 99.,  0, 0, 0,    1.02, 0, 0, 1.02,
-                 0,    0, 0, 1.03,  0, 0, 1.03, 0,     0, 0, 1.04, 0, 0, 1.04, 0,    0, 0});
+    s.set_new_state({1.01, 0, 0, -100., 0, 0, 0,    -1.01, 0, 0, 99.,  0, 0, 0,    1.02, 0, 0, 1.02,
+                     0,    0, 0, 1.03,  0, 0, 1.03, 0,     0, 0, 1.04, 0, 0, 1.04, 0,    0, 0});
     s.set_time(0.);
 
     oc = s.step(10.);
@@ -50,8 +50,8 @@ TEST_CASE("nf state propagate")
     REQUIRE(std::get<1>(std::get<2>(*s.get_interrupt_info())) != 0);
 
     // Ensure correctness also when using the batch integrator.
-    s.set_state({1.01, 0, 0, -100., 0, 0, 0,    -1.01, 0, 0, 101., 0, 0, 0,    1.02, 0, 0, 1.02,
-                 0,    0, 0, 1.03,  0, 0, 1.03, 0,     0, 0, 1.04, 0, 0, 1.04, 0,    0, 0});
+    s.set_new_state({1.01, 0, 0, -100., 0, 0, 0,    -1.01, 0, 0, 101., 0, 0, 0,    1.02, 0, 0, 1.02,
+                     0,    0, 0, 1.03,  0, 0, 1.03, 0,     0, 0, 1.04, 0, 0, 1.04, 0,    0, 0});
     s.set_time(0.);
 
     oc = s.propagate_until(1000., 10.);

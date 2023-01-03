@@ -207,8 +207,8 @@ int main()
             new_vy[j] = vj(1);
             new_vz[j] = vj(2);
 
-            s.set_state(s.get_x(), s.get_y(), s.get_z(), std::move(new_vx), std::move(new_vy), std::move(new_vz),
-                        s.get_sizes());
+            s.set_new_state(s.get_x(), s.get_y(), s.get_z(), std::move(new_vx), std::move(new_vy), std::move(new_vz),
+                            s.get_sizes());
         } else if (oc != outcome::success) {
             std::cout << "Interrupting due to terminal event detected\n";
             break;

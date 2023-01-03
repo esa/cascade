@@ -197,7 +197,7 @@ void sim::set_ct(double ct)
     m_ct = ct;
 }
 
-void sim::set_state(std::vector<double> new_state)
+void sim::set_new_state(std::vector<double> new_state)
 {
     // Verify the new state.
     verify_state_vector(new_state);

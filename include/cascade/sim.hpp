@@ -264,7 +264,7 @@ public:
     [[nodiscard]] bool get_high_accuracy() const;
     [[nodiscard]] size_type get_npars() const;
 
-    void set_state(std::vector<double>);
+    void set_new_state(std::vector<double>);
 
     outcome step(double = 0);
     outcome propagate_until(double, double = 0);
@@ -279,7 +279,7 @@ public:
     // shared pointers. This is inteded to be used
     // on the Python side in order to guarantee that
     // the destruction of a sim object or the invocation
-    // of set_state() do not trigger the destruction of
+    // of set_new_state() do not trigger the destruction of
     // the state/params vector if a NumPy array holds
     // a reference to them.
     // NOTE: it is prohibited to resize the vectors
@@ -292,6 +292,7 @@ public:
     {
         return m_pars;
     }
+
 private:
     template <typename T>
     CASCADE_DLL_LOCAL void init_scalar_ta(T &, size_type) const;
