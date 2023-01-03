@@ -15,6 +15,7 @@
 #include <functional>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <ranges>
 #include <tuple>
@@ -81,17 +82,29 @@ public:
 private:
     struct sim_data;
 
-    std::vector<double> m_x, m_y, m_z, m_vx, m_vy, m_vz, m_sizes;
-    std::vector<std::vector<double>> m_pars;
-    double m_ct;
+    // NOTE: wrap into shared pointers to enable
+    // safe resizing on the Python side: when a
+    // NumPy array is constructed from the internal
+    // state/pars, it grabs a copy of the shared pointer,
+    // so that if m_state/m_pars are reset with new values,
+    // the existing NumPy arrays still work safely.
+    std::shared_ptr<std::vector<double>> m_state;
+    std::shared_ptr<std::vector<double>> m_pars;
+    // The collisional timestep.
+    double m_ct = 0;
+    // The internal implementation-detail data (buffers, caches, etc.).
     sim_data *m_data = nullptr;
+    // Simulation interrupt info.
     std::optional<std::variant<std::array<size_type, 2>, size_type, std::tuple<size_type, double>>> m_int_info;
+    // Central body radius(es).
     std::variant<double, std::vector<double>> m_c_radius;
+    // Domain radius.
     double m_d_radius = 0;
+    // Number of params in the dynamics.
+    size_type m_npars = 0;
 
-    void finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>>, std::vector<std::vector<double>>,
+    void finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>>, std::vector<double>,
                        std::variant<double, std::vector<double>>, double, double, bool);
-    void set_new_state_impl(std::array<std::vector<double>, 7> &, std::vector<std::vector<double>>);
     CASCADE_DLL_LOCAL void add_jit_functions();
     CASCADE_DLL_LOCAL void morton_encode_sort_parallel();
     CASCADE_DLL_LOCAL void construct_bvh_trees_parallel();
@@ -104,52 +117,18 @@ private:
     CASCADE_DLL_LOCAL void dense_propagate(double);
     template <typename T>
     CASCADE_DLL_LOCAL outcome propagate_until_impl(const T &, double);
-    CASCADE_DLL_LOCAL void check_positions(const std::vector<double> &, const std::vector<double> &,
-                                           const std::vector<double> &) const;
     CASCADE_DLL_LOCAL bool with_reentry_event() const;
     CASCADE_DLL_LOCAL bool with_exit_event() const;
     CASCADE_DLL_LOCAL std::uint32_t reentry_event_idx() const;
     CASCADE_DLL_LOCAL std::uint32_t exit_event_idx() const;
-
-    template <typename InTup, typename OutTup, std::size_t... I>
-    static void state_set_impl(const InTup &in_tup, OutTup &out_tup, std::index_sequence<I...>)
-    {
-        auto func = [&](auto ic) {
-            constexpr auto Idx = decltype(ic)::value;
-
-            // The type of the input range.
-            using in_t = std::tuple_element_t<Idx, InTup>;
-
-            // The input/output vectors.
-            auto &in_vec = std::get<Idx>(in_tup);
-            auto &out_vec = std::get<Idx>(out_tup);
-
-            if constexpr (std::is_same_v<std::vector<double>, std::remove_cvref_t<in_t>>) {
-                // The input range is already a vector<double>: copy/move it in.
-                out_vec = std::forward<in_t>(in_vec);
-            } else {
-                if constexpr (std::ranges::sized_range<in_t>) {
-                    if constexpr (std::integral<std::ranges::range_size_t<in_t>>) {
-                        // The input range is sized and the size type is a C++ integral.
-                        // Prepare the internal vector.
-                        out_vec.reserve(boost::numeric_cast<decltype(out_vec.size())>(std::ranges::size(in_vec)));
-                    }
-                }
-
-                // Add the values.
-                for (auto &&val : in_vec) {
-                    out_vec.push_back(static_cast<double>(val));
-                }
-            }
-        };
-
-        (func(std::integral_constant<std::size_t, I>{}), ...);
-    }
+    CASCADE_DLL_LOCAL void verify_state_vector(const std::vector<double> &) const;
+    CASCADE_DLL_LOCAL void copy_from_final_state() noexcept;
 
 public:
     sim();
-    template <di_range X, di_range Y, di_range Z, di_range VX, di_range VY, di_range VZ, di_range S, typename... KwArgs>
-    explicit sim(X &&x, Y &&y, Z &&z, VX &&vx, VY &&vy, VZ &&vz, S &&s, double ct, KwArgs &&...kw_args) : m_ct(ct)
+    template <typename... KwArgs>
+    explicit sim(std::vector<double> state, double ct, KwArgs &&...kw_args)
+        : m_state(std::make_shared<std::vector<double>>(std::move(state))), m_ct(ct)
     {
         igor::parser p{kw_args...};
 
@@ -171,21 +150,10 @@ public:
         }
 
         // Values of runtime parameters.
-        std::vector<std::vector<double>> pars;
+        std::vector<double> pars;
         if constexpr (p.has(kw::pars)) {
-            if constexpr (di_range_range<decltype(p(kw::pars))>) {
-                // NOTE: turn it into an lvalue.
-                auto &&tmp_range = p(kw::pars);
-
-                for (auto &&rng : tmp_range) {
-                    pars.emplace_back();
-
-                    // NOTE: possible optimisation: reserve/move in if possible,
-                    // instead of push_back().
-                    for (auto &&val : rng) {
-                        pars.back().push_back(static_cast<double>(val));
-                    }
-                }
+            if constexpr (std::assignable_from<decltype(pars) &, decltype(p(kw::pars))>) {
+                pars = std::forward<decltype(p(kw::pars))>(p(kw::pars));
             } else {
                 static_assert(detail::always_false_v<KwArgs...>, "The 'pars' keyword argument is of the wrong type.");
             }
@@ -223,13 +191,6 @@ public:
             }
         }
 
-        auto in_tup
-            = std::forward_as_tuple(std::forward<X>(x), std::forward<Y>(y), std::forward<Z>(z), std::forward<VX>(vx),
-                                    std::forward<VY>(vy), std::forward<VZ>(vz), std::forward<S>(s));
-        auto out_tup = std::make_tuple(std::ref(m_x), std::ref(m_y), std::ref(m_z), std::ref(m_vx), std::ref(m_vy),
-                                       std::ref(m_vz), std::ref(m_sizes));
-        state_set_impl(in_tup, out_tup, std::make_index_sequence<std::tuple_size_v<decltype(in_tup)>>{});
-
         // Integration tolerance (defaults to epsilon).
         auto tol = std::numeric_limits<double>::epsilon();
         if constexpr (p.has(kw::tol)) {
@@ -261,73 +222,76 @@ public:
     sim &operator=(const sim &);
     sim &operator=(sim &&) noexcept;
 
-    const auto &get_interrupt_info() const
+    [[nodiscard]] const auto &get_interrupt_info() const
     {
         return m_int_info;
     }
-    size_type get_nparts() const
+    [[nodiscard]] const auto &get_state() const
     {
-        return m_x.size();
+        return *m_state;
     }
-    const auto &get_x() const
+    [[nodiscard]] const auto *get_state_data() const
     {
-        return m_x;
+        return m_state->data();
     }
-    const auto &get_y() const
+    [[nodiscard]] auto *get_state_data()
     {
-        return m_y;
+        return m_state->data();
     }
-    const auto &get_z() const
+    [[nodiscard]] const auto &get_pars() const
     {
-        return m_z;
+        return *m_pars;
     }
-    const auto &get_vx() const
+    [[nodiscard]] const auto *get_pars_data() const
     {
-        return m_vx;
+        return m_pars->data();
     }
-    const auto &get_vy() const
+    [[nodiscard]] auto *get_pars_data()
     {
-        return m_vy;
+        return m_pars->data();
     }
-    const auto &get_vz() const
+    [[nodiscard]] size_type get_nparts() const
     {
-        return m_vz;
+        return get_state().size() / 7u;
     }
-    const auto &get_pars() const
-    {
-        return m_pars;
-    }
-    const auto &get_sizes() const
-    {
-        return m_sizes;
-    }
-    double get_time() const;
+    [[nodiscard]] double get_time() const;
     void set_time(double);
 
-    double get_ct() const;
+    [[nodiscard]] double get_ct() const;
     void set_ct(double);
 
-    double get_tol() const;
-    bool get_high_accuracy() const;
+    [[nodiscard]] double get_tol() const;
+    [[nodiscard]] bool get_high_accuracy() const;
+    [[nodiscard]] size_type get_npars() const;
 
-    template <di_range X, di_range Y, di_range Z, di_range VX, di_range VY, di_range VZ, di_range S>
-    void set_new_state(X &&x, Y &&y, Z &&z, VX &&vx, VY &&vy, VZ &&vz, S &&s,
-                       std::vector<std::vector<double>> pars = {})
-    {
-        auto in_tup
-            = std::forward_as_tuple(std::forward<X>(x), std::forward<Y>(y), std::forward<Z>(z), std::forward<VX>(vx),
-                                    std::forward<VY>(vy), std::forward<VZ>(vz), std::forward<S>(s));
-
-        std::array<std::vector<double>, 7> new_state;
-
-        state_set_impl(in_tup, new_state, std::make_index_sequence<7>{});
-
-        set_new_state_impl(new_state, pars);
-    }
+    void set_state(std::vector<double>);
 
     outcome step(double = 0);
     outcome propagate_until(double, double = 0);
 
+    // NOTE: these two helpers are used to fetch
+    // copies of the shared pointers storing the state
+    // vector and the pars vector. The intended purpose
+    // is to increase the reference count of the shared
+    // pointers so that the destruction of the shared
+    // pointers in this does not necessarily lead to
+    // the destruction of the vectors contained in the
+    // shared pointers. This is inteded to be used
+    // on the Python side in order to guarantee that
+    // the destruction of a sim object or the invocation
+    // of set_state() do not trigger the destruction of
+    // the state/params vector if a NumPy array holds
+    // a reference to them.
+    // NOTE: it is prohibited to resize the vectors
+    // stored in the returned shared pointers.
+    auto _get_state_ptr() const
+    {
+        return m_state;
+    }
+    auto _get_pars_ptr() const
+    {
+        return m_pars;
+    }
 private:
     template <typename T>
     CASCADE_DLL_LOCAL void init_scalar_ta(T &, size_type) const;

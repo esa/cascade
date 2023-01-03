@@ -217,7 +217,7 @@ while sim.time < final_t:
         ic = np.delete(ic, [pi,pj], 0)
         radius = np.delete(radius, [pi,pj])
         bstar = np.delete(bstar, [pi,pj])
-        sim.set_new_state(ic[:, 0], ic[:, 1], ic[:, 2], ic[:, 3],
+        sim.set_state(ic[:, 0], ic[:, 1], ic[:, 2], ic[:, 3],
                           ic[:, 4], ic[:, 5], radius, pars=[bstar])
 
     elif oc == csc.outcome.reentry:
@@ -230,7 +230,7 @@ while sim.time < final_t:
         ic = np.delete(ic, pi, 0)
         radius = np.delete(radius, pi)
         bstar = np.delete(bstar, pi)
-        sim.set_new_state(ic[:, 0], ic[:, 1], ic[:, 2], ic[:, 3],
+        sim.set_state(ic[:, 0], ic[:, 1], ic[:, 2], ic[:, 3],
                           ic[:, 4], ic[:, 5], radius, pars=[bstar])
     
 

@@ -19,9 +19,7 @@ using namespace cascade;
 
 TEST_CASE("nf state step")
 {
-    sim s(std::vector<double>{1.01, -1.01}, std::vector<double>{0, 0}, std::vector<double>{0, 0},
-          std::vector<double>{-100., 99.}, std::vector<double>{0.0, 0}, std::vector<double>{0., 0},
-          std::vector<double>{0, 0}, 0.23);
+    sim s({1.01, 0, 0, -100., 0, 0, 0, -1.01, 0, 0, 99., 0, 0, 0}, 0.23);
 
     auto oc = s.step(10.);
 
@@ -30,9 +28,8 @@ TEST_CASE("nf state step")
     REQUIRE(std::get<1>(std::get<2>(*s.get_interrupt_info())) != 0);
 
     // Ensure correctness also when using the batch integrator.
-    s.set_new_state(std::vector<double>{1.01, -1.01, 1.02, 1.03, 1.04}, std::vector<double>(5u, 0.),
-                    std::vector<double>(5u, 0.), std::vector<double>{-100., 99., 1.02, 1.03, 1.04},
-                    std::vector<double>(5u, 0.), std::vector<double>(5u, 0.), std::vector<double>(5u, 0.));
+    s.set_state({1.01, 0, 0, -100., 0, 0, 0,    -1.01, 0, 0, 99.,  0, 0, 0,    1.02, 0, 0, 1.02,
+                 0,    0, 0, 1.03,  0, 0, 1.03, 0,     0, 0, 1.04, 0, 0, 1.04, 0,    0, 0});
     s.set_time(0.);
 
     oc = s.step(10.);
@@ -44,9 +41,7 @@ TEST_CASE("nf state step")
 
 TEST_CASE("nf state propagate")
 {
-    sim s(std::vector<double>{1.01, -1.01}, std::vector<double>{0, 0}, std::vector<double>{0, 0},
-          std::vector<double>{-100., 101}, std::vector<double>{0.0, 0}, std::vector<double>{0., 0},
-          std::vector<double>{0, 0}, 0.23);
+    sim s({1.01, 0, 0, -100., 0, 0, 0, -1.01, 0, 0, 101., 0, 0, 0}, 0.23);
 
     auto oc = s.propagate_until(1000., 10.);
 
@@ -55,9 +50,8 @@ TEST_CASE("nf state propagate")
     REQUIRE(std::get<1>(std::get<2>(*s.get_interrupt_info())) != 0);
 
     // Ensure correctness also when using the batch integrator.
-    s.set_new_state(std::vector<double>{1.01, -1.01, 1.02, 1.03, 1.04}, std::vector<double>(5u, 0.),
-                    std::vector<double>(5u, 0.), std::vector<double>{-100., 101, 1.02, 1.03, 1.04},
-                    std::vector<double>(5u, 0.), std::vector<double>(5u, 0.), std::vector<double>(5u, 0.));
+    s.set_state({1.01, 0, 0, -100., 0, 0, 0,    -1.01, 0, 0, 101., 0, 0, 0,    1.02, 0, 0, 1.02,
+                 0,    0, 0, 1.03,  0, 0, 1.03, 0,     0, 0, 1.04, 0, 0, 1.04, 0,    0, 0});
     s.set_time(0.);
 
     oc = s.propagate_until(1000., 10.);

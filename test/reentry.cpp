@@ -14,6 +14,11 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
+#include <xtensor/xadapt.hpp>
+#include <xtensor/xarray.hpp>
+#include <xtensor/xview.hpp>
+
+#include <cascade/logging.hpp>
 #include <cascade/sim.hpp>
 
 #include "catch.hpp"
@@ -24,30 +29,31 @@ TEST_CASE("reentry sphere")
 {
     using Catch::Detail::Approx;
 
-    sim s(std::vector<double>{1.5}, std::vector<double>{0}, std::vector<double>{0}, std::vector<double>{0},
-          std::vector<double>{0.01}, std::vector<double>{0.}, std::vector<double>{0}, 0.23, kw::c_radius = 1.);
+    sim s({1.5, 0, 0, 0, 0.01, 0., 0}, 0.23, kw::c_radius = 1.);
+
+    auto sv = xt::adapt(s.get_state_data(), {1, 7});
+    auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
 
     auto oc = s.propagate_until(1000.);
 
     REQUIRE(oc == outcome::reentry);
 
-    auto x = s.get_x()[0];
-    auto y = s.get_y()[0];
-    auto z = s.get_z()[0];
+    auto x = pos(0, 0);
+    auto y = pos(0, 1);
+    auto z = pos(0, 2);
 
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.).epsilon(0.).margin(1e-14));
 
-    s.set_new_state(std::vector<double>{0.}, std::vector<double>{1.5}, std::vector<double>{0}, std::vector<double>{0},
-                    std::vector<double>{0.}, std::vector<double>{0.}, std::vector<double>{0});
+    sv = xt::xarray<double>{{0., 1.5, 0, 0, 0., 0., 0.}};
     s.set_time(0.);
 
     oc = s.propagate_until(1000, 0.1);
 
     REQUIRE(oc == outcome::reentry);
 
-    x = s.get_x()[0];
-    y = s.get_y()[0];
-    z = s.get_z()[0];
+    x = pos(0, 0);
+    y = pos(0, 1);
+    z = pos(0, 2);
 
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.).epsilon(0.).margin(1e-14));
 
@@ -60,10 +66,8 @@ TEST_CASE("reentry sphere")
     }
 
     // Ensure correctness also when using the batch integrator.
-    s.set_new_state(std::vector<double>{1.1, 1.5, 1.1, 1.1, 1.1, 1.1}, std::vector<double>(6u, 0.),
-                    std::vector<double>(6u, 0.), std::vector<double>(6u, 0.),
-                    std::vector<double>{.953, 0.01, .953, .953, .953, .953}, std::vector<double>(6u, 0.),
-                    std::vector<double>(6u, 0.));
+    s.set_state({1.1, 0., 0., 0., .953, 0., 0., 1.5, 0., 0., 0., .01,  0., 0., 1.1, 0., 0., 0., .953, 0., 0.,
+                 1.1, 0., 0., 0., .953, 0., 0., 1.1, 0., 0., 0., .953, 0., 0., 1.1, 0., 0., 0., .953, 0., 0.});
     s.set_time(0.);
 
     oc = s.propagate_until(1000, 0.1);
@@ -71,9 +75,12 @@ TEST_CASE("reentry sphere")
     REQUIRE(oc == outcome::reentry);
     REQUIRE(std::get<1>(*s.get_interrupt_info()) == 1u);
 
-    x = s.get_x()[1];
-    y = s.get_y()[1];
-    z = s.get_z()[1];
+    auto sv2 = xt::adapt(s.get_state_data(), {6, 7});
+    auto pos2 = xt::view(sv2, xt::all(), xt::range(0, 3));
+
+    x = pos2(1, 0);
+    y = pos2(1, 1);
+    z = pos2(1, 2);
 
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.).epsilon(0.).margin(1e-14));
 
@@ -90,45 +97,46 @@ TEST_CASE("reentry ellipsoid")
 {
     using Catch::Detail::Approx;
 
-    sim s(std::vector<double>{1.5}, std::vector<double>{0}, std::vector<double>{0}, std::vector<double>{0},
-          std::vector<double>{0.0}, std::vector<double>{0.}, std::vector<double>{0}, 0.23,
-          kw::c_radius = std::vector<double>{1., 1.1, 1.2});
+    sim s({1.5, 0, 0, 0, 0., 0., 0}, 0.23, kw::c_radius = std::vector<double>{1., 1.1, 1.2});
+
+    auto sv = xt::adapt(s.get_state_data(), {1, 7});
+    auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
 
     auto oc = s.propagate_until(1000., 0.1);
 
     REQUIRE(oc == outcome::reentry);
 
-    auto x = s.get_x()[0];
-    auto y = s.get_y()[0];
-    auto z = s.get_z()[0];
+    auto x = pos(0, 0);
+    auto y = pos(0, 1);
+    auto z = pos(0, 2);
 
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.).epsilon(0.).margin(1e-14));
 
-    s.set_new_state(std::vector<double>{0.}, std::vector<double>{1.5}, std::vector<double>{0}, std::vector<double>{0},
-                    std::vector<double>{0.}, std::vector<double>{0.}, std::vector<double>{0});
+    sv = xt::xarray<double>{{0., 1.5, 0, 0, 0., 0., 0}};
+
     s.set_time(0.);
 
     oc = s.propagate_until(1000, 0.1);
 
     REQUIRE(oc == outcome::reentry);
 
-    x = s.get_x()[0];
-    y = s.get_y()[0];
-    z = s.get_z()[0];
+    x = pos(0, 0);
+    y = pos(0, 1);
+    z = pos(0, 2);
 
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.1).epsilon(0.).margin(1e-14));
 
-    s.set_new_state(std::vector<double>{0.}, std::vector<double>{0.}, std::vector<double>{1.5}, std::vector<double>{0},
-                    std::vector<double>{0.}, std::vector<double>{0.}, std::vector<double>{0});
+    sv = xt::xarray<double>{{0., 0, 1.5, 0, 0., 0., 0}};
+
     s.set_time(0.);
 
     oc = s.propagate_until(1000, 0.1);
 
     REQUIRE(oc == outcome::reentry);
 
-    x = s.get_x()[0];
-    y = s.get_y()[0];
-    z = s.get_z()[0];
+    x = pos(0, 0);
+    y = pos(0, 1);
+    z = pos(0, 2);
 
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.2).epsilon(0.).margin(1e-14));
 
@@ -140,10 +148,8 @@ TEST_CASE("reentry ellipsoid")
     }
 
     // Ensure correctness also when using the batch integrator.
-    s.set_new_state(std::vector<double>{1.1, 1.5, 1.1, 1.1, 1.1, 1.1}, std::vector<double>(6u, 0.),
-                    std::vector<double>(6u, 0.), std::vector<double>(6u, 0.),
-                    std::vector<double>{.953, 0., .953, .953, .953, .953}, std::vector<double>(6u, 0.),
-                    std::vector<double>(6u, 0.));
+    s.set_state({1.1, 0., 0., 0., .953, 0., 0., 1.5, 0., 0., 0., .0,   0., 0., 1.1, 0., 0., 0., .953, 0., 0.,
+                 1.1, 0., 0., 0., .953, 0., 0., 1.1, 0., 0., 0., .953, 0., 0., 1.1, 0., 0., 0., .953, 0., 0.});
     s.set_time(0.);
 
     oc = s.propagate_until(1000, 0.1);
@@ -151,9 +157,12 @@ TEST_CASE("reentry ellipsoid")
     REQUIRE(oc == outcome::reentry);
     REQUIRE(std::get<1>(*s.get_interrupt_info()) == 1u);
 
-    x = s.get_x()[1];
-    y = s.get_y()[1];
-    z = s.get_z()[1];
+    auto sv2 = xt::adapt(s.get_state_data(), {6, 7});
+    auto pos2 = xt::view(sv2, xt::all(), xt::range(0, 3));
+
+    x = pos2(1, 0);
+    y = pos2(1, 1);
+    z = pos2(1, 2);
 
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.).epsilon(0.).margin(1e-14));
 
@@ -164,9 +173,10 @@ TEST_CASE("reentry ellipsoid")
             ia.what(), "The recomputed number of chunks after the triggering of a stopping terminal"));
     }
 
-    s.set_new_state(std::vector<double>(6u, 0.), std::vector<double>(6u, 0.),
-                    std::vector<double>{2.1, 1.5, 2.1, 2.1, 2.1, 2.1}, std::vector<double>{.69, 0., .69, .69, .69, .69},
-                    std::vector<double>(6u, 0.), std::vector<double>(6u, 0.), std::vector<double>(6u, 0.));
+    sv2 = xt::xarray<double>{{0., 0., 2.1, .69, 0., 0., 0.}, {0., 0., 1.5, .0, 0., 0., 0.},
+                             {0., 0., 2.1, .69, 0., 0., 0.}, {0., 0., 2.1, .69, 0., 0., 0.},
+                             {0., 0., 2.1, .69, 0., 0., 0.}, {0., 0., 2.1, .69, 0., 0., 0.}};
+
     s.set_time(0.);
 
     oc = s.propagate_until(1000, 0.1);
@@ -174,15 +184,16 @@ TEST_CASE("reentry ellipsoid")
     REQUIRE(oc == outcome::reentry);
     REQUIRE(std::get<1>(*s.get_interrupt_info()) == 1u);
 
-    x = s.get_x()[1];
-    y = s.get_y()[1];
-    z = s.get_z()[1];
+    x = pos2(1, 0);
+    y = pos2(1, 1);
+    z = pos2(1, 2);
 
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.2).epsilon(0.).margin(1e-14));
 
-    s.set_new_state(std::vector<double>(6u, 0.), std::vector<double>{2.1, 2.1, 2.1, 1.5, 2.1, 2.1},
-                    std::vector<double>(6u, 0.), std::vector<double>{.69, .69, .69, 0., .69, .69},
-                    std::vector<double>(6u, 0.), std::vector<double>(6u, 0.), std::vector<double>(6u, 0.));
+    sv2 = xt::xarray<double>{{0., 2.1, 0., .69, 0., 0., 0.}, {0., 2.1, 0., .69, 0., 0., 0.},
+                             {0., 2.1, 0., .69, 0., 0., 0.}, {0., 1.5, 0., .0, 0., 0., 0.},
+                             {0., 2.1, 0., .69, 0., 0., 0.}, {0., 2.1, 0., .69, 0., 0., 0.}};
+
     s.set_time(0.);
 
     oc = s.propagate_until(1000, 0.1);
@@ -190,9 +201,9 @@ TEST_CASE("reentry ellipsoid")
     REQUIRE(oc == outcome::reentry);
     REQUIRE(std::get<1>(*s.get_interrupt_info()) == 3u);
 
-    x = s.get_x()[3];
-    y = s.get_y()[3];
-    z = s.get_z()[3];
+    x = pos2(3, 0);
+    y = pos2(3, 1);
+    z = pos2(3, 2);
 
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.1).epsilon(0.).margin(1e-14));
 }

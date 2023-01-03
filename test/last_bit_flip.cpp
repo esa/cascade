@@ -37,7 +37,7 @@ TEST_CASE("last bit flip")
         std::string line;
 
         while (std::getline(in, line)) {
-            double value;
+            double value = 0;
             std::stringstream ss(line);
 
             ss >> value;
@@ -46,8 +46,18 @@ TEST_CASE("last bit flip")
         }
     }
 
-    sim s(data[0], data[1], data[2], data[3], data[4], data[5], data[6], 0.23 * 806.81,
-          kw::dyn = dynamics::kepler(GMe));
+    std::vector<double> state;
+    for (decltype(state.size()) i = 0; i < data[0].size(); ++i) {
+        state.push_back(data[0][i]);
+        state.push_back(data[1][i]);
+        state.push_back(data[2][i]);
+        state.push_back(data[3][i]);
+        state.push_back(data[4][i]);
+        state.push_back(data[5][i]);
+        state.push_back(data[6][i]);
+    }
+
+    sim s(state, 0.23 * 806.81, kw::dyn = dynamics::kepler(GMe));
 
     auto oc = s.step();
     REQUIRE((oc == outcome::success || oc == outcome::collision));

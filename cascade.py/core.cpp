@@ -211,14 +211,14 @@ PYBIND11_MODULE(core, m)
                                    return ret_list;
                                })
         .def(
-            "set_new_state",
+            "set_state",
             [](sim &s, std::vector<double> x, std::vector<double> y, std::vector<double> z, std::vector<double> vx,
                std::vector<double> vy, std::vector<double> vz, std::vector<double> sizes,
                std::vector<std::vector<double>> pars) {
                 py::gil_scoped_release release;
 
-                s.set_new_state(std::move(x), std::move(y), std::move(z), std::move(vx), std::move(vy), std::move(vz),
-                                std::move(sizes), std::move(pars));
+                s.set_state(std::move(x), std::move(y), std::move(z), std::move(vx), std::move(vy), std::move(vz),
+                            std::move(sizes), std::move(pars));
             },
             "x"_a, "y"_a, "z"_a, "vx"_a, "vy"_a, "vz"_a, "sizes"_a, "pars"_a = py::list{})
         // Repr.

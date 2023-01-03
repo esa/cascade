@@ -29,7 +29,7 @@ TEST_CASE("largish")
     std::uniform_real_distribution<double> a_dist(1.02, 1.3), e_dist(0., 0.02), i_dist(0., 0.05),
         ang_dist(0., 2 * boost::math::constants::pi<double>());
 
-    std::vector<double> xv, yv, zv, vxv, vyv, vzv, sizev;
+    std::vector<double> state;
 
     const auto nparts = 8000ull;
 
@@ -43,29 +43,19 @@ TEST_CASE("largish")
 
         auto [r, v] = kep_to_cart<double>({a, e, inc, om, Om, nu}, 1.);
 
-        xv.push_back(r[0]);
-        yv.push_back(r[1]);
-        zv.push_back(r[2]);
+        state.push_back(r[0]);
+        state.push_back(r[1]);
+        state.push_back(r[2]);
 
-        vxv.push_back(v[0]);
-        vyv.push_back(v[1]);
-        vzv.push_back(v[2]);
+        state.push_back(v[0]);
+        state.push_back(v[1]);
+        state.push_back(v[2]);
 
-        sizev.push_back(0.);
+        state.push_back(0.);
     }
 
-    sim s(xv, yv, zv, vxv, vyv, vzv, sizev, 0.23);
+    sim s(state, 0.23);
     REQUIRE(s.get_nparts() == 8000u);
-
-    REQUIRE(s.get_x() == xv);
-    REQUIRE(s.get_y() == yv);
-    REQUIRE(s.get_z() == zv);
-
-    REQUIRE(s.get_vx() == vxv);
-    REQUIRE(s.get_vy() == vyv);
-    REQUIRE(s.get_vz() == vzv);
-
-    REQUIRE(s.get_sizes() == sizev);
 
     for (auto i = 0; i < 2; ++i) {
         REQUIRE(s.step() == outcome::success);

@@ -235,7 +235,7 @@ while sim.time < final_t:
         new_v_ic = np.vstack((sim.vx, sim.vy, sim.vz)).transpose()
         new_r_ic, new_v_ic, new_BSTARS, new_to_satcat, new_c_radius = remove_particle(
             [pi, pj], new_r_ic, new_v_ic, new_BSTARS, new_to_satcat, new_c_radius)
-        sim.set_new_state(new_r_ic[:, 0], new_r_ic[:, 1], new_r_ic[:, 2], new_v_ic[:, 0],
+        sim.set_state(new_r_ic[:, 0], new_r_ic[:, 1], new_r_ic[:, 2], new_v_ic[:, 0],
                           new_v_ic[:, 1], new_v_ic[:, 2], new_c_radius, pars=[new_BSTARS])
 
     elif oc == csc.outcome.reentry:
@@ -253,5 +253,5 @@ while sim.time < final_t:
         new_v_ic = np.vstack((sim.vx, sim.vy, sim.vz)).transpose()
         new_r_ic, new_v_ic, new_BSTARS, new_to_satcat, new_c_radius = remove_particle(
             pi, new_r_ic, new_v_ic, new_BSTARS, new_to_satcat, new_c_radius)
-        sim.set_new_state(new_r_ic[:, 0], new_r_ic[:, 1], new_r_ic[:, 2], new_v_ic[:, 0],
+        sim.set_state(new_r_ic[:, 0], new_r_ic[:, 1], new_r_ic[:, 2], new_v_ic[:, 0],
                           new_v_ic[:, 1], new_v_ic[:, 2], new_c_radius, pars=[new_BSTARS])

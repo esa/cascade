@@ -116,8 +116,11 @@ struct sim::sim_data {
     // a superstep for a given collisional timestep.
     std::array<double, 2> get_chunk_begin_end(unsigned, double) const;
 
-    // Buffers that will contain the state at the end of a superstep.
-    std::vector<double> final_x, final_y, final_z, final_vx, final_vy, final_vz;
+    // Buffer that is used to:
+    // - store the global state at the end of a superstep,
+    // - compute the dense output for all particles
+    //   (see dense_propagate()).
+    std::vector<double> final_state;
 
     // The integrator caches.
     // NOTE: the integrators in the caches are those
