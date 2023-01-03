@@ -102,8 +102,8 @@ std::array<double, 2> sim::sim_data::get_chunk_begin_end(unsigned chunk_idx, dou
 sim::sim() : sim(std::vector<double>{}, 1) {}
 
 sim::sim(const sim &other)
-    : m_state(std::make_unique<std::vector<double>>(*other.m_state)),
-      m_pars(std::make_unique<std::vector<double>>(*other.m_pars)), m_ct(other.m_ct), m_int_info(other.m_int_info),
+    : m_state(std::make_shared<std::vector<double>>(*other.m_state)),
+      m_pars(std::make_shared<std::vector<double>>(*other.m_pars)), m_ct(other.m_ct), m_int_info(other.m_int_info),
       m_c_radius(other.m_c_radius), m_d_radius(other.m_d_radius), m_npars(other.m_npars)
 {
     // For m_data, we will be copying only:
@@ -210,9 +210,9 @@ void sim::set_new_state(std::vector<double> new_state)
     std::vector<double> new_pars;
     new_pars.resize(safe_size_t(new_nparts) * m_npars);
 
-    // Create and Assign the new vectors.
-    auto new_st_ptr = std::make_unique<std::vector<double>>(std::move(new_state));
-    auto new_pars_ptr = std::make_unique<std::vector<double>>(std::move(new_pars));
+    // Create and assign the new vectors.
+    auto new_st_ptr = std::make_shared<std::vector<double>>(std::move(new_state));
+    auto new_pars_ptr = std::make_shared<std::vector<double>>(std::move(new_pars));
     // NOTE: noexcept from here.
     m_state = std::move(new_st_ptr);
     m_pars = std::move(new_pars_ptr);
@@ -264,7 +264,7 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
     }
 
     // Assign the pars.
-    m_pars = std::make_unique<std::vector<double>>(std::move(pars));
+    m_pars = std::make_shared<std::vector<double>>(std::move(pars));
 
     // Record the number of pars in the dynamical equations.
     std::uint32_t npars = 0;

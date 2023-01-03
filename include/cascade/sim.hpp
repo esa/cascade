@@ -284,11 +284,13 @@ public:
     // a reference to them.
     // NOTE: it is prohibited to resize the vectors
     // stored in the returned shared pointers.
-    auto _get_state_ptr() const
+    // NOTE: these are to be considered as private
+    // implementation details, **not** for public use.
+    [[nodiscard]] auto _get_state_ptr() const
     {
         return m_state;
     }
-    auto _get_pars_ptr() const
+    [[nodiscard]] auto _get_pars_ptr() const
     {
         return m_pars;
     }
