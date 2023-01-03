@@ -211,7 +211,7 @@ PYBIND11_MODULE(core, m)
                                    return ret_list;
                                })
         .def(
-            "set_state",
+            "set_new_state",
             [](sim &s, std::vector<double> x, std::vector<double> y, std::vector<double> z, std::vector<double> vx,
                std::vector<double> vy, std::vector<double> vz, std::vector<double> sizes,
                std::vector<std::vector<double>> pars) {
