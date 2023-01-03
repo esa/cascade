@@ -53,6 +53,12 @@ PYBIND11_MODULE(core, m)
     using namespace cascade;
     namespace cpy = cascade_py;
 
+    // NOTE: import immediately heyoka.py so that heyoka
+    // types (e.g., heyoka.expression) are "known" to pybind11,
+    // which can then provide nicely-formatted docstrings and
+    // error messages.
+    py::module_::import("heyoka");
+
     // Expose the logging setter functions.
     cpy::expose_logging_setters(m);
 
