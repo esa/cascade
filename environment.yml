@@ -4,7 +4,7 @@ channels:
 dependencies:
   - cmake
   - python
-  - heyoka-llvm-13>=0.17.1
+  - heyoka>=0.20.1
   - heyoka.py
   - tbb-devel
   - tbb

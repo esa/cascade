@@ -24,6 +24,8 @@
 #include <variant>
 #include <vector>
 
+#include <boost/safe_numerics/safe_integer.hpp>
+
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <fmt/ranges.h>
@@ -43,6 +45,21 @@
 #include <cascade/detail/logging_impl.hpp>
 #include <cascade/detail/sim_data.hpp>
 #include <cascade/sim.hpp>
+
+#if defined(__clang__) || defined(__GNUC__)
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+
+#endif
+
+#include "mdspan/mdspan"
+
+#if defined(__clang__) || defined(__GNUC__)
+
+#pragma GCC diagnostic pop
+
+#endif
 
 namespace cascade
 {
@@ -82,16 +99,12 @@ std::array<double, 2> sim::sim_data::get_chunk_begin_end(unsigned chunk_idx, dou
     return {cbegin, cend};
 }
 
-sim::sim()
-    : sim(std::vector<double>{}, std::vector<double>{}, std::vector<double>{}, std::vector<double>{},
-          std::vector<double>{}, std::vector<double>{}, std::vector<double>{}, 1)
-{
-}
+sim::sim() : sim(std::vector<double>{}, 1) {}
 
 sim::sim(const sim &other)
-    : m_x(other.m_x), m_y(other.m_y), m_z(other.m_z), m_vx(other.m_vx), m_vy(other.m_vy), m_vz(other.m_vz),
-      m_sizes(other.m_sizes), m_pars(other.m_pars), m_ct(other.m_ct), m_int_info(other.m_int_info),
-      m_c_radius(other.m_c_radius), m_d_radius(other.m_d_radius)
+    : m_state(std::make_shared<std::vector<double>>(*other.m_state)),
+      m_pars(std::make_shared<std::vector<double>>(*other.m_pars)), m_ct(other.m_ct), m_int_info(other.m_int_info),
+      m_c_radius(other.m_c_radius), m_d_radius(other.m_d_radius), m_npars(other.m_npars)
 {
     // For m_data, we will be copying only:
     // - the integrator templates,
@@ -112,10 +125,9 @@ sim::sim(const sim &other)
 
 // Move everything, then destroy the m_data pointer in other.
 sim::sim(sim &&other) noexcept
-    : m_x(std::move(other.m_x)), m_y(std::move(other.m_y)), m_z(std::move(other.m_z)), m_vx(std::move(other.m_vx)),
-      m_vy(std::move(other.m_vy)), m_vz(std::move(other.m_vz)), m_sizes(std::move(other.m_sizes)),
-      m_pars(std::move(other.m_pars)), m_ct(std::move(other.m_ct)), m_data(other.m_data),
-      m_int_info(std::move(other.m_int_info)), m_c_radius(std::move(other.m_c_radius)), m_d_radius(other.m_d_radius)
+    : m_state(std::move(other.m_state)), m_pars(std::move(other.m_pars)), m_ct(std::move(other.m_ct)),
+      m_data(other.m_data), m_int_info(std::move(other.m_int_info)), m_c_radius(std::move(other.m_c_radius)),
+      m_d_radius(other.m_d_radius), m_npars(other.m_npars)
 {
     other.m_data = nullptr;
 }
@@ -132,22 +144,14 @@ sim &sim::operator=(const sim &other)
 sim &sim::operator=(sim &&other) noexcept
 {
     // Assign everything, then destroy the m_data pointer in other.
-    m_x = std::move(other.m_x);
-    m_y = std::move(other.m_y);
-    m_z = std::move(other.m_z);
-    m_vx = std::move(other.m_vx);
-    m_vy = std::move(other.m_vy);
-    m_vz = std::move(other.m_vz);
-    m_sizes = std::move(other.m_sizes);
-
+    m_state = std::move(other.m_state);
     m_pars = std::move(other.m_pars);
-
     m_ct = std::move(other.m_ct);
-
     m_data = other.m_data;
-
     m_int_info = std::move(other.m_int_info);
-
+    m_c_radius = std::move(other.m_c_radius);
+    m_d_radius = std::move(other.m_d_radius);
+    m_npars = std::move(other.m_npars);
     other.m_data = nullptr;
 
     return *this;
@@ -162,6 +166,11 @@ sim::~sim()
 double sim::get_ct() const
 {
     return m_ct;
+}
+
+sim::size_type sim::get_npars() const
+{
+    return m_npars;
 }
 
 double sim::get_tol() const
@@ -188,143 +197,54 @@ void sim::set_ct(double ct)
     m_ct = ct;
 }
 
-void sim::set_new_state_impl(std::array<std::vector<double>, 7> &new_state, std::vector<std::vector<double>> pars)
+void sim::set_new_state(std::vector<double> new_state)
 {
-    // Check the new state.
-    oneapi::tbb::parallel_invoke(
-        [&]() { this->check_positions(new_state[0], new_state[1], new_state[2]); },
-        [&]() {
-            oneapi::tbb::parallel_for(
-                // NOTE: don't check the positions, as they are checked in check_positions().
-                oneapi::tbb::blocked_range<decltype(new_state.size())>(3, new_state.size()),
-                [
-                    // NOTE: the number of particles is given by the number of values in the
-                    // x vector, which is also used for the same purpose in check_positions().
-                    // Thus, we know that the positions and velocities/sizes vectors have all
-                    // consistent lengths.
-                    new_nparts = new_state[0].size(), &new_state](const auto &range) {
-                    for (auto i = range.begin(); i != range.end(); ++i) {
-                        // Check size consistency.
-                        if (new_state[i].size() != new_nparts) {
-                            throw std::invalid_argument(
-                                "An invalid new state was specified: the number of particles is not the "
-                                "same for all the state vectors");
-                        }
+    // Verify the new state.
+    verify_state_vector(new_state);
 
-                        // Check finiteness and, for sizes, non-negativity.
-                        oneapi::tbb::parallel_for(
-                            oneapi::tbb::blocked_range(new_state[i].begin(), new_state[i].end()), [i](const auto &r2) {
-                                for (const auto &val : r2) {
-                                    if (!std::isfinite(val)) {
-                                        throw std::invalid_argument(fmt::format(
-                                            "The non-finite value {} was detected in the new particle states", val));
-                                    }
+    // Fetch the new number of particles.
+    const auto new_nparts = new_state.size() / 7u;
 
-                                    if (i == 6u && val < 0) {
-                                        throw std::invalid_argument(fmt::format(
-                                            "The negative particle radius {} was detected in the new particle states",
-                                            val));
-                                    }
-                                }
-                            });
-                    }
-                });
-        });
+    // Prepare the new parameters vector.
+    using safe_size_t = boost::safe_numerics::safe<std::vector<double>::size_type>;
+    std::vector<double> new_pars;
+    new_pars.resize(safe_size_t(new_nparts) * m_npars);
 
-    // Check the new pars.
-    if (pars.size() != m_pars.size()) {
-        throw std::invalid_argument(
-            fmt::format("The vector of vectors of values for the parameters has {} elements, but {} are expected",
-                        pars.size(), m_pars.size()));
-    }
-
-    // Check that all vectors in pars have the expected number of elements.
-    for (decltype(pars.size()) i = 0; i < pars.size(); ++i) {
-        if (pars[i].size() != new_state[0].size()) {
-            throw std::invalid_argument(
-                fmt::format("The vector of values for the parameter at index {} has {} elements, but {} are expected",
-                            i, pars[i].size(), new_state[0].size()));
-        }
-    }
-
-    // Move it in.
-    m_x = std::move(new_state[0]);
-    m_y = std::move(new_state[1]);
-    m_z = std::move(new_state[2]);
-    m_vx = std::move(new_state[3]);
-    m_vy = std::move(new_state[4]);
-    m_vz = std::move(new_state[5]);
-    m_sizes = std::move(new_state[6]);
-
-    m_pars = std::move(pars);
+    // Create and assign the new vectors.
+    auto new_st_ptr = std::make_shared<std::vector<double>>(std::move(new_state));
+    auto new_pars_ptr = std::make_shared<std::vector<double>>(std::move(new_pars));
+    // NOTE: noexcept from here.
+    m_state = std::move(new_st_ptr);
+    m_pars = std::move(new_pars_ptr);
 }
 
-void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>> dyn,
-                        std::vector<std::vector<double>> pars, std::variant<double, std::vector<double>> c_radius,
-                        double d_radius, double tol, bool ha)
+void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>> dyn, std::vector<double> pars,
+                        std::variant<double, std::vector<double>> c_radius, double d_radius, double tol, bool ha)
 {
     namespace hy = heyoka;
 
+    using safe_size_t = boost::safe_numerics::safe<std::vector<double>::size_type>;
+
     auto *logger = detail::get_logger();
 
-    // Check the tolerance.
-    if (!std::isfinite(tol) || tol <= 0) {
-        throw std::invalid_argument(fmt::format(
-            "The integrator tolerance must be finite and positive, but a value of {} was specified instead", tol));
-    }
-
-    // Check consistency of the particles' state vectors.
-    const auto nparts = m_x.size();
-
-    if (m_y.size() != nparts) {
+    // Check that the state vector's size is a multiple of 7
+    // (i.e., the state vector of each particle contains 7 values:
+    // cartesian pos/vel + size).
+    // NOTE: this is a bit redundant with the checks run in verify_state_vector(),
+    // but it does not matter.
+    if (m_state->size() % 7u != 0u) {
         throw std::invalid_argument(
-            fmt::format("Inconsistent number of particles detected: the number of x coordinates is {}, "
-                        "but the number of y coordinates is {}",
-                        nparts, m_y.size()));
+            fmt::format("The size of the state vector is {}, which is not a multiple of 7", m_state->size()));
     }
 
-    if (m_z.size() != nparts) {
-        throw std::invalid_argument(
-            fmt::format("Inconsistent number of particles detected: the number of x coordinates is {}, "
-                        "but the number of z coordinates is {}",
-                        nparts, m_z.size()));
-    }
+    // Cache the number of particles.
+    const auto nparts = get_nparts();
 
-    if (m_vx.size() != nparts) {
-        throw std::invalid_argument(
-            fmt::format("Inconsistent number of particles detected: the number of x coordinates is {}, "
-                        "but the number of x velocities is {}",
-                        nparts, m_vx.size()));
-    }
-
-    if (m_vy.size() != nparts) {
-        throw std::invalid_argument(
-            fmt::format("Inconsistent number of particles detected: the number of x coordinates is {}, "
-                        "but the number of y velocities is {}",
-                        nparts, m_vy.size()));
-    }
-
-    if (m_vz.size() != nparts) {
-        throw std::invalid_argument(
-            fmt::format("Inconsistent number of particles detected: the number of x coordinates is {}, "
-                        "but the number of z velocities is {}",
-                        nparts, m_vz.size()));
-    }
-
-    if (m_sizes.size() != nparts) {
-        throw std::invalid_argument(
-            fmt::format("Inconsistent number of particles detected: the number of x coordinates is {}, "
-                        "but the number of particle radiuses is {}",
-                        nparts, m_sizes.size()));
-    }
-
+    // Check the collisional timestep.
     if (!std::isfinite(m_ct) || m_ct <= 0) {
         throw std::invalid_argument(
             fmt::format("The collisional timestep must be finite and positive, but it is {} instead", m_ct));
     }
-
-    // Assign the pars.
-    m_pars = std::move(pars);
 
     if (dyn.empty()) {
         // Default is Keplerian dynamics with unitary mu.
@@ -336,6 +256,9 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
         throw std::invalid_argument(
             fmt::format("6 dynamical equations are expected, but {} were provided instead", dyn.size()));
     }
+
+    // Assign the pars.
+    m_pars = std::make_shared<std::vector<double>>(std::move(pars));
 
     // Record the number of pars in the dynamical equations.
     std::uint32_t npars = 0;
@@ -367,28 +290,45 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
         }
     }
 
-    // Check the size of m_pars.
-    if (m_pars.size() != npars) {
-        throw std::invalid_argument(
-            fmt::format("The vector of vectors of values for the parameters has {} elements, but {} are expected",
-                        m_pars.size(), npars));
-    }
-
-    // Check that all vectors in m_pars have nparts elements.
-    for (decltype(m_pars.size()) i = 0; i < m_pars.size(); ++i) {
-        if (m_pars[i].size() != nparts) {
+    if (npars == 0u) {
+        // If there are no params in the dynamics, then the array of
+        // param values must be empty.
+        if (!m_pars->empty()) {
             throw std::invalid_argument(
-                fmt::format("The vector of values for the parameter at index {} has {} elements, but {} are expected",
-                            i, m_pars[i].size(), nparts));
+                "The input array of parameter values must be empty when the number of parameters "
+                "in the dynamics is zero");
+        }
+    } else {
+        if (m_pars->empty()) {
+            // There are parameters in the dynamics but the user did not
+            // provide an array of param values (or an empty one as provided).
+            // In such a case, zero-init the array of param values with the correct size.
+            m_pars->resize(safe_size_t(nparts) * npars);
+        } else if (m_pars->size() % npars != 0u || m_pars->size() / npars != nparts) {
+            // There are parameters in the dynamics and the user provided
+            // an array of param values, but the shape is wrong.
+            throw std::invalid_argument(fmt::format("The input array of parameter values must have shape ({}, {}), "
+                                                    "but instead its flattened size is {}",
+                                                    nparts, npars, m_pars->size()));
         }
     }
 
+    // Assign m_npars.
+    m_npars = npars;
+
     // Add the differential equation for r.
-    auto [x, y, z, vx, vy, vz, r] = hy::make_vars("x", "y", "z", "vx", "vy", "vz", "r");
+    const auto sym_vars = hy::make_vars("x", "y", "z", "vx", "vy", "vz", "r");
+    const auto &x = sym_vars[0];
+    const auto &y = sym_vars[1];
+    const auto &z = sym_vars[2];
+    const auto &vx = sym_vars[3];
+    const auto &vy = sym_vars[4];
+    const auto &vz = sym_vars[5];
+    const auto &r = sym_vars[6];
     dyn.push_back(hy::prime(r) = hy::sum({x * vx, y * vy, z * vz}) / r);
 
     // Check and assign c_radius.
-    if (auto vcr_ptr = std::get_if<std::vector<double>>(&c_radius)) {
+    if (const auto *vcr_ptr = std::get_if<std::vector<double>>(&c_radius)) {
         if (vcr_ptr->size() != 3u) {
             throw std::invalid_argument(fmt::format(
                 "The c_radius argument must be either a scalar (for a spherical central body) "
@@ -396,7 +336,7 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                 vcr_ptr->size()));
         }
 
-        if (std::ranges::any_of(*vcr_ptr, [](double x) { return !std::isfinite(x) || x <= 0; })) {
+        if (std::ranges::any_of(*vcr_ptr, [](double val) { return !std::isfinite(val) || val <= 0; })) {
             throw std::invalid_argument(fmt::format(
                 "A non-finite or non-positive value was detected among the 3 semiaxes of the central body: {}",
                 *vcr_ptr));
@@ -431,7 +371,7 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
         };
 
         auto make_reentry_eq = [&]() {
-            if (auto dbl_ptr = std::get_if<double>(&m_c_radius)) {
+            if (auto *dbl_ptr = std::get_if<double>(&m_c_radius)) {
                 assert(*dbl_ptr > 0);
 
                 return hy::sum_sq({x, y, z}) - *dbl_ptr * *dbl_ptr;
@@ -473,11 +413,6 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
             [&]() {
                 const std::uint32_t batch_size = hy::recommended_simd_size<double>();
 
-                if (batch_size > std::numeric_limits<std::vector<double>::size_type>::max() / 7u) {
-                    throw std::overflow_error(
-                        "An overflow as detected during the construction of the batch integrator");
-                }
-
                 using ev_t = hy::taylor_adaptive_batch<double>::t_event_t;
                 std::vector<ev_t> t_events;
 
@@ -494,48 +429,18 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                                           hy::kw::direction = hy::event_direction::negative);
                 }
 
-                b_ta.emplace(dyn, std::vector<double>(7u * batch_size), batch_size,
-                             hy::kw::t_events = std::move(t_events), hy::kw::tol = tol, hy::kw::high_accuracy = ha);
+                const std::vector<double>::size_type state_size = safe_size_t(7) * batch_size;
+                b_ta.emplace(dyn, std::vector<double>(state_size), batch_size, hy::kw::t_events = std::move(t_events),
+                             hy::kw::tol = tol, hy::kw::high_accuracy = ha);
             });
-    };
-
-    // Helper to check that all values in a vector
-    // are finite.
-    auto finite_checker = [](const auto &v) {
-        oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(v.begin(), v.end()), [](const auto &range) {
-            for (const auto &val : range) {
-                if (!std::isfinite(val)) {
-                    throw std::invalid_argument(
-                        fmt::format("The non-finite value {} was detected in the particle states",val));
-                }
-            }
-        });
     };
 
     spdlog::stopwatch sw;
 
     // Concurrently:
     // - setup the heyoka integrators,
-    // - run checks on the input state vectors and sizes.
-    oneapi::tbb::parallel_invoke(
-        integrators_setup, [this]() { check_positions(m_x, m_y, m_z); },
-        [&finite_checker, this]() { finite_checker(m_vx); }, [&finite_checker, this]() { finite_checker(m_vy); },
-        [&finite_checker, this]() { finite_checker(m_vz); },
-        [this]() {
-            // NOTE: for the particle sizes, we also check that no size is negative.
-            oneapi::tbb::parallel_for(
-                oneapi::tbb::blocked_range(m_sizes.begin(), m_sizes.end()), [](const auto &range) {
-                    for (const auto &val : range) {
-                        if (!std::isfinite(val)) {
-                            throw std::invalid_argument(fmt::format("A non-finite particle radius of {} was detected",val));
-                        }
-
-                        if (val < 0) {
-                            throw std::invalid_argument(fmt::format("A negative particle radius of {} was detected",val));
-                        }
-                    }
-                });
-        });
+    // - check the state vector.
+    oneapi::tbb::parallel_invoke(integrators_setup, [this]() { verify_state_vector(*m_state); });
 
     logger->trace("Integrators setup time: {}s", sw);
 
@@ -565,7 +470,7 @@ void sim::set_time(double t)
 
 bool sim::with_reentry_event() const
 {
-    if (auto dbl_ptr = std::get_if<double>(&m_c_radius)) {
+    if (const auto *dbl_ptr = std::get_if<double>(&m_c_radius)) {
         assert(std::isfinite(*dbl_ptr));
         assert(*dbl_ptr >= 0);
 
@@ -610,44 +515,54 @@ std::uint32_t sim::exit_event_idx() const
     return 0;
 }
 
-// This function is meant to check the positions vectors of the particles
-// in the simulation. It will check that:
-// - the three input vectors have all the same size,
-// - all values in all vectors are finite,
+// Run sanity checks on a state vector and verify that it
+// is compatible with the simulation setup. Specifically,
+// verify that:
+// - all values are finite,
 // - if central and/or domain radius are defined in the
 //   simulation, no position falls within the central body
-//   or outside the domain.
-// NOTE: this function assumes that the c/d_radius data members have already
-// been set up.
-void sim::check_positions(const std::vector<double> &x, const std::vector<double> &y,
-                          const std::vector<double> &z) const
+//   or outside the domain,
+// - no particle size is negative.
+void sim::verify_state_vector(const std::vector<double> &st) const
 {
-    if (x.size() != y.size() || x.size() != z.size()) {
+    namespace stdex = std::experimental;
+
+    // Check that the state vector's size is a multiple of 7
+    // (i.e., the state vector of each particle contains 7 values:
+    // cartesian pos/vel + size).
+    if (st.size() % 7u != 0u) {
         throw std::invalid_argument(
-            fmt::format("Inconsistent sizes detected in the position vectors: the position vectors for the cartesian "
-                        "coordinates of the particles must all have the same size, but instead they have sizes {}, {} "
-                        "and {} for the x, y and z coordinates respectively",
-                        x.size(), y.size(), z.size()));
+            fmt::format("The size of the state vector is {}, which is not a multiple of 7", st.size()));
     }
 
-    const auto nparts = x.size();
+    // Infer the number of particles.
+    const auto nparts = st.size() / 7u;
+
+    // Init the span for accessing st as a 2D array.
+    stdex::mdspan sv(st.data(), stdex::extents<size_type, stdex::dynamic_extent, 7u>(nparts));
+
+    // Check if reentry/exit events are defined in the current simulation.
     const auto with_reentry = with_reentry_event();
     const auto with_exit = with_exit_event();
 
     oneapi::tbb::parallel_for(
-        oneapi::tbb::blocked_range<decltype(x.size())>(0, nparts),
-        [with_reentry, with_exit, &x, &y, &z, this](const auto &range) {
-            for (auto idx = range.begin(); idx != range.end(); ++idx) {
-                if (!std::isfinite(x[idx]) || !std::isfinite(y[idx]) || !std::isfinite(z[idx])) {
-                    throw std::invalid_argument(
-                        fmt::format("A non-finite value was detected in the position vectors at index {}", idx));
+        oneapi::tbb::blocked_range<size_type>(0, nparts), [sv, with_reentry, with_exit, this](const auto &range) {
+            for (auto pidx = range.begin(); pidx != range.end(); ++pidx) {
+                // Positions.
+                const auto x = sv(pidx, 0);
+                const auto y = sv(pidx, 1);
+                const auto z = sv(pidx, 2);
+
+                if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z)) {
+                    throw std::invalid_argument(fmt::format(
+                        "An non-finite position was detected in the state vector of the particle at index {}", pidx));
                 }
 
                 if (with_reentry) {
-                    if (auto dbl_ptr = std::get_if<double>(&m_c_radius)) {
-                        if (x[idx] * x[idx] + y[idx] * y[idx] + z[idx] * z[idx] < *dbl_ptr * *dbl_ptr) {
+                    if (const auto *dbl_ptr = std::get_if<double>(&m_c_radius)) {
+                        if (x * x + y * y + z * z < *dbl_ptr * *dbl_ptr) {
                             throw std::invalid_argument(
-                                fmt::format("The particle at index {} is inside the spherical central body", idx));
+                                fmt::format("The particle at index {} is inside the spherical central body", pidx));
                         }
                     } else {
                         const auto &ax_vec = std::get<std::vector<double>>(m_c_radius);
@@ -655,20 +570,30 @@ void sim::check_positions(const std::vector<double> &x, const std::vector<double
                         const auto ax_b = ax_vec[1];
                         const auto ax_c = ax_vec[2];
 
-                        if (x[idx] * x[idx] / (ax_a * ax_a) + y[idx] * y[idx] / (ax_b * ax_b)
-                                + z[idx] * z[idx] / (ax_c * ax_c)
-                            < 1) {
+                        if (x * x / (ax_a * ax_a) + y * y / (ax_b * ax_b) + z * z / (ax_c * ax_c) < 1) {
                             throw std::invalid_argument(
-                                fmt::format("The particle at index {} is inside the ellipsoidal central body", idx));
+                                fmt::format("The particle at index {} is inside the ellipsoidal central body", pidx));
                         }
                     }
                 }
 
                 if (with_exit) {
-                    if (x[idx] * x[idx] + y[idx] * y[idx] + z[idx] * z[idx] >= m_d_radius * m_d_radius) {
+                    if (x * x + y * y + z * z >= m_d_radius * m_d_radius) {
                         throw std::invalid_argument(
-                            fmt::format("The particle at index {} is outside the domain radius {}", idx, m_d_radius));
+                            fmt::format("The particle at index {} is outside the domain radius {}", pidx, m_d_radius));
                     }
+                }
+
+                // Velocities
+                if (!std::isfinite(sv(pidx, 3)) || !std::isfinite(sv(pidx, 4)) || !std::isfinite(sv(pidx, 5))) {
+                    throw std::invalid_argument(fmt::format(
+                        "An non-finite velocity was detected in the state vector of the particle at index {}", pidx));
+                }
+
+                // Size.
+                if (!std::isfinite(sv(pidx, 6)) || sv(pidx, 6) < 0) {
+                    throw std::invalid_argument(fmt::format(
+                        "An invalid particle size of {} was detected for the particle at index {}", sv(pidx, 6), pidx));
                 }
             }
         });

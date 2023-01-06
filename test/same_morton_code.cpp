@@ -31,7 +31,7 @@ TEST_CASE("same morton code")
     std::uniform_real_distribution<double> a_dist(1.02, 1.3), e_dist(0., 0.02), i_dist(0., 0.05),
         ang_dist(0., 2 * boost::math::constants::pi<double>());
 
-    std::vector<double> x, y, z, vx, vy, vz, size;
+    std::vector<double> state;
 
     const auto nparts = 2000ull;
 
@@ -45,31 +45,31 @@ TEST_CASE("same morton code")
 
         auto [r, v] = kep_to_cart<double>({a, e, inc, om, Om, nu}, 1.);
 
-        x.push_back(r[0]);
-        y.push_back(r[1]);
-        z.push_back(r[2]);
+        state.push_back(r[0]);
+        state.push_back(r[1]);
+        state.push_back(r[2]);
 
-        vx.push_back(v[0]);
-        vy.push_back(v[1]);
-        vz.push_back(v[2]);
+        state.push_back(v[0]);
+        state.push_back(v[1]);
+        state.push_back(v[2]);
 
-        size.push_back(0.);
+        state.push_back(0.);
     }
 
     // Add a couple of particles very close to other particles in the simulation.
     for (auto idx : {1u, 123u, 456u}) {
-        x.push_back(x[idx] + std::numeric_limits<double>::epsilon() * 1000);
-        y.push_back(y[idx] + std::numeric_limits<double>::epsilon() * 1000);
-        z.push_back(z[idx] + std::numeric_limits<double>::epsilon() * 1000);
+        state.push_back(state[idx * 7ul] + std::numeric_limits<double>::epsilon() * 1000);
+        state.push_back(state[idx * 7ul + 1u] + std::numeric_limits<double>::epsilon() * 1000);
+        state.push_back(state[idx * 7ul + 2u] + std::numeric_limits<double>::epsilon() * 1000);
 
-        vx.push_back(vx[idx]);
-        vy.push_back(vy[idx]);
-        vz.push_back(vz[idx]);
+        state.push_back(state[idx * 7ul + 3u]);
+        state.push_back(state[idx * 7ul + 4u]);
+        state.push_back(state[idx * 7ul + 5u]);
 
-        size.push_back(.1);
+        state.push_back(.1);
     }
 
-    sim s(x, y, z, vx, vy, vz, size, 0.23);
+    sim s(state, 0.23);
 
     auto oc = s.step();
     REQUIRE((oc == outcome::success || oc == outcome::collision));

@@ -64,6 +64,21 @@
 
 #endif
 
+#if defined(__clang__) || defined(__GNUC__)
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+
+#endif
+
+#include "mdspan/mdspan"
+
+#if defined(__clang__) || defined(__GNUC__)
+
+#pragma GCC diagnostic pop
+
+#endif
+
 namespace cascade
 {
 
@@ -139,7 +154,7 @@ std::uint64_t disc_single_coord(float x, float min, float max)
     rx = rx >= 0.f ? rx : 0.f;
 
     // Rescale by 2**16.
-    rx *= std::uint64_t(1) << 16;
+    rx *= static_cast<std::uint64_t>(1) << 16;
 
     // Cast back to integer.
     const auto retval = static_cast<std::uint64_t>(rx);
@@ -148,7 +163,7 @@ std::uint64_t disc_single_coord(float x, float min, float max)
     // somehow FP arithmetic makes it spill outside
     // the bound.
     // NOTE: std::min is safe with integral types.
-    return std::min(retval, std::uint64_t((std::uint64_t(1) << 16) - 1u));
+    return std::min(retval, static_cast<std::uint64_t>((static_cast<std::uint64_t>(1) << 16) - 1u));
 }
 
 } // namespace
@@ -161,9 +176,17 @@ std::uint64_t disc_single_coord(float x, float min, float max)
 template <typename T>
 void sim::init_scalar_ta(T &ta, size_type pidx) const
 {
-    assert(pidx < m_x.size());
+    namespace stdex = std::experimental;
 
+    const auto nparts = get_nparts();
+    const auto npars = get_npars();
+
+    assert(pidx < nparts);
+
+    // Create views on the data.
     auto *st_data = ta.get_state_data();
+    stdex::mdspan sv(m_state->data(), stdex::extents<size_type, stdex::dynamic_extent, 7u>(nparts));
+    stdex::mdspan pv(m_pars->data(), nparts, npars);
 
     // Reset cooldowns and set up the times.
     if (ta.with_events()) {
@@ -172,20 +195,17 @@ void sim::init_scalar_ta(T &ta, size_type pidx) const
     ta.set_dtime(m_data->time.hi, m_data->time.lo);
 
     // Copy over the state.
-    st_data[0] = m_x[pidx];
-    st_data[1] = m_y[pidx];
-    st_data[2] = m_z[pidx];
-    st_data[3] = m_vx[pidx];
-    st_data[4] = m_vy[pidx];
-    st_data[5] = m_vz[pidx];
+    for (auto j = 0u; j < 6u; ++j) {
+        st_data[j] = sv(pidx, j);
+    }
 
     // NOTE: compute the radius on the fly from the x/y/z coords.
     st_data[6] = std::sqrt(st_data[0] * st_data[0] + st_data[1] * st_data[1] + st_data[2] * st_data[2]);
 
     // Copy over the parameters.
     auto pars_data = ta.get_pars_data();
-    for (decltype(m_pars.size()) i = 0; i < m_pars.size(); ++i) {
-        pars_data[i] = m_pars[i][pidx];
+    for (size_type i = 0; i < npars; ++i) {
+        pars_data[i] = pv(pidx, i);
     }
 }
 
@@ -195,13 +215,22 @@ void sim::init_scalar_ta(T &ta, size_type pidx) const
 template <typename T>
 void sim::init_batch_ta(T &ta, size_type pidx_begin, size_type pidx_end) const
 {
+    namespace stdex = std::experimental;
+
     const auto batch_size = ta.get_batch_size();
+    const auto nparts = get_nparts();
+    const auto npars = get_npars();
 
     assert(pidx_end > pidx_begin);
     assert(pidx_end - pidx_begin == batch_size);
-    assert(pidx_end <= m_x.size());
+    assert(pidx_end <= nparts);
 
-    auto *st_data = ta.get_state_data();
+    // Create views on the data.
+    stdex::mdspan sv(m_state->data(), stdex::extents<size_type, stdex::dynamic_extent, 7u>(nparts));
+    stdex::mdspan pv(m_pars->data(), nparts, npars);
+
+    stdex::mdspan st(ta.get_state_data(), stdex::extents<std::uint32_t, 7u, stdex::dynamic_extent>(batch_size));
+    stdex::mdspan pt(ta.get_pars_data(), npars, boost::numeric_cast<size_type>(batch_size));
 
     // Reset cooldowns and set up the times.
     if (ta.with_events()) {
@@ -209,26 +238,18 @@ void sim::init_batch_ta(T &ta, size_type pidx_begin, size_type pidx_end) const
     }
     ta.set_dtime(m_data->time.hi, m_data->time.lo);
 
-    // Copy over the state.
-    std::copy(m_x.data() + pidx_begin, m_x.data() + pidx_end, st_data);
-    std::copy(m_y.data() + pidx_begin, m_y.data() + pidx_end, st_data + batch_size);
-    std::copy(m_z.data() + pidx_begin, m_z.data() + pidx_end, st_data + 2u * batch_size);
-
-    std::copy(m_vx.data() + pidx_begin, m_vx.data() + pidx_end, st_data + 3u * batch_size);
-    std::copy(m_vy.data() + pidx_begin, m_vy.data() + pidx_end, st_data + 4u * batch_size);
-    std::copy(m_vz.data() + pidx_begin, m_vz.data() + pidx_end, st_data + 5u * batch_size);
-
-    // NOTE: compute the radius on the fly from the x/y/z coords.
+    // Copy over the state and params.
     for (std::uint32_t i = 0; i < batch_size; ++i) {
-        st_data[6u * batch_size + i]
-            = std::sqrt(st_data[i] * st_data[i] + st_data[batch_size + i] * st_data[batch_size + i]
-                        + st_data[batch_size * 2u + i] * st_data[batch_size * 2u + i]);
-    }
+        for (auto j = 0u; j < 6u; ++j) {
+            st(j, i) = sv(pidx_begin + i, j);
+        }
 
-    // Copy over the parameters.
-    auto pars_data = ta.get_pars_data();
-    for (decltype(m_pars.size()) i = 0; i < m_pars.size(); ++i) {
-        std::copy(m_pars[i].data() + pidx_begin, m_pars[i].data() + pidx_end, pars_data + i * batch_size);
+        // NOTE: compute the radius on the fly from the x/y/z coords.
+        st(6, i) = std::sqrt(st(0, i) * st(0, i) + st(1, i) * st(1, i) + st(2, i) * st(2, i));
+
+        for (size_type j = 0; j < npars; ++j) {
+            pt(j, i) = pv(pidx_begin + i, j);
+        }
     }
 }
 
@@ -239,9 +260,16 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
 {
     namespace hy = heyoka;
     using dfloat = hy::detail::dfloat<double>;
+    namespace stdex = std::experimental;
+
+    const auto nparts = get_nparts();
+
+    // Fetch a view on the state vector in order to
+    // access the particles' sizes.
+    stdex::mdspan sv(std::as_const(m_state)->data(), stdex::extents<size_type, stdex::dynamic_extent, 7u>(nparts));
 
     // Fetch pointers to the AABB data for the current chunk.
-    const auto offset = get_nparts() * chunk_idx;
+    const auto offset = nparts * chunk_idx;
 
     auto *CASCADE_RESTRICT x_lb_ptr = m_data->x_lb.data() + offset;
     auto *CASCADE_RESTRICT y_lb_ptr = m_data->y_lb.data() + offset;
@@ -267,7 +295,7 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
     r_ub_ptr[pidx] = -finf;
 
     // Fetch the particle radius.
-    const auto p_radius = m_sizes[pidx];
+    const auto p_radius = sv(pidx, 6);
 
     // Cache a few quantities.
     const auto order = m_data->s_ta.get_order();
@@ -537,6 +565,7 @@ outcome sim::step(double dt)
 {
     namespace hy = heyoka;
     using dfloat = hy::detail::dfloat<double>;
+    namespace stdex = std::experimental;
 
     spdlog::stopwatch sw;
 
@@ -613,16 +642,11 @@ outcome sim::step(double dt)
     resize_if_needed(npnc, m_data->srt_x_ub, m_data->srt_y_ub, m_data->srt_z_ub, m_data->srt_r_ub);
     resize_if_needed(npnc, m_data->srt_mcodes);
 
-    // Final state vectors.
-    // NOTE: these need to match *exactly* nparts,
-    // as their data will be swapped in as the new state
-    // at the end of a step.
-    m_data->final_x.resize(nparts);
-    m_data->final_y.resize(nparts);
-    m_data->final_z.resize(nparts);
-    m_data->final_vx.resize(nparts);
-    m_data->final_vy.resize(nparts);
-    m_data->final_vz.resize(nparts);
+    // Final state vector.
+    // NOTE: contrary to m_state, this does not contain the particle sizes,
+    // hence the number of columns is 6 and not 7.
+    m_data->final_state.resize(nparts * 6u);
+    stdex::mdspan fsv(m_data->final_state.data(), stdex::extents<size_type, stdex::dynamic_extent, 6u>(nparts));
 
     // Global AABBs data.
     resize_if_needed(nchunks, m_data->global_lb, m_data->global_ub);
@@ -663,7 +687,8 @@ outcome sim::step(double dt)
         // Cache a few variables.
         auto &ta = bdata_ptr->ta;
         auto &pfor_ts = bdata_ptr->pfor_ts;
-        auto *st_data = ta.get_state_data();
+        stdex::mdspan st(std::as_const(ta).get_state_data(),
+                         stdex::extents<std::uint32_t, 7u, stdex::dynamic_extent>(batch_size));
         auto &s_data = m_data->s_data;
         const auto &ta_tc = ta.get_tc();
 
@@ -852,14 +877,13 @@ outcome sim::step(double dt)
 
             // Fill in the state at the end of the superstep.
             // NOTE: for those particles whose integration was interrupted early due
-            // to stopping terminal events, the final_* vectors will contain the
+            // to stopping terminal events, the final_state vector will contain the
             // state at the interruption time.
-            std::copy(st_data, st_data + batch_size, m_data->final_x.data() + pidx_begin);
-            std::copy(st_data + batch_size, st_data + 2u * batch_size, m_data->final_y.data() + pidx_begin);
-            std::copy(st_data + 2u * batch_size, st_data + 3u * batch_size, m_data->final_z.data() + pidx_begin);
-            std::copy(st_data + 3u * batch_size, st_data + 4u * batch_size, m_data->final_vx.data() + pidx_begin);
-            std::copy(st_data + 4u * batch_size, st_data + 5u * batch_size, m_data->final_vy.data() + pidx_begin);
-            std::copy(st_data + 5u * batch_size, st_data + 6u * batch_size, m_data->final_vz.data() + pidx_begin);
+            for (std::uint32_t i = 0; i < batch_size; ++i) {
+                for (auto j = 0u; j < 6u; ++j) {
+                    fsv(pidx_begin + i, j) = st(j, i);
+                }
+            }
         }
 
         // We can now proceed, for each chunk, to:
@@ -946,7 +970,7 @@ outcome sim::step(double dt)
 
         // Cache a few variables.
         auto &ta = *ta_ptr;
-        auto *st_data = ta.get_state_data();
+        const auto *st_data = ta.get_state_data();
         auto &s_data = m_data->s_data;
         const auto &ta_tc = ta.get_tc();
 
@@ -1046,14 +1070,11 @@ outcome sim::step(double dt)
 
             // Fill in the state at the end of the superstep.
             // NOTE: if the integration was was interrupted early due
-            // to a stopping terminal event, the final_* vectors will contain the
+            // to a stopping terminal event, the final_state vector will contain the
             // state at the interruption time.
-            m_data->final_x[pidx] = st_data[0];
-            m_data->final_y[pidx] = st_data[1];
-            m_data->final_z[pidx] = st_data[2];
-            m_data->final_vx[pidx] = st_data[3];
-            m_data->final_vy[pidx] = st_data[4];
-            m_data->final_vz[pidx] = st_data[5];
+            for (auto j = 0u; j < 6u; ++j) {
+                fsv(pidx, j) = st_data[j];
+            }
         }
 
         // We can now proceed, for each chunk, to:
@@ -1174,7 +1195,7 @@ outcome sim::step(double dt)
         ste_it = std::ranges::min_element(
             m_data->ste_vec, [](const auto &tup1, const auto &tup2) { return std::get<1>(tup1) < std::get<1>(tup2); });
 
-        // The earliest stopping terminal events redefines the superstep
+        // The earliest stopping terminal event redefines the superstep
         // size and, by extension, the number of chunks.
         // NOTE: use std::min() for FP paranoia.
         m_data->delta_t = std::min(std::get<1>(*ste_it), m_data->delta_t);
@@ -1263,7 +1284,7 @@ outcome sim::step(double dt)
     if (oc == outcome::success) {
         // No interruptions. We just need to:
         // - update the time variable,
-        // - swap in the final_* vectors, that were
+        // - copy in final_state, which was
         //   filled in during the numerical integration
         //   of the particles,
         // - reset the interrupt info.
@@ -1279,13 +1300,8 @@ outcome sim::step(double dt)
         // event that would have redefined delta_t.
         m_data->time += delta_t;
 
-        // Swap in the updated state.
-        m_x.swap(m_data->final_x);
-        m_y.swap(m_data->final_y);
-        m_z.swap(m_data->final_z);
-        m_vx.swap(m_data->final_vx);
-        m_vy.swap(m_data->final_vy);
-        m_vz.swap(m_data->final_vz);
+        // Copy the final state.
+        copy_from_final_state();
 
         // Reset the interrupt data.
         m_int_info.reset();
@@ -1295,7 +1311,7 @@ outcome sim::step(double dt)
         // - propagate the state of all particles up to the
         //   first interruption,
         // - update the time coordinate,
-        // - swap in the final_* vectors, which were filled
+        // - copy in final_state, which was filled
         //   in by dense_propagate(),
         // - set up the interrupt info.
 
@@ -1303,7 +1319,7 @@ outcome sim::step(double dt)
 
         // Propagate the state of all particles up to the interrupt
         // time using dense output, writing the updated state
-        // into the m_data->final_* vectors.
+        // into final_state.
         // NOTE: interruption times are all reported with respect
         // to the time coordinate at the beginning of the superstep,
         // as expected by dense_propagate().
@@ -1314,13 +1330,8 @@ outcome sim::step(double dt)
         // Update the time coordinate.
         m_data->time += *interrupt_time;
 
-        // Swap in the updated state.
-        m_x.swap(m_data->final_x);
-        m_y.swap(m_data->final_y);
-        m_z.swap(m_data->final_z);
-        m_vx.swap(m_data->final_vx);
-        m_vy.swap(m_data->final_vy);
-        m_vz.swap(m_data->final_vz);
+        // Copy the updated state.
+        copy_from_final_state();
 
         // Setup the interrupt data.
         switch (oc) {
@@ -1571,18 +1582,25 @@ void sim::verify_global_aabbs() const
 }
 
 // Propagate the state of all particles up to t using dense output,
-// writing the updated state into the m_data->final_* vectors.
+// writing the updated state into final_state.
 // t is a time coordinate relative to the beginning of the current
 // superstep.
 void sim::dense_propagate(double t)
 {
+    namespace stdex = std::experimental;
+
     spdlog::stopwatch sw;
 
     auto *logger = detail::get_logger();
 
     const auto order = m_data->s_ta.get_order();
+    const auto nparts = get_nparts();
 
-    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, get_nparts()), [&](const auto &range) {
+    // Fetch a view for writing into final_state.
+    assert(m_data->final_state.size() == nparts * 6u);
+    stdex::mdspan fsv(m_data->final_state.data(), stdex::extents<size_type, stdex::dynamic_extent, 6u>(nparts));
+
+    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &range) {
         using dfloat = heyoka::detail::dfloat<double>;
 
         const auto &s_data = m_data->s_data;
@@ -1662,13 +1680,13 @@ void sim::dense_propagate(double t)
             const auto fvz = horner_eval(tc_ptr_vz);
 
             // Write the state of the particle at t
-            // into the final_* vectors.
-            m_data->final_x[pidx] = fx;
-            m_data->final_y[pidx] = fy;
-            m_data->final_z[pidx] = fz;
-            m_data->final_vx[pidx] = fvx;
-            m_data->final_vy[pidx] = fvy;
-            m_data->final_vz[pidx] = fvz;
+            // into final_state.
+            fsv(pidx, 0) = fx;
+            fsv(pidx, 1) = fy;
+            fsv(pidx, 2) = fz;
+            fsv(pidx, 3) = fvx;
+            fsv(pidx, 4) = fvy;
+            fsv(pidx, 5) = fvz;
         }
     });
 
@@ -1695,7 +1713,7 @@ outcome sim::propagate_until_impl(const T &final_t, double dt)
 
                 // Propagate the state of the system up
                 // to the final time, writing the new state
-                // into the final_* vectors.
+                // into final_state.
                 dense_propagate(static_cast<double>(final_t - orig_t));
 
                 // NOTE: everything noexcept from now on.
@@ -1703,13 +1721,8 @@ outcome sim::propagate_until_impl(const T &final_t, double dt)
                 // Update the time coordinate.
                 m_data->time = final_t;
 
-                // Swap in the updated state.
-                m_x.swap(m_data->final_x);
-                m_y.swap(m_data->final_y);
-                m_z.swap(m_data->final_z);
-                m_vx.swap(m_data->final_vx);
-                m_vy.swap(m_data->final_vy);
-                m_vz.swap(m_data->final_vz);
+                // Copy in the updated state.
+                copy_from_final_state();
 
                 // NOTE: m_int_info has already been reset by the
                 // step() function.
@@ -1729,7 +1742,7 @@ outcome sim::propagate_until_impl(const T &final_t, double dt)
 
                 // Propagate the state of the system up
                 // to the final time, writing the new state
-                // into the final_* vectors.
+                // into final_state.
                 dense_propagate(static_cast<double>(final_t - orig_t));
 
                 // NOTE: everything noexcept from now on.
@@ -1737,13 +1750,8 @@ outcome sim::propagate_until_impl(const T &final_t, double dt)
                 // Update the time coordinate.
                 m_data->time = final_t;
 
-                // Swap in the updated state.
-                m_x.swap(m_data->final_x);
-                m_y.swap(m_data->final_y);
-                m_z.swap(m_data->final_z);
-                m_vx.swap(m_data->final_vx);
-                m_vy.swap(m_data->final_vy);
-                m_vz.swap(m_data->final_vz);
+                // Copy in the updated state.
+                copy_from_final_state();
 
                 // Reset the interrupt data, which
                 // was set up at the end of the step() function.
@@ -1783,6 +1791,33 @@ outcome sim::propagate_until(double t, double dt)
     }
 
     return propagate_until_impl(dfloat(t), dt);
+}
+
+// Helper to copy the global state vector from
+// m_data->final_state to m_state.
+// NOTE: mark as noexcept as we use this functions
+// in chunks of code which are not supposed to throw
+// for exception safety.
+void sim::copy_from_final_state() noexcept
+{
+    namespace stdex = std::experimental;
+
+    assert(m_data->final_state.size() == get_nparts() * 6u);
+
+    const auto nparts = get_nparts();
+    stdex::mdspan fsv(std::as_const(m_data->final_state).data(),
+                      stdex::extents<size_type, stdex::dynamic_extent, 6u>(nparts));
+    stdex::mdspan sv(m_state->data(), stdex::extents<size_type, stdex::dynamic_extent, 7u>(nparts));
+
+    // NOTE: we need to quantify if the parallelisation
+    // is worth it here.
+    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &range) {
+        for (auto pidx = range.begin(); pidx != range.end(); ++pidx) {
+            for (auto j = 0u; j < 6u; ++j) {
+                sv(pidx, j) = fsv(pidx, j);
+            }
+        }
+    });
 }
 
 } // namespace cascade

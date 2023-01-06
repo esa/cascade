@@ -45,7 +45,7 @@ TEST_CASE("haumea bug 00")
         std::string line;
 
         while (std::getline(in, line)) {
-            double value;
+            double value = 0;
             std::stringstream ss(line);
 
             ss >> value;
@@ -110,9 +110,15 @@ TEST_CASE("haumea bug 00")
     dynamics[4].second += pert_y_s;
     dynamics[5].second += pert_z_s;
 
-    sim s(state_data[0], state_data[1], state_data[2], state_data[3], state_data[4], state_data[5],
-          std::vector(state_data[0].size(), radius), ct, kw::dyn = dynamics,
-          kw::c_radius = std::vector<double>{ra, rb, rc}, kw::d_radius = a_s * 10);
+    std::vector<double> state;
+    for (decltype(state_data[0].size()) i = 0; i < state_data[0].size(); ++i) {
+        for (auto j = 0u; j < 6u; ++j) {
+            state.push_back(state_data[j][i]);
+        }
+        state.push_back(radius);
+    }
+
+    sim s(state, ct, kw::dyn = dynamics, kw::c_radius = std::vector<double>{ra, rb, rc}, kw::d_radius = a_s * 10);
 
     s.set_time(13401085490.242563);
 

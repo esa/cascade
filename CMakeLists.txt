@@ -1,6 +1,5 @@
-# NOTE: temporarily to 3.17 for the Python bits,
-# otherwise 3.12 is sufficient.
-cmake_minimum_required(VERSION 3.17.0)
+# NOTE: current minimum heyoka requirement.
+cmake_minimum_required(VERSION 3.18.0)
 
 # Set default build type to "Release".
 # NOTE: this should be done before the project command since the latter can set
@@ -189,7 +188,8 @@ find_package(TBB REQUIRED CONFIG)
 target_link_libraries(cascade PRIVATE TBB::tbb)
 
 # Boost.
-find_package(Boost 1.60 REQUIRED)
+# NOTE: need 1.69 for safe numerics.
+find_package(Boost 1.69 REQUIRED)
 target_link_libraries(cascade PUBLIC Boost::boost)
 
 # fmt.
@@ -200,8 +200,8 @@ target_link_libraries(cascade PRIVATE fmt::fmt)
 find_package(heyoka CONFIG REQUIRED)
 target_link_libraries(cascade PUBLIC heyoka::heyoka)
 message(STATUS "heyoka version: ${heyoka_VERSION}")
-if(heyoka_VERSION VERSION_LESS 0.17.1)
-    message(FATAL_ERROR "heyoka>=0.17.1 is required, but heyoka ${heyoka_VERSION} was found instead")
+if(heyoka_VERSION VERSION_LESS 0.20.1)
+    message(FATAL_ERROR "heyoka>=0.20.1 is required, but heyoka ${heyoka_VERSION} was found instead")
 endif()
 
 # spdlog.
@@ -270,21 +270,41 @@ install(TARGETS cascade
 )
 
 if(CASCADE_BUILD_PYTHON_BINDINGS)
-  # Python.
-  find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
-  message(STATUS "Python3 interpreter: ${Python3_EXECUTABLE}")
-  message(STATUS "Python3 installation directory: ${Python3_SITEARCH}")
-  if(${Python3_VERSION_MINOR} LESS 5)
-      message(FATAL_ERROR "The minimum supported version of Python is 3.5, but version 3.${Python3_VERSION_MINOR} was found instead")
-  endif()
-  set(CASCADE_PY_INSTALL_PATH "" CACHE STRING "cascade module installation path")
-  mark_as_advanced(CASCADE_PY_INSTALL_PATH)
+    # Setup the list of Python components we need to locate.
+    set(_CASCADE_PY_PYTHON3_COMPONENTS Interpreter Development.Module)
 
-  # pybind11.
-  find_package(pybind11 REQUIRED CONFIG)
-  if(${pybind11_VERSION} VERSION_LESS "2.6")
-      message(FATAL_ERROR "pybind11 >= 2.6 is required, but version ${pybind11_VERSION} was found instead.")
-  endif()
+    # NOTE: strictly speaking, we should need only the Interpreter and Development.Module
+    # components to build cascade.py. However, in certain setups (e.g., skbuild), it looks
+    # like if we specify only Development.Module CMake is unable to correctly locate
+    # the Python installation. Hence, as a workaround, if the following line fails
+    # and Python3 is *not* found, we try again, this time with the full Development
+    # component (rather than only Development.Module). This seems to work around the
+    # issue, for now at least.
+    find_package(Python3 QUIET COMPONENTS ${_CASCADE_PY_PYTHON3_COMPONENTS})
+
+    if(NOT Python3_FOUND)
+        list(POP_BACK _CASCADE_PY_PYTHON3_COMPONENTS)
+        list(APPEND _CASCADE_PY_PYTHON3_COMPONENTS Development)
+    endif()
+
+    find_package(Python3 QUIET REQUIRED COMPONENTS ${_CASCADE_PY_PYTHON3_COMPONENTS})
+
+    message(STATUS "Python3 interpreter: ${Python3_EXECUTABLE}")
+    message(STATUS "Python3 installation directory: ${Python3_SITEARCH}")
+
+    if(${Python3_VERSION_MINOR} LESS 5)
+        message(FATAL_ERROR "The minimum supported version of Python is 3.5, but version 3.${Python3_VERSION_MINOR} was found instead")
+    endif()
+
+    set(CASCADE_PY_INSTALL_PATH "" CACHE STRING "cascade module installation path")
+    mark_as_advanced(CASCADE_PY_INSTALL_PATH)
+    unset(_CASCADE_PY_PYTHON3_COMPONENTS)
+
+    # pybind11.
+    find_package(pybind11 REQUIRED CONFIG)
+    if(${pybind11_VERSION} VERSION_LESS "2.10")
+        message(FATAL_ERROR "pybind11 >= 2.10 is required, but version ${pybind11_VERSION} was found instead.")
+    endif()
 endif()
 
 if(CASCADE_BUILD_TESTS)

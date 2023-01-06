@@ -1,3 +1,6 @@
+# Find the xtensor bits.
+find_package(xtensor REQUIRED CONFIG)
+
 add_library(cascade_test STATIC catch_main.cpp)
 target_compile_options(cascade_test PRIVATE
   "$<$<CONFIG:Debug>:${CASCADE_CXX_FLAGS_DEBUG}>"
@@ -12,7 +15,7 @@ set_property(TARGET cascade_test PROPERTY CXX_EXTENSIONS NO)
 
 function(ADD_CASCADE_TESTCASE arg1)
   add_executable(${arg1} ${arg1}.cpp)
-  target_link_libraries(${arg1} PRIVATE cascade_test cascade Boost::boost fmt::fmt heyoka::heyoka)
+  target_link_libraries(${arg1} PRIVATE cascade_test cascade Boost::boost fmt::fmt heyoka::heyoka xtensor)
   target_compile_options(${arg1} PRIVATE
     "$<$<CONFIG:Debug>:${CASCADE_CXX_FLAGS_DEBUG}>"
     "$<$<CONFIG:Release>:${CASCADE_CXX_FLAGS_RELEASE}>"
@@ -51,5 +54,4 @@ ADD_CASCADE_TESTCASE(last_bit_flip)
 ADD_CASCADE_TESTCASE(reentry)
 ADD_CASCADE_TESTCASE(domain_exit)
 ADD_CASCADE_TESTCASE(interrupt_order)
-ADD_CASCADE_TESTCASE(nf_state)
 ADD_CASCADE_TESTCASE(haumea_bug_00)

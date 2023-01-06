@@ -33,6 +33,21 @@
 #include <cascade/detail/sim_data.hpp>
 #include <cascade/sim.hpp>
 
+#if defined(__clang__) || defined(__GNUC__)
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+
+#endif
+
+#include "mdspan/mdspan"
+
+#if defined(__clang__) || defined(__GNUC__)
+
+#pragma GCC diagnostic pop
+
+#endif
+
 namespace cascade
 {
 
@@ -248,6 +263,7 @@ void sim::narrow_phase_parallel()
 {
     namespace hy = heyoka;
     using dfloat = hy::detail::dfloat<double>;
+    namespace stdex = std::experimental;
 
     spdlog::stopwatch sw;
 
@@ -265,6 +281,11 @@ void sim::narrow_phase_parallel()
 
     // Reset the collision vector.
     m_data->coll_vec.clear();
+
+    // Fetch a view on the state vector in order to
+    // access the particles' sizes.
+    stdex::mdspan sv(std::as_const(m_state)->data(),
+                     stdex::extents<size_type, stdex::dynamic_extent, 7u>(get_nparts()));
 
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
@@ -349,8 +370,8 @@ void sim::narrow_phase_parallel()
                         const auto &sd_j = s_data[pj];
 
                         // Load the particle radiuses.
-                        const auto p_rad_i = m_sizes[pi];
-                        const auto p_rad_j = m_sizes[pj];
+                        const auto p_rad_i = sv(pi, 6);
+                        const auto p_rad_j = sv(pj, 6);
 
                         // Cache the range of end times of the substeps.
                         const auto tcoords_begin_i = sd_i.tcoords.begin();
