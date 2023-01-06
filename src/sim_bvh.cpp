@@ -173,7 +173,7 @@ void sim::construct_bvh_trees_parallel()
                     [&](const auto &rn, std::uint32_t init) {
                         // Local accumulator for the number of leaf nodes
                         // detected in the range.
-                        std::uint32_t n_leaf_nodes = 0;
+                        std::uint32_t loc_n_leaf_nodes = 0;
 
                         // NOTE: this for loop can *probably* be written in a vectorised
                         // fashion, using the gather primitives as done in heyoka.
@@ -245,7 +245,7 @@ void sim::construct_bvh_trees_parallel()
                                 nplc_buf[node_idx - n_begin] = 0;
 
                                 // Update the leaf nodes counter.
-                                ++n_leaf_nodes;
+                                ++loc_n_leaf_nodes;
 
                                 // NOTE: check that the initial value of the AABB
                                 // was properly set.
@@ -276,7 +276,7 @@ void sim::construct_bvh_trees_parallel()
                             }
                         }
 
-                        return init + n_leaf_nodes;
+                        return init + loc_n_leaf_nodes;
                     },
                     std::plus<>{});
 

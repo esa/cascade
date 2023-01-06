@@ -336,7 +336,7 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                 vcr_ptr->size()));
         }
 
-        if (std::ranges::any_of(*vcr_ptr, [](double x) { return !std::isfinite(x) || x <= 0; })) {
+        if (std::ranges::any_of(*vcr_ptr, [](double val) { return !std::isfinite(val) || val <= 0; })) {
             throw std::invalid_argument(fmt::format(
                 "A non-finite or non-positive value was detected among the 3 semiaxes of the central body: {}",
                 *vcr_ptr));
