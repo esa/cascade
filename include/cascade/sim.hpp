@@ -94,6 +94,12 @@ private:
     // The internal implementation-detail data (buffers, caches, etc.).
     sim_data *m_data = nullptr;
     // Simulation interrupt info.
+    // NOTE: the three possibilities in the variant are:
+    // - particle-particle collision (two particle indices),
+    // - reentry/exit (single particle index),
+    // - nf state (particle idx + time coordinate at the beginning of the dynamical step
+    //   in which the non-finite step was generated, measured relative to the beginning
+    //   of the superstep).
     std::optional<std::variant<std::array<size_type, 2>, size_type, std::tuple<size_type, double>>> m_int_info;
     // Central body radius(es).
     std::variant<double, std::vector<double>> m_c_radius;
