@@ -457,8 +457,13 @@ void sim::narrow_phase_parallel()
                             }
 
                             // Fetch pointers to the original Taylor polynomials for the two particles.
-                            // NOTE: static_cast because overflow checking and numeric cast are already
-                            // done in sim_propagate_for.
+                            // NOTE: static_cast because:
+                            // - we have verified during the propagation that we can safely compute
+                            //   differences between iterators of tcoords vectors (see overflow checking in the
+                            //   step() function), and
+                            // - we know that there are multiple Taylor coefficients being recorded
+                            //   for each time coordinate, thus the size type of the vector of Taylor
+                            //   coefficients can certainly represent the size of the tcoords vectors.
                             const auto ss_idx_i = static_cast<decltype(s_data[pi].tc_x.size())>(it_i - tcoords_begin_i);
                             const auto ss_idx_j = static_cast<decltype(s_data[pj].tc_x.size())>(it_j - tcoords_begin_j);
 
