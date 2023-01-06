@@ -154,7 +154,7 @@ std::uint64_t disc_single_coord(float x, float min, float max)
     rx = rx >= 0.f ? rx : 0.f;
 
     // Rescale by 2**16.
-    rx *= std::uint64_t(1) << 16;
+    rx *= static_cast<std::uint64_t>(1) << 16;
 
     // Cast back to integer.
     const auto retval = static_cast<std::uint64_t>(rx);
@@ -163,7 +163,7 @@ std::uint64_t disc_single_coord(float x, float min, float max)
     // somehow FP arithmetic makes it spill outside
     // the bound.
     // NOTE: std::min is safe with integral types.
-    return std::min(retval, std::uint64_t((std::uint64_t(1) << 16) - 1u));
+    return std::min(retval, static_cast<std::uint64_t>((static_cast<std::uint64_t>(1) << 16) - 1u));
 }
 
 } // namespace
