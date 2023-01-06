@@ -284,7 +284,8 @@ void sim::narrow_phase_parallel()
 
     // Fetch a view on the state vector in order to
     // access the particles' sizes.
-    stdex::mdspan sv(m_state->data(), stdex::extents<size_type, stdex::dynamic_extent, 7u>(get_nparts()));
+    stdex::mdspan sv(std::as_const(m_state)->data(),
+                     stdex::extents<size_type, stdex::dynamic_extent, 7u>(get_nparts()));
 
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {

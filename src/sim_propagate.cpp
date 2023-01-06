@@ -266,7 +266,7 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
 
     // Fetch a view on the state vector in order to
     // access the particles' sizes.
-    stdex::mdspan sv(m_state->data(), stdex::extents<size_type, stdex::dynamic_extent, 7u>(nparts));
+    stdex::mdspan sv(std::as_const(m_state)->data(), stdex::extents<size_type, stdex::dynamic_extent, 7u>(nparts));
 
     // Fetch pointers to the AABB data for the current chunk.
     const auto offset = nparts * chunk_idx;
