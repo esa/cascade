@@ -114,7 +114,7 @@ struct sim::sim_data {
     unsigned nchunks = 0;
     // Helper to compute the begin and end of a chunk within
     // a superstep for a given collisional timestep.
-    std::array<double, 2> get_chunk_begin_end(unsigned, double) const;
+    [[nodiscard]] std::array<double, 2> get_chunk_begin_end(unsigned, double) const;
 
     // Buffer that is used to:
     // - store the global state at the end of a superstep,
