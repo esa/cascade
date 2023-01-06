@@ -306,7 +306,7 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
             m_pars->resize(safe_size_t(nparts) * npars);
         } else if (m_pars->size() % npars != 0u || m_pars->size() / npars != nparts) {
             // There are parameters in the dynamics and the user provided
-            // an array of param values: check its shape.
+            // an array of param values, but the shape is wrong.
             throw std::invalid_argument(fmt::format("The input array of parameter values must have shape ({}, {}), "
                                                     "but instead its flattened size is {}",
                                                     nparts, npars, m_pars->size()));
