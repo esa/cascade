@@ -122,10 +122,10 @@ private:
     CASCADE_DLL_LOCAL void dense_propagate(double);
     template <typename T>
     CASCADE_DLL_LOCAL outcome propagate_until_impl(const T &, double);
-    CASCADE_DLL_LOCAL bool with_reentry_event() const;
-    CASCADE_DLL_LOCAL bool with_exit_event() const;
-    CASCADE_DLL_LOCAL std::uint32_t reentry_event_idx() const;
-    CASCADE_DLL_LOCAL std::uint32_t exit_event_idx() const;
+    [[nodiscard]] CASCADE_DLL_LOCAL bool with_reentry_event() const;
+    [[nodiscard]] CASCADE_DLL_LOCAL bool with_exit_event() const;
+    [[nodiscard]] CASCADE_DLL_LOCAL std::uint32_t reentry_event_idx() const;
+    [[nodiscard]] CASCADE_DLL_LOCAL std::uint32_t exit_event_idx() const;
     CASCADE_DLL_LOCAL void verify_state_vector(const std::vector<double> &) const;
     CASCADE_DLL_LOCAL void copy_from_final_state() noexcept;
 
