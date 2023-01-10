@@ -20,6 +20,7 @@
 #include <boost/math/constants/constants.hpp>
 
 #include <xtensor-blas/xlinalg.hpp>
+#include <xtensor/xadapt.hpp>
 #include <xtensor/xfixed.hpp>
 #include <xtensor/xio.hpp>
 
@@ -198,17 +199,16 @@ int main()
             vi += new_vu_i * uij;
             vj += new_vu_j * uij;
 
-            auto new_state = s.get_state();
+            std::vector<std::size_t> shape = {s.get_nparts(), 7u};
+            auto state = xt::adapt(s.get_state_data(), shape);
 
-            new_state[7 * i + 3] = vi(0);
-            new_state[7 * i + 4] = vi(1);
-            new_state[7 * i + 5] = vi(2);
+            state(i, 3) = vi(0);
+            state(i, 4) = vi(1);
+            state(i, 5) = vi(2);
 
-            new_state[7 * j + 3] = vj(0);
-            new_state[7 * j + 4] = vj(1);
-            new_state[7 * j + 5] = vj(2);
-
-            s.set_new_state(new_state);
+            state(j, 3) = vj(0);
+            state(j, 4) = vj(1);
+            state(j, 5) = vj(2);
         } else if (oc != outcome::success) {
             std::cout << "Interrupting due to terminal event detected\n";
             break;

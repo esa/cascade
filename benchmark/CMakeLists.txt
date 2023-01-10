@@ -19,6 +19,8 @@ endfunction()
 
 # Data files needed by some benchmarks.
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/data/test_ic_19647.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/data/test_par_19647.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
+
 
 ADD_CASCADE_BENCHMARK(random_leo_pop_kep)
 ADD_CASCADE_BENCHMARK(2022_leo_pop)
