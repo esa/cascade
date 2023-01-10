@@ -36,7 +36,7 @@ inline std::pair<std::array<T, 3>, std::array<T, 3>> kep_to_cart(std::array<T, 6
     using std::sqrt;
     using std::tan;
 
-    auto [a, e, i, om, Om, nu] = kep;
+    auto [a, e, i, Om, om, nu] = kep;
 
     const auto E = 2 * atan(sqrt((1 - e) / (1 + e)) * tan(nu / 2));
 
@@ -64,8 +64,6 @@ using namespace cascade;
 
 int main()
 {
-    // oneapi::tbb::global_control gc(oneapi::tbb::global_control::max_allowed_parallelism, 1);
-
     create_logger();
 
     set_logger_level_trace();
@@ -77,7 +75,7 @@ int main()
     std::uniform_real_distribution<double> a_dist(1.02, 1.3), e_dist(0., 0.02), i_dist(0., 0.05),
         ang_dist(0., 2 * boost::math::constants::pi<double>()), size_dist(1.57e-8, 1.57e-7);
 
-    std::vector<double> x, y, z, vx, vy, vz, size;
+    std::vector<double> state;
 
     const auto nparts = 17378ull;
 
@@ -89,26 +87,27 @@ int main()
         const auto Om = ang_dist(rng);
         const auto nu = ang_dist(rng);
 
-        auto [r, v] = kep_to_cart<double>({a, e, inc, om, Om, nu}, 1.);
+        auto [r, v] = kep_to_cart<double>({a, e, inc, Om, om, nu}, 1.);
 
-        x.push_back(r[0]);
-        y.push_back(r[1]);
-        z.push_back(r[2]);
+        state.push_back(r[0]);
+        state.push_back(r[1]);
+        state.push_back(r[2]);
 
-        vx.push_back(v[0]);
-        vy.push_back(v[1]);
-        vz.push_back(v[2]);
+        state.push_back(v[0]);
+        state.push_back(v[1]);
+        state.push_back(v[2]);
 
-        size.push_back(size_dist(rng));
+        state.push_back(size_dist(rng));
     }
 
-    auto x_data = x.data();
+    auto state_data = state.data();
 
-    sim s(std::move(x), y, z, vx, vy, vz, size, 0.23);
+    // Simulation with nparts with all default values for the kwargs (keplerian dynamics ... etc..)
+    sim s(std::move(state), 0.23);
 
-    std::cout << "Moved in: " << (x_data == s.get_x().data()) << '\n';
-
-    for (auto i = 0; i < 100; ++i) {
+    // Performs 20 steps of the simulation
+    for (auto i = 0; i < 20; ++i) {
+        std::cout << "\nStep: " << i << '\n';
         s.step();
     }
 }
