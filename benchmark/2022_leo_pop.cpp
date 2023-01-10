@@ -32,50 +32,17 @@
 #include <cascade/logging.hpp>
 #include <cascade/sim.hpp>
 
-template <typename T>
-inline T dot(std::array<T, 3> a, std::array<T, 3> b)
-{
-    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-}
-
-template <typename T>
-inline std::pair<std::array<T, 3>, std::array<T, 3>> kep_to_cart(std::array<T, 6> kep, T mu)
-{
-    using std::atan;
-    using std::cos;
-    using std::sin;
-    using std::sqrt;
-    using std::tan;
-
-    auto [a, e, i, Om, om, nu] = kep;
-
-    const auto E = 2 * atan(sqrt((1 - e) / (1 + e)) * tan(nu / 2));
-
-    const auto n = sqrt(mu / (a * a * a));
-
-    const std::array<T, 3> q = {a * (cos(E) - e), a * sqrt(1 - e * e) * sin(E), T(0)};
-    const std::array<T, 3> vq
-        = {-n * a * sin(E) / (1 - e * cos(E)), n * a * sqrt(1 - e * e) * cos(E) / (1 - e * cos(E)), T(0)};
-
-    const std::array<T, 3> r1 = {cos(Om) * cos(om) - sin(Om) * cos(i) * sin(om),
-                                 -cos(Om) * sin(om) - sin(Om) * cos(i) * cos(om), sin(Om) * sin(i)};
-    const std::array<T, 3> r2 = {sin(Om) * cos(om) + cos(Om) * cos(i) * sin(om),
-                                 -sin(Om) * sin(om) + cos(Om) * cos(i) * cos(om), -cos(Om) * sin(i)};
-    const std::array<T, 3> r3 = {sin(i) * sin(om), sin(i) * cos(om), cos(i)};
-
-    std::array<T, 3> x = {dot(r1, q), dot(r2, q), dot(r3, q)};
-    std::array<T, 3> v = {dot(r1, vq), dot(r2, vq), dot(r3, vq)};
-
-    return std::pair{x, v};
-}
-
 std::mt19937 rng;
 
 using namespace cascade;
 
 int main()
 {
-    // We read the state from file
+    namespace hy = heyoka;
+    set_logger_level_trace();
+
+    // Constuct the initial state from file "test_ic_19647.txt". This was created
+    // using all catalogued objects from spacetrack as of 2022
     std::vector<double> state;
     std::string line;
     std::ifstream file_in;
@@ -90,73 +57,40 @@ int main()
     } else {
         std::cout << " unable to open file test_ic_19647.txt" << std::endl;
     }
-    namespace hy = heyoka;
 
-    set_logger_level_trace();
+    // Create the dynamics
+    // Dynamical variables.
+    const auto [x, y, z, vx, vy, vz] = hy::make_vars("x", "y", "z", "vx", "vy", "vz");
 
-    // Create the dynamics.
-    const auto G = 6.674e-11;
+    // Constants.
+    const auto GMe = 398600441800000.0;
+    const auto C20 = -4.84165371736e-4;
+    const auto C22 = 2.43914352398e-6;
+    const auto S22 = -1.40016683654e-6;
+    const auto Re = 6378137.0;
 
-    const auto m_c = 4.006e21;
-    const auto mu_c = m_c * G;
-    const auto ra = 2000e3;
-    const auto rb = ra;
-    const auto rc = ra / 2;
-    const auto Ac = 1 / 5. * m_c * (rb * rb + rc * rc);
-    const auto Bc = 1 / 5. * m_c * (ra * ra + rc * rc);
-    const auto Cc = 1 / 5. * m_c * (ra * ra + rb * rb);
+    // Create Keplerian dynamics.
+    auto dyn = dynamics::kepler(GMe);
 
-    const auto m_s = m_c / 223;
-    const auto mu_s = m_s * G;
-    const auto a_s = 20000e3;
-    const auto e_s = 0.05;
-    const auto inc_s = 55. * 2 * boost::math::constants::pi<double>() / 360;
+    // Add the J2 terms.
+    auto magr2 = hy::sum_sq({x, y, z});
+    auto J2term1 = GMe * (Re * Re) * std::sqrt(5) * C20 / (2. * hy::pow(magr2, 0.5));
+    auto J2term2 = 3. / (magr2 * magr2);
+    auto J2term3 = 15. * (z * z) / (magr2 * magr2 * magr2);
+    auto fJ2x = J2term1 * x * (J2term2 - J2term3);
+    auto fJ2y = J2term1 * y * (J2term2 - J2term3);
+    auto fJ2z = J2term1 * z * (3. * J2term2 - J2term3);
 
-    const auto ct = 5000.;
-    const auto radius = 10e3 / 3;
-    const auto dt = 10000.;
-
-    const auto M_s = std::sqrt((mu_c + mu_s) / (a_s * a_s * a_s)) * hy::time;
-
-    const auto x_so = a_s * (hy::cos(M_s) - e_s * (1. + hy::sin(M_s) * hy::sin(M_s)));
-    const auto y_so = a_s * (hy::sin(M_s) + e_s * hy::sin(M_s) * hy::cos(M_s));
-
-    const auto x_s = x_so;
-    const auto y_s = y_so * std::cos(inc_s);
-    const auto z_s = y_so * std::sin(inc_s);
-
-    const auto [x, y, z] = hy::make_vars("x", "y", "z");
-
-    const auto dps_m3 = hy::pow((x_s - x) * (x_s - x) + (y_s - y) * (y_s - y) + (z_s - z) * (z_s - z), -3. / 2);
-
-    const auto dcs_m3 = hy::pow(x_s * x_s + y_s * y_s + z_s * z_s, -3. / 2);
-
-    const auto nu = .3;
-
-    // Perturbations on a ring particle due to Hi'iaka and
-    // the non-inertial reference frame.
-    auto pert_x_s = mu_s * ((x_s - x) * dps_m3 - x_s * dcs_m3);
-    auto pert_y_s = mu_s * ((y_s - y) * dps_m3 - y_s * dcs_m3);
-    auto pert_z_s = mu_s * ((z_s - z) * dps_m3 - z_s * dcs_m3);
-
-    const auto I = (Ac * x * x + Bc * y * y + Cc * z * z) / hy::sum_sq({x, y, z});
-    const auto Vell = G / 2. * (Ac + Bc + Cc - 3. * I) * hy::pow(hy::sum_sq({x, y, z}), -3. / 2);
-
-    pert_x_s += hy::diff(Vell, x);
-    pert_y_s += hy::diff(Vell, y);
-    pert_z_s += hy::diff(Vell, z);
-
-    auto dynamics = dynamics::kepler(mu_c);
-
-    dynamics[3].second += pert_x_s;
-    dynamics[4].second += pert_y_s;
-    dynamics[5].second += pert_z_s;
+    dyn[3].second += fJ2x;
+    dyn[4].second += fJ2y;
+    dyn[5].second += fJ2z;
 
     // Create the simulation.
-    sim s(state, ct, kw::dyn = dynamics, kw::c_radius = std::vector<double>{ra, rb, rc}, kw::d_radius = a_s * 10);
+    auto ct = 0.23 * 806.81;
+    sim s(state, ct, kw::dyn = dyn);
 
     while (true) {
-        auto oc = s.step(dt);
+        auto oc = s.step();
 
         if (oc == outcome::collision) {
             // Fetch the indices of the collision.
