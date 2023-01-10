@@ -47,7 +47,7 @@ inline std::pair<std::array<T, 3>, std::array<T, 3>> kep_to_cart(std::array<T, 6
     using std::sqrt;
     using std::tan;
 
-    auto [a, e, i, om, Om, nu] = kep;
+    auto [a, e, i, Om, om, nu] = kep;
 
     const auto E = 2 * atan(sqrt((1 - e) / (1 + e)) * tan(nu / 2));
 
@@ -139,7 +139,7 @@ int main()
 
     // Create the initial conditions.
     const auto nparts = 10000ull;
-    std::array<std::vector<double>, 6> state_data;
+    std::vector<double> state;
 
     std::uniform_real_distribution<double> a_dist(5000e3, 10000e3), e_dist(0., 1e-3),
         i_dist(0., 2. * boost::math::constants::pi<double>() / 360),
@@ -153,21 +153,20 @@ int main()
         const auto Om = ang_dist(rng);
         const auto nu = ang_dist(rng);
 
-        auto [r, v] = kep_to_cart<double>({a, e, inc, om, Om, nu}, mu_c);
+        auto [r, v] = kep_to_cart<double>({a, e, inc, Om, om, nu}, mu_c);
 
-        state_data[0].push_back(r[0]);
-        state_data[1].push_back(r[1]);
-        state_data[2].push_back(r[2]);
+        state.push_back(r[0]);
+        state.push_back(r[1]);
+        state.push_back(r[2]);
 
-        state_data[3].push_back(v[0]);
-        state_data[4].push_back(v[1]);
-        state_data[5].push_back(v[2]);
+        state.push_back(v[0]);
+        state.push_back(v[1]);
+        state.push_back(v[2]);
+        state.push_back(radius);
     }
 
     // Create the simulation.
-    sim s(state_data[0], state_data[1], state_data[2], state_data[3], state_data[4], state_data[5],
-          std::vector(state_data[0].size(), radius), ct, kw::dyn = dynamics,
-          kw::c_radius = std::vector<double>{ra, rb, rc}, kw::d_radius = a_s * 10);
+    sim s(state, ct, kw::dyn = dynamics, kw::c_radius = std::vector<double>{ra, rb, rc}, kw::d_radius = a_s * 10);
 
     while (true) {
         auto oc = s.step(dt);
@@ -176,11 +175,15 @@ int main()
             // Fetch the indices of the collision.
             const auto [i, j] = std::get<0>(*s.get_interrupt_info());
 
-            xt::xtensor_fixed<double, xt::xshape<3>> ri{s.get_x()[i], s.get_y()[i], s.get_z()[i]};
-            xt::xtensor_fixed<double, xt::xshape<3>> rj{s.get_x()[j], s.get_y()[j], s.get_z()[j]};
+            xt::xtensor_fixed<double, xt::xshape<3>> ri{s.get_state()[i * 7], s.get_state()[i * 7 + 1],
+                                                        s.get_state()[i * 7 + 2]};
+            xt::xtensor_fixed<double, xt::xshape<3>> rj{s.get_state()[j * 7], s.get_state()[j * 7 + 1],
+                                                        s.get_state()[j * 7 + 2]};
 
-            xt::xtensor_fixed<double, xt::xshape<3>> vi{s.get_vx()[i], s.get_vy()[i], s.get_vz()[i]};
-            xt::xtensor_fixed<double, xt::xshape<3>> vj{s.get_vx()[j], s.get_vy()[j], s.get_vz()[j]};
+            xt::xtensor_fixed<double, xt::xshape<3>> vi{s.get_state()[i * 7 + 3], s.get_state()[i * 7 + 4],
+                                                        s.get_state()[i * 7 + 5]};
+            xt::xtensor_fixed<double, xt::xshape<3>> vj{s.get_state()[j * 7 + 3], s.get_state()[j * 7 + 4],
+                                                        s.get_state()[j * 7 + 5]};
 
             auto rij = rj - ri;
             auto uij = rij / xt::linalg::norm(rij);
@@ -195,20 +198,17 @@ int main()
             vi += new_vu_i * uij;
             vj += new_vu_j * uij;
 
-            auto new_vx = s.get_vx();
-            auto new_vy = s.get_vy();
-            auto new_vz = s.get_vz();
+            auto new_state = s.get_state();
 
-            new_vx[i] = vi(0);
-            new_vy[i] = vi(1);
-            new_vz[i] = vi(2);
+            new_state[7 * i + 3] = vi(0);
+            new_state[7 * i + 4] = vi(1);
+            new_state[7 * i + 5] = vi(2);
 
-            new_vx[j] = vj(0);
-            new_vy[j] = vj(1);
-            new_vz[j] = vj(2);
+            new_state[7 * j + 3] = vj(0);
+            new_state[7 * j + 4] = vj(1);
+            new_state[7 * j + 5] = vj(2);
 
-            s.set_new_state(s.get_x(), s.get_y(), s.get_z(), std::move(new_vx), std::move(new_vy), std::move(new_vz),
-                            s.get_sizes());
+            s.set_new_state(new_state);
         } else if (oc != outcome::success) {
             std::cout << "Interrupting due to terminal event detected\n";
             break;
