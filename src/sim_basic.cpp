@@ -168,7 +168,7 @@ double sim::get_ct() const
     return m_ct;
 }
 
-sim::size_type sim::get_npars() const
+std::uint32_t sim::get_npars() const
 {
     return m_npars;
 }

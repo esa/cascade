@@ -204,7 +204,7 @@ void sim::init_scalar_ta(T &ta, size_type pidx) const
 
     // Copy over the parameters.
     auto pars_data = ta.get_pars_data();
-    for (size_type i = 0; i < npars; ++i) {
+    for (std::uint32_t i = 0; i < npars; ++i) {
         pars_data[i] = pv(pidx, i);
     }
 }
@@ -230,7 +230,7 @@ void sim::init_batch_ta(T &ta, size_type pidx_begin, size_type pidx_end) const
     stdex::mdspan pv(m_pars->data(), nparts, npars);
 
     stdex::mdspan st(ta.get_state_data(), stdex::extents<std::uint32_t, 7u, stdex::dynamic_extent>(batch_size));
-    stdex::mdspan pt(ta.get_pars_data(), npars, boost::numeric_cast<size_type>(batch_size));
+    stdex::mdspan pt(ta.get_pars_data(), npars, batch_size);
 
     // Reset cooldowns and set up the times.
     if (ta.with_events()) {
@@ -247,7 +247,7 @@ void sim::init_batch_ta(T &ta, size_type pidx_begin, size_type pidx_end) const
         // NOTE: compute the radius on the fly from the x/y/z coords.
         st(6, i) = std::sqrt(st(0, i) * st(0, i) + st(1, i) * st(1, i) + st(2, i) * st(2, i));
 
-        for (size_type j = 0; j < npars; ++j) {
+        for (std::uint32_t j = 0; j < npars; ++j) {
             pt(j, i) = pv(pidx_begin + i, j);
         }
     }
