@@ -17,7 +17,10 @@
 #include <variant>
 #include <vector>
 
+#include <oneapi/tbb/global_control.h>
+
 #include <boost/math/constants/constants.hpp>
+#include <boost/program_options.hpp>
 
 #include <xtensor-blas/xlinalg.hpp>
 #include <xtensor/xadapt.hpp>
@@ -25,8 +28,10 @@
 #include <xtensor/xio.hpp>
 
 #include <heyoka/math/cos.hpp>
+#include <heyoka/math/exp.hpp>
 #include <heyoka/math/pow.hpp>
 #include <heyoka/math/sin.hpp>
+#include <heyoka/math/sqrt.hpp>
 #include <heyoka/math/sum_sq.hpp>
 #include <heyoka/math/time.hpp>
 
@@ -37,6 +42,7 @@ std::mt19937 rng;
 
 constexpr double pi = boost::math::constants::pi<double>();
 
+// Reads a file into an std vector. Assumes file formatted in one column
 std::vector<double> read_file(std::string filename)
 {
     std::vector<double> retval;
@@ -56,47 +62,134 @@ std::vector<double> read_file(std::string filename)
     return retval;
 }
 
+// Removes from state and pars all the particles ids contained in a list.
 void remove_particles(std::vector<double> &state, std::vector<double> &pars, const std::vector<std::size_t> &idxs)
 {
     auto idxs_copy = idxs;
     std::sort(idxs_copy.begin(), idxs_copy.end(), std::greater<int>());
     for (auto idx : idxs_copy) {
-        state.erase(state.begin() + idx);
+        state.erase(state.begin() + 7 * idx, state.begin() + 7 * idx + 7);
         pars.erase(pars.begin() + idx);
     }
 }
 
+// Helper returning the heyoka expression for the density using
+// the results from the data interpolation
+/*
+    Returns the heyoka expression for the atmosheric density in kg.m^3.
+    Input is the altitude in m.
+    (when we fitted km were used here we change as to allow better expressions)
+*/
+heyoka::expression compute_density(heyoka::expression h, const std::vector<double> &best_x)
+{
+
+    heyoka::expression retval(0.);
+    for (auto i = 0u; i < 4u; ++i) {
+        double alpha = best_x[i];
+        double beta = best_x[i + 4] / 1000;
+        double gamma = best_x[i + 8] * 1000;
+        retval += alpha * heyoka::exp(-(h - gamma) * beta);
+    }
+    return retval;
+}
+
 using namespace cascade;
 
-int main()
+int main(int ac, char *av[])
 {
+    // Program options
+    // ------------------------------------------------------------------------------------------------------
+    namespace po = boost::program_options;
+
+    po::options_description desc("Allowed options");
+    desc.add_options()("help", "produce help message")("cpus,n", po::value<int>()->default_value(1),
+                                                       "set number of cpus to use")(
+        "steps,s", po::value<int>()->default_value(20), "set number of steps to perform")(
+        "large,l", po::value<bool>()->default_value(false), "augments with >500000 small debris")(
+        "rcs_factor,r", po::value<double>()->default_value(1.), "factor to inflate the radius (for collisions)");
+
+    po::variables_map vm;
+    po::store(po::parse_command_line(ac, av, desc), vm);
+    po::notify(vm);
+
+    if (vm.count("help")) {
+        std::cout << desc << "\n";
+        return 1;
+    }
+
+    int n_cpus, max_steps;
+    if (vm.count("cpus")) {
+        n_cpus = vm["cpus"].as<int>();
+    }
+    std::optional<oneapi::tbb::global_control> tbb_gc;
+    tbb_gc.emplace(oneapi::tbb::global_control::max_allowed_parallelism, n_cpus);
+
+    if (vm.count("steps")) {
+        max_steps = vm["steps"].as<int>();
+    }
+
+    bool large_dataset;
+    if (vm.count("large")) {
+        large_dataset = vm["large"].as<bool>();
+    }
+
+    double rcs_factor;
+    if (vm.count("rcs_factor")) {
+        rcs_factor = vm["rcs_factor"].as<double>();
+    }
+
+    std::cout << "\nRunning " << max_steps << " steps with " << n_cpus << " cpus and on the "
+              << (large_dataset ? "large" : "small") << " dataset, rcs factor: " << rcs_factor << std::endl;
+
     namespace hy = heyoka;
     set_logger_level_trace();
 
-    // Constuct the initial state from file "test_ic_19647.txt". This was created
-    // using all catalogued objects from spacetrack as of 2022
-    std::vector<double> state;
-    state = read_file("test_ic_19647.txt");
-    std::vector<double> c_sections;
-    c_sections = read_file("test_par_19647.txt");
+    // Construct the initial state from files. This was created using all catalogued objects from spacetrack as of 2022.
+    // The large database instead adds also the debris as to match the LADDS test case.
+    // ------------------------------------------------------------------------------------------------------
+    std::cout << "\nReading data from files..." << std::endl;
+    std::vector<double> state, pars;
+    double drag_factor;
+    if (large_dataset) {
+        state = read_file("test_ic_612813.txt");
+        pars = read_file("test_par_612813.txt");
+        // We switch off drag as to avoid to see too many reentries (in connection to the event c_radius being halved)
+        drag_factor = 0.;
+    } else {
+        state = read_file("test_ic_19647.txt");
+        pars = read_file("test_par_19647.txt");
+        drag_factor = 1;
+    }
+    // Account for factors
+    for (auto i = 6; i < state.size(); i = i + 7) {
+        state[i] = state[i] * rcs_factor;
+    }
+    for (auto i = 0; i < pars.size(); ++i) {
+        pars[i] = pars[i] * drag_factor;
+    }
+    std::vector<double> best_x;
+    best_x = read_file("best_fit_density.txt");
 
     // Create the dynamics
+    // ------------------------------------------------------------------------------------------------------
+
     // Dynamical variables.
     const auto [x, y, z, vx, vy, vz] = hy::make_vars("x", "y", "z", "vx", "vy", "vz");
 
     // Constants.
-    const auto GMe = 398600441800000.0;
-    const auto C20 = -4.84165371736e-4;
-    const auto C22 = 2.43914352398e-6;
-    const auto S22 = -1.40016683654e-6;
-    const auto Re = 6378137.0;
+    const double GMe = 398600441800000.0;
+    const double C20 = -4.84165371736e-4;
+    const double C22 = 2.43914352398e-6;
+    const double S22 = -1.40016683654e-6;
+    const double Re = 6378137.0;
+    const double min_radius = Re + 150000.;
 
     // Create Keplerian dynamics.
     auto dyn = dynamics::kepler(GMe);
 
     // Add the J2 terms.
     auto magr2 = hy::sum_sq({x, y, z});
-    auto J2term1 = GMe * (Re * Re) * std::sqrt(5) * C20 / (2. * hy::pow(magr2, 0.5));
+    auto J2term1 = GMe * (Re * Re) * std::sqrt(5) * C20 / (2. * hy::sqrt(magr2));
     auto J2term2 = 3. / (magr2 * magr2);
     auto J2term3 = 15. * (z * z) / (magr2 * magr2 * magr2);
     auto fJ2x = J2term1 * x * (J2term2 - J2term3);
@@ -140,19 +233,46 @@ int main()
     dyn[4].second += fC22y + fS22y;
     dyn[5].second += fC22z + fS22z;
 
+    // Add the drag force.
+    auto magv2 = hy::sum_sq({vx, vy, vz});
+    auto magv = hy::sqrt(magv2);
+    // Here we consider a spherical Earth ... would be easy to account for the oblateness effect on the altitude.
+    auto altitude = hy::sqrt(magr2) - Re;
+    auto density = compute_density(altitude, best_x);
+    auto ref_density = 0.1570 / Re;
+    auto fdrag = density / ref_density * hy::par[0] * magv;
+    auto fdragx = -fdrag * vx;
+    auto fdragy = -fdrag * vy;
+    auto fdragz = -fdrag * vz;
+    dyn[3].second += fC22x + fdragx;
+    dyn[4].second += fC22y + fdragy;
+    dyn[5].second += fC22z + fdragz;
+
     // Create the simulation.
-    auto ct = 0.23 * 806.81;
-    sim s(state, ct, kw::dyn = dyn);
+    // ------------------------------------------------------------------------------------------------------
 
-    // Performs 20 steps of the simulation
-    for (auto step = 0; step < 20; ++step) {
+    std::cout << "\nConstructing the simulation object..." << std::endl;
+    double ct, c_rad;
+    if (large_dataset) {
+        ct = 0.08 * 806.81;
+        c_rad = min_radius / 2;
+    } else {
+        ct = 0.23 * 806.81;
+        c_rad = min_radius;
+    }
+    sim s(state, ct, kw::dyn = dyn, kw::pars = pars, kw::c_radius = c_rad);
+    // Perform steps of the simulation.
+    // ------------------------------------------------------------------------------------------------------
+    std::cout << "\nPerforming the simulation..." << std::endl;
+    for (auto step = 0; step < max_steps; ++step) {
+        std::cout << "\nStep: " << step << '\n';
+        std::cout << "Time: " << s.get_time() / 60 / 60 / 24 << '\n';
         auto oc = s.step();
-
         if (oc == outcome::collision) {
             // Fetch the indices of the collision.
             const auto [i, j] = std::get<0>(*s.get_interrupt_info());
 
-            std::cout << "Collision detected, deleting particles " << i << " and " << j << std::endl;
+            std::cout << "\nCollision detected, deleting particles " << i << " and " << j << std::endl;
 
             auto new_state = s.get_state();
             auto new_pars = s.get_pars();
@@ -165,7 +285,7 @@ int main()
             // Fetch the index of the re-entry.
             const auto i = std::get<1>(*s.get_interrupt_info());
 
-            std::cout << "Reentry detected, particle " << i << std::endl;
+            std::cout << "\nReentry detected, particle " << i << std::endl;
 
             auto new_state = s.get_state();
             auto new_pars = s.get_pars();
