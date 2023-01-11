@@ -12,6 +12,7 @@
 #include <array>
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -106,7 +107,7 @@ private:
     // Domain radius.
     double m_d_radius = 0;
     // Number of params in the dynamics.
-    size_type m_npars = 0;
+    std::uint32_t m_npars = 0;
 
     void finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>>, std::vector<double>,
                        std::variant<double, std::vector<double>>, double, double, bool);
@@ -268,7 +269,7 @@ public:
 
     [[nodiscard]] double get_tol() const;
     [[nodiscard]] bool get_high_accuracy() const;
-    [[nodiscard]] size_type get_npars() const;
+    [[nodiscard]] std::uint32_t get_npars() const;
 
     void set_new_state(std::vector<double>);
 
