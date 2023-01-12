@@ -22,10 +22,7 @@
 #include <boost/math/constants/constants.hpp>
 #include <boost/program_options.hpp>
 
-#include <xtensor-blas/xlinalg.hpp>
 #include <xtensor/xadapt.hpp>
-#include <xtensor/xfixed.hpp>
-#include <xtensor/xio.hpp>
 
 #include <heyoka/math/cos.hpp>
 #include <heyoka/math/exp.hpp>
@@ -38,11 +35,11 @@
 #include <cascade/logging.hpp>
 #include <cascade/sim.hpp>
 
-std::mt19937 rng;
+using namespace cascade;
 
 constexpr double pi = boost::math::constants::pi<double>();
 
-// Reads a file into an std vector. Assumes file formatted in one column
+// Helper to read a file into an std vector. Assumes file formatted in one column
 std::vector<double> read_file(std::string filename)
 {
     std::vector<double> retval;
@@ -62,7 +59,7 @@ std::vector<double> read_file(std::string filename)
     return retval;
 }
 
-// Removes from state and pars all the particles ids contained in a list.
+// Helper to remove from state and pars all the particles ids contained in a list.
 void remove_particles(std::vector<double> &state, std::vector<double> &pars, const std::vector<std::size_t> &idxs)
 {
     auto idxs_copy = idxs;
@@ -93,10 +90,25 @@ heyoka::expression compute_density(heyoka::expression h, const std::vector<doubl
     return retval;
 }
 
-using namespace cascade;
+/*
+This benchmark uses real LEO population (pre-computed) and runs a few steps on them
+
+Allowed options:
+  --help                                produce help message
+  -n [ --cpus ] arg (=1)                set number of cpus to use
+  -s [ --steps ] arg (=20)              set number of steps to perform
+  -l [ --large ] arg (=0)               augments with >500000 small debris
+  -r [ --rcs_factor ] arg (=1)          factor for the radius (collisions)
+  -c [ --c_timestep ] arg (=64.544799999999995)
+                                        collisional time step
+  -S [ --s_size ] arg                   superstep size
+*/
 
 int main(int ac, char *av[])
 {
+    namespace hy = heyoka;
+    set_logger_level_trace();
+
     // Program options
     // ------------------------------------------------------------------------------------------------------
     namespace po = boost::program_options;
@@ -106,7 +118,9 @@ int main(int ac, char *av[])
                                                        "set number of cpus to use")(
         "steps,s", po::value<int>()->default_value(20), "set number of steps to perform")(
         "large,l", po::value<bool>()->default_value(false), "augments with >500000 small debris")(
-        "rcs_factor,r", po::value<double>()->default_value(1.), "factor to inflate the radius (for collisions)");
+        "rcs_factor,r", po::value<double>()->default_value(1.), "factor for the radius (collisions)")(
+        "c_timestep,c", po::value<double>()->default_value(64.5448),
+        "collisional time step")("s_size,S", po::value<double>(), "superstep size");
 
     po::variables_map vm;
     po::store(po::parse_command_line(ac, av, desc), vm);
@@ -138,11 +152,25 @@ int main(int ac, char *av[])
         rcs_factor = vm["rcs_factor"].as<double>();
     }
 
-    std::cout << "\nRunning " << max_steps << " steps with " << n_cpus << " cpus and on the "
-              << (large_dataset ? "large" : "small") << " dataset, rcs factor: " << rcs_factor << std::endl;
+    double c_timestep;
+    if (vm.count("c_timestep")) {
+        c_timestep = vm["c_timestep"].as<double>();
+    }
 
-    namespace hy = heyoka;
-    set_logger_level_trace();
+    double s_size;
+    if (vm.count("s_size")) {
+        s_size = vm["s_size"].as<double>();
+    }
+
+    std::cout << "\nRunning " << max_steps << " steps with " << n_cpus << " cpus\n"
+              << (large_dataset ? "Large" : "Small") << " dataset used\nRadius factor: " << rcs_factor
+              << "\nCollisional time-step: " << c_timestep << "s\nSuper step size: ";
+    if (vm.count("s_size")) {
+        std::cout << s_size << "s";
+    } else {
+        std::cout << "auto";
+    }
+    std::cout << std::endl;
 
     // Construct the initial state from files. This was created using all catalogued objects from spacetrack as of 2022.
     // The large database instead adds also the debris as to match the LADDS test case.
@@ -252,22 +280,27 @@ int main(int ac, char *av[])
     // ------------------------------------------------------------------------------------------------------
 
     std::cout << "\nConstructing the simulation object..." << std::endl;
-    double ct, c_rad;
+    double c_rad;
     if (large_dataset) {
-        ct = 0.08 * 806.81;
         c_rad = min_radius / 2;
     } else {
-        ct = 0.23 * 806.81;
         c_rad = min_radius;
     }
-    sim s(state, ct, kw::dyn = dyn, kw::pars = pars, kw::c_radius = c_rad);
+    sim s(state, c_timestep, kw::dyn = dyn, kw::pars = pars, kw::c_radius = c_rad);
     // Perform steps of the simulation.
     // ------------------------------------------------------------------------------------------------------
+    outcome oc;
     std::cout << "\nPerforming the simulation..." << std::endl;
     for (auto step = 0; step < max_steps; ++step) {
         std::cout << "\nStep: " << step << '\n';
         std::cout << "Time: " << s.get_time() / 60 / 60 / 24 << '\n';
-        auto oc = s.step();
+
+        // Superstep is only used if passed as argument, else automatically detected.
+        if (vm.count("s_size")) {
+            oc = s.step(s_size);
+        } else {
+            oc = s.step();
+        }
         if (oc == outcome::collision) {
             // Fetch the indices of the collision.
             const auto [i, j] = std::get<0>(*s.get_interrupt_info());
