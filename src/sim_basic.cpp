@@ -106,19 +106,8 @@ sim::sim(const sim &other)
       m_pars(std::make_shared<std::vector<double>>(*other.m_pars)), m_ct(other.m_ct), m_int_info(other.m_int_info),
       m_c_radius(other.m_c_radius), m_d_radius(other.m_d_radius), m_npars(other.m_npars)
 {
-    // For m_data, we will be copying only:
-    // - the integrator templates,
-    // - the llvm state.
-    auto data_ptr
-        = std::make_unique<sim_data>(other.m_data->s_ta, other.m_data->b_ta, other.m_data->c_ta, other.m_data->state);
-
-    // Need to assign the JIT function pointers.
-    data_ptr->pta = reinterpret_cast<decltype(data_ptr->pta)>(data_ptr->state.jit_lookup("poly_translate_a"));
-    data_ptr->pssdiff3 = reinterpret_cast<decltype(data_ptr->pssdiff3)>(data_ptr->state.jit_lookup("poly_ssdiff3"));
-    data_ptr->fex_check = reinterpret_cast<decltype(data_ptr->fex_check)>(data_ptr->state.jit_lookup("fex_check"));
-    data_ptr->rtscc = reinterpret_cast<decltype(data_ptr->rtscc)>(data_ptr->state.jit_lookup("poly_rtscc"));
-    // NOTE: this is implicitly added by llvm_add_poly_rtscc().
-    data_ptr->pt1 = reinterpret_cast<decltype(data_ptr->pt1)>(data_ptr->state.jit_lookup("poly_translate_1"));
+    // For m_data, we will be copying only the integrator templates.
+    auto data_ptr = std::make_unique<sim_data>(other.m_data->s_ta, other.m_data->b_ta, other.m_data->c_ta);
 
     // Assign the pointer.
     m_data = data_ptr.release();
@@ -508,12 +497,6 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
 
     auto data_ptr = std::make_unique<sim_data>(std::move(*s_ta), std::move(*b_ta), std::move(*c_ta));
     m_data = data_ptr.release();
-
-    sw.reset();
-
-    add_jit_functions();
-
-    logger->trace("JIT functions setup time: {}s", sw);
 }
 
 double sim::get_time() const

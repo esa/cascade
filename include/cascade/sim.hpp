@@ -111,7 +111,6 @@ private:
 
     void finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>>, std::vector<double>,
                        std::variant<double, std::vector<double>>, double, double, bool);
-    CASCADE_DLL_LOCAL void add_jit_functions();
     CASCADE_DLL_LOCAL void morton_encode_sort_parallel();
     CASCADE_DLL_LOCAL void construct_bvh_trees_parallel();
     CASCADE_DLL_LOCAL void verify_bvh_trees_parallel() const;

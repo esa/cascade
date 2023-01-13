@@ -366,9 +366,6 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
         const auto tc_ptr_r = s_data[pidx].tc_r.data() + ss_idx * (order + 1u);
 
         // Run the polynomial evaluations using interval arithmetic.
-        // NOTE: jit for performance? If so, we can do all 4 coordinates
-        // in a single JIT compiled function. Possibly also the update
-        // with the particle radius?
         auto horner_eval = [order, h_int = detail::ival(h_int_lb, h_int_ub)](const double *ptr) {
             auto acc = detail::ival(ptr[order]);
             for (auto o = 1u; o <= order; ++o) {
@@ -502,7 +499,6 @@ void sim::morton_encode_sort_parallel()
             auto *CASCADE_RESTRICT vidx_ptr = m_data->vidx.data() + offset;
 
             oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &r2) {
-                // NOTE: JIT optimisation opportunity here. Worth it?
                 for (auto pidx = r2.begin(); pidx != r2.end(); ++pidx) {
                     // Compute the centre of the AABB.
                     const auto x_ctr = x_lb_ptr[pidx] / 2 + x_ub_ptr[pidx] / 2;
@@ -1660,8 +1656,6 @@ void sim::dense_propagate(double t)
             const auto tc_ptr_vz = s_data[pidx].tc_vz.data() + ss_idx * (order + 1u);
 
             // Run the polynomial evaluations.
-            // NOTE: jit for performance? If so, we can do all variables
-            // in a single JIT compiled function.
             auto horner_eval = [order, eval_tm](const double *ptr) {
                 auto acc = ptr[order];
                 for (auto o = 1u; o <= order; ++o) {

@@ -22,7 +22,6 @@
 #include <oneapi/tbb/concurrent_vector.h>
 
 #include <heyoka/detail/dfloat.hpp>
-#include <heyoka/llvm_state.hpp>
 #include <heyoka/taylor.hpp>
 
 #include <cascade/sim.hpp>
@@ -93,20 +92,6 @@ struct sim::sim_data {
     // the integrator caches below.
     heyoka::taylor_adaptive<double> s_ta;
     heyoka::taylor_adaptive_batch<double> b_ta, c_ta;
-
-    // The JIT data.
-    heyoka::llvm_state state;
-    using pta_t = double *(*)(double *, const double *, double) noexcept;
-    pta_t pta = nullptr;
-    using pssdiff3_t = void (*)(double *, const double *, const double *, const double *, const double *,
-                                const double *, const double *) noexcept;
-    pssdiff3_t pssdiff3 = nullptr;
-    using fex_check_t = void (*)(const double *, const double *, const std::uint32_t *, std::uint32_t *) noexcept;
-    fex_check_t fex_check = nullptr;
-    using rtscc_t = void (*)(double *, double *, std::uint32_t *, const double *) noexcept;
-    rtscc_t rtscc = nullptr;
-    using pt1_t = void (*)(double *, const double *) noexcept;
-    pt1_t pt1 = nullptr;
 
     // The superstep size and the number of chunks.
     // NOTE: these are set up at the beginning of each superstep.
