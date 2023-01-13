@@ -22,6 +22,9 @@
 #include <boost/math/constants/constants.hpp>
 #include <boost/program_options.hpp>
 
+#include <spdlog/spdlog.h>
+#include <spdlog/stopwatch.h>
+
 #include <xtensor/xadapt.hpp>
 
 #include <heyoka/math/cos.hpp>
@@ -112,6 +115,8 @@ int main(int ac, char *av[])
     namespace hy = heyoka;
     set_logger_level_trace();
 
+    auto cascade_logger = spdlog::get("cascade");
+
     // Program options
     // ------------------------------------------------------------------------------------------------------
     namespace po = boost::program_options;
@@ -119,7 +124,7 @@ int main(int ac, char *av[])
     po::options_description desc("Allowed options");
     desc.add_options()("help", "produce help message")("cpus,n", po::value<int>()->default_value(1),
                                                        "set number of cpus to use")(
-        "steps,s", po::value<int>()->default_value(20), "set number of steps to perform")(
+        "final_time,t", po::value<double>()->default_value(1), "set final time (in days)")(
         "large,l", po::value<bool>()->default_value(false), "augments with >500000 small debris")(
         "rcs_factor,r", po::value<double>()->default_value(1.), "factor for the radius (collisions)")(
         "c_timestep,c", po::value<double>()->default_value(185.5663),
@@ -134,15 +139,16 @@ int main(int ac, char *av[])
         return 1;
     }
 
-    int n_cpus, max_steps;
+    int n_cpus;
+    double final_time;
     if (vm.count("cpus")) {
         n_cpus = vm["cpus"].as<int>();
     }
     std::optional<oneapi::tbb::global_control> tbb_gc;
     tbb_gc.emplace(oneapi::tbb::global_control::max_allowed_parallelism, n_cpus);
 
-    if (vm.count("steps")) {
-        max_steps = vm["steps"].as<int>();
+    if (vm.count("final_time")) {
+        final_time = vm["final_time"].as<double>();
     }
 
     bool large_dataset;
@@ -165,7 +171,7 @@ int main(int ac, char *av[])
         s_size = vm["s_size"].as<double>();
     }
 
-    std::cout << "\nRunning " << max_steps << " steps with " << n_cpus << " cpus\n"
+    std::cout << "\nRunning up to " << final_time << " days with " << n_cpus << " cpus\n"
               << (large_dataset ? "Large" : "Small") << " dataset used\nRadius factor: " << rcs_factor
               << "\nCollisional time-step: " << c_timestep << "s\nSuper step size: ";
     if (vm.count("s_size")) {
@@ -294,9 +300,19 @@ int main(int ac, char *av[])
     // ------------------------------------------------------------------------------------------------------
     outcome oc;
     std::cout << "\nPerforming the simulation..." << std::endl;
-    for (auto step = 0; step < max_steps; ++step) {
+
+    spdlog::stopwatch sw;
+
+    auto step = 0ull;
+
+    while (true) {
         std::cout << "\nStep: " << step << '\n';
-        std::cout << "Time: " << s.get_time() / 60 / 60 / 24 << '\n';
+        const auto cur_time = s.get_time() / 60 / 60 / 24;
+        std::cout << "Time: " << cur_time << '\n';
+
+        if (cur_time >= final_time) {
+            break;
+        }
 
         // Superstep is only used if passed as argument, else automatically detected.
         if (vm.count("s_size")) {
@@ -331,5 +347,9 @@ int main(int ac, char *av[])
             auto pars = xt::adapt(s.get_pars_data(), shape);
             pars = xt::adapt(new_pars.data(), shape);
         }
+
+        ++step;
     }
+
+    cascade_logger->trace("Total simulation time: {}s", sw);
 }

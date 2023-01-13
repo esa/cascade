@@ -5,7 +5,7 @@ find_package(Boost 1.69 COMPONENTS program_options REQUIRED)
 
 function(ADD_CASCADE_BENCHMARK arg1)
   add_executable(${arg1} ${arg1}.cpp)
-  target_link_libraries(${arg1} PRIVATE cascade Boost::boost Boost::program_options TBB::tbb xtensor xtensor-blas)
+  target_link_libraries(${arg1} PRIVATE cascade Boost::boost Boost::program_options TBB::tbb xtensor xtensor-blas spdlog::spdlog)
   target_compile_definitions(${arg1} PRIVATE XTENSOR_USE_FLENS_BLAS PRIVATE BOOST_ALLOW_DEPRECATED_HEADERS)
   target_compile_options(${arg1} PRIVATE
     "$<$<CONFIG:Debug>:${CASCADE_CXX_FLAGS_DEBUG}>"
