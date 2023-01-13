@@ -180,12 +180,18 @@ ic = np.delete(ic, inside_the_radius, 0)
 radius = np.delete(radius, inside_the_radius)
 bstar = np.delete(bstar, inside_the_radius)
 print(f"Final size: {len(bstar)}")
+
+ic_state = np.hstack([ic, radius.reshape((-1, 1))])
+pars = bstar.reshape((-1, 1))
+#np.savetxt("test_ic_613681.txt", ic_state.reshape(-1, 1))
+#np.savetxt("test_par_613681.txt", pars)
+
+
 # In[]
 # # We setup the simulation
 #----------------------------- We setup the simulation--------------------------------
 print("Building the simulation:", flush=True)
-sim = csc.sim(ic[:, 0], ic[:, 1], ic[:, 2], ic[:, 3], ic[:, 4], ic[:, 5],
-              radius, 0.08 * 806.81, dyn=dyn, pars=[bstar*0.], c_radius=min_radius/2.)
+sim = csc.sim(ic_state, 0.08 * 806.81, dyn=dyn, pars=pars*0., c_radius=min_radius/2.)
 
 # csc.set_logger_level_info()
 csc.set_logger_level_trace()
