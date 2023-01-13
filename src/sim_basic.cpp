@@ -20,6 +20,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -109,7 +110,8 @@ sim::sim(const sim &other)
     // For m_data, we will be copying only:
     // - the integrator templates,
     // - the llvm state.
-    auto data_ptr = std::make_unique<sim_data>(other.m_data->s_ta, other.m_data->b_ta, other.m_data->state);
+    auto data_ptr
+        = std::make_unique<sim_data>(other.m_data->s_ta, other.m_data->b_ta, other.m_data->c_ta, other.m_data->state);
 
     // Need to assign the JIT function pointers.
     data_ptr->pta = reinterpret_cast<decltype(data_ptr->pta)>(data_ptr->state.jit_lookup("poly_translate_a"));
@@ -176,6 +178,7 @@ std::uint32_t sim::get_npars() const
 double sim::get_tol() const
 {
     assert(m_data->s_ta.get_tol() == m_data->b_ta.get_tol());
+    assert(m_data->s_ta.get_tol() == m_data->c_ta.get_tol());
 
     return m_data->s_ta.get_tol();
 }
@@ -183,6 +186,7 @@ double sim::get_tol() const
 bool sim::get_high_accuracy() const
 {
     assert(m_data->s_ta.get_high_accuracy() == m_data->b_ta.get_high_accuracy());
+    assert(m_data->s_ta.get_high_accuracy() == m_data->c_ta.get_high_accuracy());
 
     return m_data->s_ta.get_high_accuracy();
 }
@@ -360,7 +364,10 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
 
     // Machinery to construct the integrators.
     std::optional<hy::taylor_adaptive<double>> s_ta;
-    std::optional<hy::taylor_adaptive_batch<double>> b_ta;
+    std::optional<hy::taylor_adaptive_batch<double>> b_ta, c_ta;
+
+    // Fetch the recommended batch size.
+    const auto batch_size = hy::recommended_simd_size<double>();
 
     auto integrators_setup = [&]() {
         // Helpers to create the exit/reentry event equations.
@@ -411,8 +418,6 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                              hy::kw::high_accuracy = ha);
             },
             [&]() {
-                const std::uint32_t batch_size = hy::recommended_simd_size<double>();
-
                 using ev_t = hy::taylor_adaptive_batch<double>::t_event_t;
                 std::vector<ev_t> t_events;
 
@@ -432,6 +437,64 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                 const std::vector<double>::size_type state_size = safe_size_t(7) * batch_size;
                 b_ta.emplace(dyn, std::vector<double>(state_size), batch_size, hy::kw::t_events = std::move(t_events),
                              hy::kw::tol = tol, hy::kw::high_accuracy = ha);
+            },
+            [&]() {
+                using ev_t = hy::taylor_adaptive_batch<double>::t_event_t;
+                using safe_u32_t = boost::safe_numerics::safe<std::uint32_t>;
+
+                // Define the radiuses of the two particles as the parameters
+                // at indices npars and 2*npars + 1, so that they show up as
+                // extra trailing parameters wrt the parameters appearing in
+                // the dynamics.
+                auto ri = hy::par[npars];
+                auto rj = hy::par[safe_u32_t(npars) * 2u + 1u];
+
+                // Make a copy of the dynamics, excluding r, changing the state variables
+                // from x/y/z/... to xi/yi/zi/... in order to generate the equations
+                // of motion for the first particle.
+                std::unordered_map<std::string, std::string> repl_map
+                    = {{"x", "xi"}, {"y", "yi"}, {"z", "zi"}, {"vx", "vxi"}, {"vy", "vyi"}, {"vz", "vzi"}};
+
+                std::vector<std::pair<hy::expression, hy::expression>> dyn_copy;
+                for (auto i = 0u; i < 6u; ++i) {
+                    auto new_rhs = hy::copy(dyn[i].second);
+                    hy::rename_variables(new_rhs, repl_map);
+                    dyn_copy.emplace_back(std::get<hy::variable>(dyn[i].first.value()).name() + "i",
+                                          std::move(new_rhs));
+                }
+
+                // Make another copy of the dynamics, excluding r, changing the state variables
+                // from x/y/z/... to xj/yj/zj/... and the parameters from par[j] to par[j + npars + 1],
+                // so that the dynamical equations for the second particle refer to another set
+                // of variables and parameters.
+                repl_map = {{"x", "xj"}, {"y", "yj"}, {"z", "zj"}, {"vx", "vxj"}, {"vy", "vyj"}, {"vz", "vzj"}};
+                std::unordered_map<hy::expression, hy::expression> par_subs;
+                for (std::uint32_t i = 0; i < npars; ++i) {
+                    par_subs[hy::par[i]] = hy::par[i + npars + 1u];
+                }
+                for (auto i = 0u; i < 6u; ++i) {
+                    auto new_rhs = hy::subs(dyn[i].second, par_subs);
+                    hy::rename_variables(new_rhs, repl_map);
+                    dyn_copy.emplace_back(std::get<hy::variable>(dyn[i].first.value()).name() + "j",
+                                          std::move(new_rhs));
+                }
+
+                // Define the variables for the collision event equation.
+                auto [xi, yi, zi, xj, yj, zj] = hy::make_vars("xi", "yi", "zi", "xj", "yj", "zj");
+
+                // Assemble the event equation.
+                auto ev_eq = hy::sum_sq({xi - xj, yi - yj, zi - zj}) - (ri + rj) * (ri + rj);
+
+                // Create the event.
+                // NOTE: negative direction to detect only inwards collisions.
+                ev_t coll_ev(ev_eq, hy::kw::direction = hy::event_direction::negative);
+
+                // Size of the state vector.
+                const std::vector<double>::size_type state_size = safe_size_t(12) * batch_size;
+
+                // Construct the integrator.
+                c_ta.emplace(dyn_copy, std::vector<double>(state_size), batch_size, hy::kw::t_events = {coll_ev},
+                             hy::kw::tol = tol, hy::kw::high_accuracy = ha);
             });
     };
 
@@ -444,7 +507,7 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
 
     logger->trace("Integrators setup time: {}s", sw);
 
-    auto data_ptr = std::make_unique<sim_data>(std::move(*s_ta), std::move(*b_ta));
+    auto data_ptr = std::make_unique<sim_data>(std::move(*s_ta), std::move(*b_ta), std::move(*c_ta));
     m_data = data_ptr.release();
 
     sw.reset();

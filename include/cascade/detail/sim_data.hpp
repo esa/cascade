@@ -92,7 +92,7 @@ struct sim::sim_data {
     // we just copy them as necessary to setup
     // the integrator caches below.
     heyoka::taylor_adaptive<double> s_ta;
-    heyoka::taylor_adaptive_batch<double> b_ta;
+    heyoka::taylor_adaptive_batch<double> b_ta, c_ta;
 
     // The JIT data.
     heyoka::llvm_state state;
@@ -205,6 +205,12 @@ struct sim::sim_data {
     // TBB puts a copy constructor requirement on the inner unique_ptr.
     std::vector<std::unique_ptr<oneapi::tbb::concurrent_queue<std::unique_ptr<bp_data>>>> bp_data_caches;
 
+    // Chunk-local caches of integrators to be used
+    // during narrow phase collision detection.
+    // NOTE: indirect concurrent queue through a unique_ptr because otherwise
+    // TBB puts a copy constructor requirement on the inner unique_ptr.
+    std::vector<std::unique_ptr<oneapi::tbb::concurrent_queue<std::unique_ptr<heyoka::taylor_adaptive_batch<double>>>>>
+        c_ta_caches;
     // Struct for holding polynomial caches used during
     // narrow phase collision detection.
     struct np_data {
@@ -257,7 +263,7 @@ struct sim::sim_data {
     // in the assumption that collisions are infrequent.
     // We can later consider solutions with better concurrency
     // if needed (e.g., chunk local concurrent queues of collision vectors).
-    oneapi::tbb::concurrent_vector<std::tuple<size_type, size_type, double>> coll_vec;
+    oneapi::tbb::concurrent_vector<std::tuple<size_type, size_type, double>> coll_vec, coll_vec2;
 
     // Structures to record terminal events and nf_error conditions.
     // NOTE: these cannot be chunk-local because they are written to

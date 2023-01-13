@@ -23,7 +23,7 @@
 #include <boost/numeric/conversion/cast.hpp>
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
+#include <fmt/ranges.h>
 
 #include <oneapi/tbb/blocked_range.h>
 #include <oneapi/tbb/parallel_for.h>
@@ -664,6 +664,7 @@ outcome sim::step(double dt)
 
     // Narrow phase data.
     resize_if_needed(nchunks, m_data->np_caches);
+    resize_if_needed(nchunks, m_data->c_ta_caches);
 
     // Stopping terminal events and err_nf_state vectors.
     m_data->ste_vec.clear();
@@ -1228,6 +1229,8 @@ outcome sim::step(double dt)
 
     // Narrow phase collision detection.
     narrow_phase_parallel();
+    narrow_phase_parallel_new();
+    logger->info("Collision comparison: {} vs {}", m_data->coll_vec, m_data->coll_vec2);
 
     // Data to determine and setup the outcome of the step.
     outcome oc = outcome::success;
