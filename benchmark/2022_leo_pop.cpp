@@ -60,10 +60,11 @@ std::vector<double> read_file(std::string filename)
 }
 
 // Helper to remove from state and pars all the particles ids contained in a list.
-void remove_particles(std::vector<double> &state, std::vector<double> &pars, const std::vector<std::size_t> &idxs)
+void remove_particles(std::vector<double> &state, std::vector<double> &pars,
+                      const std::vector<cascade::sim::size_type> &idxs)
 {
     auto idxs_copy = idxs;
-    std::sort(idxs_copy.begin(), idxs_copy.end(), std::greater<int>());
+    std::sort(idxs_copy.begin(), idxs_copy.end(), std::greater<>());
     for (auto idx : idxs_copy) {
         state.erase(state.begin() + 7 * idx, state.begin() + 7 * idx + 7);
         pars.erase(pars.begin() + idx);
@@ -189,10 +190,10 @@ int main(int ac, char *av[])
         drag_factor = 1;
     }
     // Account for factors
-    for (auto i = 6; i < state.size(); i = i + 7) {
+    for (decltype(state.size()) i = 6; i < state.size(); i = i + 7) {
         state[i] = state[i] * rcs_factor;
     }
-    for (auto i = 0; i < pars.size(); ++i) {
+    for (decltype(pars.size()) i = 0; i < pars.size(); ++i) {
         pars[i] = pars[i] * drag_factor;
     }
     std::vector<double> best_x;
@@ -311,7 +312,7 @@ int main(int ac, char *av[])
             auto new_pars = s.get_pars();
             remove_particles(new_state, new_pars, {i, j});
             s.set_new_state(new_state); // this will also reset all pars to zero and resize
-            std::vector<std::size_t> shape = {s.get_nparts()};
+            std::vector<cascade::sim::size_type> shape = {s.get_nparts()};
             auto pars = xt::adapt(s.get_pars_data(), shape);
             pars = xt::adapt(new_pars.data(), shape);
         } else if (oc == outcome::reentry) {
@@ -324,7 +325,7 @@ int main(int ac, char *av[])
             auto new_pars = s.get_pars();
             remove_particles(new_state, new_pars, {i});
             s.set_new_state(new_state); // this will also reset all pars to zero and resize
-            std::vector<std::size_t> shape = {s.get_nparts()};
+            std::vector<cascade::sim::size_type> shape = {s.get_nparts()};
             auto pars = xt::adapt(s.get_pars_data(), shape);
             pars = xt::adapt(new_pars.data(), shape);
         }

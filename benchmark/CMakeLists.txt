@@ -1,6 +1,7 @@
 # Find the xtensor bits.
 find_package(xtensor REQUIRED CONFIG)
 find_package(xtensor-blas REQUIRED CONFIG)
+find_package(Boost 1.69 COMPONENTS program_options REQUIRED)
 
 function(ADD_CASCADE_BENCHMARK arg1)
   add_executable(${arg1} ${arg1}.cpp)
