@@ -100,9 +100,11 @@ Allowed options:
   -s [ --steps ] arg (=20)              set number of steps to perform
   -l [ --large ] arg (=0)               augments with >500000 small debris
   -r [ --rcs_factor ] arg (=1)          factor for the radius (collisions)
-  -c [ --c_timestep ] arg (=64.544799999999995)
+  -c [ --c_timestep ] arg (=185.5663)
                                         collisional time step
   -S [ --s_size ] arg                   superstep size
+
+To recover the results prior to this benchmark code obtained on the large dataset, use -c 64.5448
 */
 
 int main(int ac, char *av[])
