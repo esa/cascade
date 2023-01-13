@@ -120,7 +120,7 @@ int main(int ac, char *av[])
         "steps,s", po::value<int>()->default_value(20), "set number of steps to perform")(
         "large,l", po::value<bool>()->default_value(false), "augments with >500000 small debris")(
         "rcs_factor,r", po::value<double>()->default_value(1.), "factor for the radius (collisions)")(
-        "c_timestep,c", po::value<double>()->default_value(64.5448),
+        "c_timestep,c", po::value<double>()->default_value(185.5663),
         "collisional time step")("s_size,S", po::value<double>(), "superstep size");
 
     po::variables_map vm;
