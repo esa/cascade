@@ -211,59 +211,12 @@ struct sim::sim_data {
     // TBB puts a copy constructor requirement on the inner unique_ptr.
     std::vector<std::unique_ptr<oneapi::tbb::concurrent_queue<std::unique_ptr<heyoka::taylor_adaptive_batch<double>>>>>
         c_ta_caches;
-    // Struct for holding polynomial caches used during
-    // narrow phase collision detection.
-    struct np_data {
-        // A RAII helper to extract polys from a cache and
-        // return them to the cache upon destruction.
-        struct pwrap {
-            std::vector<std::vector<double>> &pc;
-            std::vector<double> v;
-
-            void back_to_cache();
-            std::vector<double> get_poly_from_cache(std::uint32_t);
-
-            explicit pwrap(std::vector<std::vector<double>> &, std::uint32_t);
-            pwrap(pwrap &&) noexcept;
-            pwrap &operator=(pwrap &&) noexcept;
-
-            // Delete copy semantics.
-            pwrap(const pwrap &) = delete;
-            pwrap &operator=(const pwrap &) = delete;
-
-            ~pwrap();
-        };
-
-        // The working list type used during real root isolation.
-        using wlist_t = std::vector<std::tuple<double, double, pwrap>>;
-        // The type used to store the list of isolating intervals.
-        using isol_t = std::vector<std::tuple<double, double>>;
-
-        // Polynomial buffers used in the construction
-        // of the dist square polynomial.
-        std::array<std::vector<double>, 7> dist2;
-        // Polynomial cache for use during real root isolation.
-        // NOTE: it is *really* important that this is declared
-        // *before* wlist, because wlist will contain references
-        // to and interact with r_iso_cache during destruction,
-        // and we must be sure that wlist is destroyed *before*
-        // r_iso_cache.
-        std::vector<std::vector<double>> r_iso_cache;
-        // The working list.
-        wlist_t wlist;
-        // The list of isolating intervals.
-        isol_t isol;
-    };
-    // NOTE: indirect through a unique_ptr, because for some reason a std::vector of
-    // concurrent_queue requires copy ctability of np_data, which is not available due to
-    // pwrap semantics.
-    std::vector<std::unique_ptr<oneapi::tbb::concurrent_queue<std::unique_ptr<np_data>>>> np_caches;
     // The global vector of collisions.
     // NOTE: use a concurrent vector for the time being,
     // in the assumption that collisions are infrequent.
     // We can later consider solutions with better concurrency
     // if needed (e.g., chunk local concurrent queues of collision vectors).
-    oneapi::tbb::concurrent_vector<std::tuple<size_type, size_type, double>> coll_vec, coll_vec2;
+    oneapi::tbb::concurrent_vector<std::tuple<size_type, size_type, double>> coll_vec;
 
     // Structures to record terminal events and nf_error conditions.
     // NOTE: these cannot be chunk-local because they are written to

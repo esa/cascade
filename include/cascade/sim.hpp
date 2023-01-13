@@ -118,7 +118,6 @@ private:
     CASCADE_DLL_LOCAL void broad_phase_parallel();
     CASCADE_DLL_LOCAL void verify_broad_phase_parallel() const;
     CASCADE_DLL_LOCAL void narrow_phase_parallel();
-    CASCADE_DLL_LOCAL void narrow_phase_parallel_new();
     CASCADE_DLL_LOCAL double infer_superstep();
     CASCADE_DLL_LOCAL void verify_global_aabbs() const;
     CASCADE_DLL_LOCAL void dense_propagate(double);

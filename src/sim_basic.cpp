@@ -28,7 +28,6 @@
 #include <boost/safe_numerics/safe_integer.hpp>
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 #include <fmt/ranges.h>
 
 #include <oneapi/tbb/blocked_range.h>
