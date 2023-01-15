@@ -60,10 +60,10 @@ namespace hy = heyoka;
 // (where n == order of the polynomial).
 void add_poly_translator_a(hy::llvm_state &s, std::uint32_t order)
 {
+    using namespace hy::literals;
+
     // NOTE: this is guaranteed by heyoka.
     assert(order >= 2u); // LCOV_EXCL_LINE
-
-    using namespace hy::literals;
 
     // The translation amount 'a' is implemented as the
     // first and only parameter of the compiled function.
