@@ -60,6 +60,9 @@ namespace hy = heyoka;
 // (where n == order of the polynomial).
 void add_poly_translator_a(hy::llvm_state &s, std::uint32_t order)
 {
+    // NOTE: this is guaranteed by heyoka.
+    assert(order >= 2u); // LCOV_EXCL_LINE
+
     using namespace hy::literals;
 
     // The translation amount 'a' is implemented as the
@@ -113,7 +116,8 @@ void add_poly_translator_a(hy::llvm_state &s, std::uint32_t order)
 // still a polynomial of order n (rather than 2*n).
 void add_poly_ssdiff3(hy::llvm_state &s, std::uint32_t order)
 {
-    assert(order > 0u); // LCOV_EXCL_LINE
+    // NOTE: this is guaranteed by heyoka.
+    assert(order >= 2u); // LCOV_EXCL_LINE
 
     auto &builder = s.builder();
     auto &context = s.context();
