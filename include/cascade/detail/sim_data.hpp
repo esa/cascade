@@ -236,6 +236,9 @@ struct sim::sim_data {
         // Polynomial buffers used in the construction
         // of the dist square polynomial.
         std::array<std::vector<double>, 7> dist2;
+        // Vector to store the input for the cfunc used to compute
+        // the distance square polynomial.
+        std::vector<double> diff_input;
         // Polynomial cache for use during real root isolation.
         // NOTE: it is *really* important that this is declared
         // *before* wlist, because wlist will contain references

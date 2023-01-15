@@ -23,6 +23,7 @@
 #include <boost/math/policies/policy.hpp>
 #include <boost/math/tools/toms748_solve.hpp>
 #include <boost/numeric/conversion/cast.hpp>
+#include <boost/safe_numerics/safe_integer.hpp>
 
 #include <oneapi/tbb/blocked_range.h>
 #include <oneapi/tbb/parallel_for.h>
@@ -330,6 +331,9 @@ void sim::narrow_phase_parallel()
                     for (auto &v : pcaches->dist2) {
                         assert(v.size() == order + 1u);
                     }
+
+                    using safe_size_t = boost::safe_numerics::safe<decltype(pcaches->diff_input.size())>;
+                    assert(pcaches->diff_input.size() == (order + 1u) * safe_size_t(6));
 #endif
                 } else {
                     SPDLOG_LOGGER_DEBUG(logger, "Creating new local polynomials for narrow phase collision detection");
@@ -340,10 +344,14 @@ void sim::narrow_phase_parallel()
                     for (auto &v : pcaches->dist2) {
                         v.resize(boost::numeric_cast<decltype(v.size())>(order + 1u));
                     }
+
+                    using safe_size_t = boost::safe_numerics::safe<decltype(pcaches->diff_input.size())>;
+                    pcaches->diff_input.resize((order + 1u) * safe_size_t(6));
                 }
 
                 // Cache a few quantities.
                 auto &[xi_temp, yi_temp, zi_temp, xj_temp, yj_temp, zj_temp, ss_diff] = pcaches->dist2;
+                auto &diff_input = pcaches->diff_input;
                 auto &wlist = pcaches->wlist;
                 auto &isol = pcaches->isol;
                 auto &r_iso_cache = pcaches->r_iso_cache;
@@ -465,7 +473,9 @@ void sim::narrow_phase_parallel()
                             // Perform the translations, if needed.
                             // NOTE: perhaps we can write a dedicated function
                             // that does the translation for all 3 coordinates
-                            // at once, for better performance?
+                            // at once, for better performance? It seems like
+                            // this needs the new tc layout so that the x/y/z
+                            // coords are contiguous.
                             // NOTE: need to re-assign the poly_*i pointers if the
                             // translation happens, otherwise we can keep the pointer
                             // to the original polynomials.
@@ -486,6 +496,19 @@ void sim::narrow_phase_parallel()
                                 pta_cfunc(zj_temp.data(), poly_zj, &delta_j);
                                 poly_zj = zj_temp.data();
                             }
+
+                            // Copy over the data to diff_input.
+                            using di_size_t = decltype(diff_input.size());
+                            std::copy(poly_xi, poly_xi + (order + 1u), diff_input.data());
+                            std::copy(poly_yi, poly_yi + (order + 1u), diff_input.data() + (order + 1u));
+                            std::copy(poly_zi, poly_zi + (order + 1u),
+                                      diff_input.data() + static_cast<di_size_t>(2) * (order + 1u));
+                            std::copy(poly_xj, poly_xj + (order + 1u),
+                                      diff_input.data() + static_cast<di_size_t>(3) * (order + 1u));
+                            std::copy(poly_yj, poly_yj + (order + 1u),
+                                      diff_input.data() + static_cast<di_size_t>(4) * (order + 1u));
+                            std::copy(poly_zj, poly_zj + (order + 1u),
+                                      diff_input.data() + static_cast<di_size_t>(5) * (order + 1u));
 
                             // We can now construct the polynomial for the
                             // square of the distance.
