@@ -96,8 +96,8 @@ struct sim::sim_data {
 
     // The JIT data.
     heyoka::llvm_state state;
-    using pta_t = double *(*)(double *, const double *, double) noexcept;
-    pta_t pta = nullptr;
+    using pta_cfunc_t = void (*)(double *, const double *, const double *) noexcept;
+    pta_cfunc_t pta_cfunc = nullptr;
     using pssdiff3_t = void (*)(double *, const double *, const double *, const double *, const double *,
                                 const double *, const double *) noexcept;
     pssdiff3_t pssdiff3 = nullptr;

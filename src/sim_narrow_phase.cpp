@@ -273,7 +273,7 @@ void sim::narrow_phase_parallel()
     const auto nchunks = m_data->nchunks;
     const auto order = m_data->s_ta.get_order();
     const auto &s_data = m_data->s_data;
-    const auto pta = m_data->pta;
+    const auto pta_cfunc = m_data->pta_cfunc;
     const auto pssdiff3 = m_data->pssdiff3;
     const auto fex_check = m_data->fex_check;
     const auto rtscc = m_data->rtscc;
@@ -466,16 +466,25 @@ void sim::narrow_phase_parallel()
                             // NOTE: perhaps we can write a dedicated function
                             // that does the translation for all 3 coordinates
                             // at once, for better performance?
+                            // NOTE: need to re-assign the poly_*i pointers if the
+                            // translation happens, otherwise we can keep the pointer
+                            // to the original polynomials.
                             if (delta_i != 0) {
-                                poly_xi = pta(xi_temp.data(), poly_xi, delta_i);
-                                poly_yi = pta(yi_temp.data(), poly_yi, delta_i);
-                                poly_zi = pta(zi_temp.data(), poly_zi, delta_i);
+                                pta_cfunc(xi_temp.data(), poly_xi, &delta_i);
+                                poly_xi = xi_temp.data();
+                                pta_cfunc(yi_temp.data(), poly_yi, &delta_i);
+                                poly_yi = yi_temp.data();
+                                pta_cfunc(zi_temp.data(), poly_zi, &delta_i);
+                                poly_zi = zi_temp.data();
                             }
 
                             if (delta_j != 0) {
-                                poly_xj = pta(xj_temp.data(), poly_xj, delta_j);
-                                poly_yj = pta(yj_temp.data(), poly_yj, delta_j);
-                                poly_zj = pta(zj_temp.data(), poly_zj, delta_j);
+                                pta_cfunc(xj_temp.data(), poly_xj, &delta_j);
+                                poly_xj = xj_temp.data();
+                                pta_cfunc(yj_temp.data(), poly_yj, &delta_j);
+                                poly_yj = yj_temp.data();
+                                pta_cfunc(zj_temp.data(), poly_zj, &delta_j);
+                                poly_zj = zj_temp.data();
                             }
 
                             // We can now construct the polynomial for the

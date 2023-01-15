@@ -112,7 +112,7 @@ sim::sim(const sim &other)
     auto data_ptr = std::make_unique<sim_data>(other.m_data->s_ta, other.m_data->b_ta, other.m_data->state);
 
     // Need to assign the JIT function pointers.
-    data_ptr->pta = reinterpret_cast<decltype(data_ptr->pta)>(data_ptr->state.jit_lookup("poly_translate_a"));
+    data_ptr->pta_cfunc = reinterpret_cast<decltype(data_ptr->pta_cfunc)>(data_ptr->state.jit_lookup("pta_cfunc"));
     data_ptr->pssdiff3 = reinterpret_cast<decltype(data_ptr->pssdiff3)>(data_ptr->state.jit_lookup("poly_ssdiff3"));
     data_ptr->fex_check = reinterpret_cast<decltype(data_ptr->fex_check)>(data_ptr->state.jit_lookup("fex_check"));
     data_ptr->rtscc = reinterpret_cast<decltype(data_ptr->rtscc)>(data_ptr->state.jit_lookup("poly_rtscc"));
