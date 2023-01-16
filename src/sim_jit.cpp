@@ -9,7 +9,6 @@
 #include <cassert>
 #include <cstdint>
 #include <initializer_list>
-#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -18,19 +17,7 @@
 
 #include <fmt/core.h>
 
-#include <llvm/IR/Attributes.h>
-#include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/Constants.h>
-#include <llvm/IR/DerivedTypes.h>
-#include <llvm/IR/Function.h>
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/LLVMContext.h>
-#include <llvm/IR/Module.h>
-#include <llvm/IR/Type.h>
-#include <llvm/IR/Value.h>
-
 #include <heyoka/detail/event_detection.hpp>
-#include <heyoka/detail/llvm_helpers.hpp>
 #include <heyoka/expression.hpp>
 #include <heyoka/llvm_state.hpp>
 #include <heyoka/math/sum.hpp>
