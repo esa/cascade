@@ -38,6 +38,21 @@
 #include <cascade/detail/sim_data.hpp>
 #include <cascade/sim.hpp>
 
+#if defined(__clang__) || defined(__GNUC__)
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+
+#endif
+
+#include "mdspan/mdspan"
+
+#if defined(__clang__) || defined(__GNUC__)
+
+#pragma GCC diagnostic pop
+
+#endif
+
 namespace cascade
 {
 
@@ -109,148 +124,109 @@ void add_poly_translator_a(hy::llvm_state &s, std::uint32_t order)
     hy::add_cfunc<double>(s, "pta_cfunc", out, hy::kw::vars = std::move(cfs));
 }
 
-// Add a function to compute the sum of the squares
-// of the differences between three polynomials.
-// NOTE: the squares are computed in truncated arithmetics,
-// i.e., given input polynomials of order n the result is
-// still a polynomial of order n (rather than 2*n).
-void add_poly_ssdiff3(hy::llvm_state &s, std::uint32_t order)
+// Add a compiled function to compute the sum of the squares
+// of the differences between three polynomials. The computation
+// is performed in the truncated power series algebra.
+void add_poly_ssdiff3_cfunc(hy::llvm_state &s, std::uint32_t order)
 {
+    namespace stdex = std::experimental;
+    using namespace hy::literals;
+
     // NOTE: this is guaranteed by heyoka.
     assert(order >= 2u); // LCOV_EXCL_LINE
 
-    auto &builder = s.builder();
-    auto &context = s.context();
-
-    // The scalar floating-point type and the corresponding pointer type.
-    auto *fp_t = hy::detail::to_llvm_type<double>(context);
-    auto *fp_ptr_t = llvm::PointerType::getUnqual(fp_t);
-
-    // Fetch the current insertion block.
-    auto orig_bb = builder.GetInsertBlock();
-
-    // The function arguments:
-    // - the output pointer,
-    // - the pointers to the poly coefficients (read-only).
-    // No overlap is allowed.
-    std::vector<llvm::Type *> fargs(7u, fp_ptr_t);
-    // The function returns nothing.
-    auto *ft = llvm::FunctionType::get(builder.getVoidTy(), fargs, false);
-    assert(ft != nullptr); // LCOV_EXCL_LINE
-    // Now create the function.
-    auto *f = llvm::Function::Create(ft, llvm::Function::ExternalLinkage, "poly_ssdiff3", &s.module());
-    // LCOV_EXCL_START
-    if (f == nullptr) {
-        throw std::invalid_argument("Unable to create a function for polynomial translation");
+    // The coefficients of are given in row-major
+    // format for the polynomials of xi,yi,zi,xj,yj,zj.
+    std::vector<hy::expression> vars;
+    for (std::uint32_t i = 0; i <= order; ++i) {
+        vars.emplace_back(fmt::format("xi_{}", i));
     }
-    // LCOV_EXCL_STOP
+    for (std::uint32_t i = 0; i <= order; ++i) {
+        vars.emplace_back(fmt::format("yi_{}", i));
+    }
+    for (std::uint32_t i = 0; i <= order; ++i) {
+        vars.emplace_back(fmt::format("zi_{}", i));
+    }
+    for (std::uint32_t i = 0; i <= order; ++i) {
+        vars.emplace_back(fmt::format("xj_{}", i));
+    }
+    for (std::uint32_t i = 0; i <= order; ++i) {
+        vars.emplace_back(fmt::format("yj_{}", i));
+    }
+    for (std::uint32_t i = 0; i <= order; ++i) {
+        vars.emplace_back(fmt::format("zj_{}", i));
+    }
 
-    // Set the names/attributes of the function arguments.
-    auto out_ptr = f->args().begin();
-    out_ptr->setName("out_ptr");
-    out_ptr->addAttr(llvm::Attribute::NoCapture);
-    out_ptr->addAttr(llvm::Attribute::NoAlias);
+    // Access the polynomials as submdspans into vars.
+    stdex::mdspan var_arr(std::as_const(vars).data(), static_cast<decltype(vars.size())>(6), order + 1u);
+    auto xi_poly = stdex::submdspan(var_arr, 0u, stdex::full_extent);
+    auto yi_poly = stdex::submdspan(var_arr, 1u, stdex::full_extent);
+    auto zi_poly = stdex::submdspan(var_arr, 2u, stdex::full_extent);
+    auto xj_poly = stdex::submdspan(var_arr, 3u, stdex::full_extent);
+    auto yj_poly = stdex::submdspan(var_arr, 4u, stdex::full_extent);
+    auto zj_poly = stdex::submdspan(var_arr, 5u, stdex::full_extent);
 
-    auto xi_ptr = f->args().begin() + 1;
-    xi_ptr->setName("xi_ptr");
-    xi_ptr->addAttr(llvm::Attribute::NoCapture);
-    xi_ptr->addAttr(llvm::Attribute::NoAlias);
-    xi_ptr->addAttr(llvm::Attribute::ReadOnly);
+    // Helper to compute the difference between two polynomials.
+    auto pdiff = [order](const auto &p1, const auto &p2) {
+        std::vector<hy::expression> ret;
+        ret.reserve(order + 1u);
 
-    auto yi_ptr = f->args().begin() + 2;
-    yi_ptr->setName("yi_ptr");
-    yi_ptr->addAttr(llvm::Attribute::NoCapture);
-    yi_ptr->addAttr(llvm::Attribute::NoAlias);
-    yi_ptr->addAttr(llvm::Attribute::ReadOnly);
+        for (std::uint32_t i = 0; i <= order; ++i) {
+            ret.push_back(p1[i] - p2[i]);
+        }
 
-    auto zi_ptr = f->args().begin() + 3;
-    zi_ptr->setName("zi_ptr");
-    zi_ptr->addAttr(llvm::Attribute::NoCapture);
-    zi_ptr->addAttr(llvm::Attribute::NoAlias);
-    zi_ptr->addAttr(llvm::Attribute::ReadOnly);
+        return ret;
+    };
 
-    auto xj_ptr = f->args().begin() + 4;
-    xj_ptr->setName("xj_ptr");
-    xj_ptr->addAttr(llvm::Attribute::NoCapture);
-    xj_ptr->addAttr(llvm::Attribute::NoAlias);
-    xj_ptr->addAttr(llvm::Attribute::ReadOnly);
+    // Compute the differences.
+    auto diff_x = pdiff(xi_poly, xj_poly);
+    auto diff_y = pdiff(yi_poly, yj_poly);
+    auto diff_z = pdiff(zi_poly, zj_poly);
 
-    auto yj_ptr = f->args().begin() + 5;
-    yj_ptr->setName("yj_ptr");
-    yj_ptr->addAttr(llvm::Attribute::NoCapture);
-    yj_ptr->addAttr(llvm::Attribute::NoAlias);
-    yj_ptr->addAttr(llvm::Attribute::ReadOnly);
+    // Helper to compute the square of a polynomial.
+    auto psquare = [order](const auto &p) {
+        std::vector<hy::expression> ret, tmp;
+        ret.reserve(order + 1u);
 
-    auto zj_ptr = f->args().begin() + 6;
-    zj_ptr->setName("zj_ptr");
-    zj_ptr->addAttr(llvm::Attribute::NoCapture);
-    zj_ptr->addAttr(llvm::Attribute::NoAlias);
-    zj_ptr->addAttr(llvm::Attribute::ReadOnly);
+        for (std::uint32_t i = 0; i <= order; ++i) {
+            tmp.clear();
 
-    // Create a new basic block to start insertion into.
-    auto *bb = llvm::BasicBlock::Create(context, "entry", f);
-    assert(bb != nullptr); // LCOV_EXCL_LINE
-    builder.SetInsertPoint(bb);
+            if (i % 2u == 0u) {
+                if (i == 0u) {
+                    ret.push_back(p[0] * p[0]);
+                } else {
+                    for (std::uint32_t j = 0; j <= i / 2u - 1u; ++j) {
+                        tmp.push_back(p[i - j] * p[j]);
+                    }
 
-    // Helper to compute the square of the difference between
-    // two polynomials a and b.
-    auto pdiff_square = [&](auto *a_ptr, auto *b_ptr) {
-        // Init the return value with zeros.
-        std::vector<llvm::Value *> ret(boost::numeric_cast<std::vector<llvm::Value *>::size_type>(order + 1u),
-                                       static_cast<llvm::Value *>(llvm::ConstantFP::get(fp_t, 0.)));
+                    ret.push_back(2_dbl * hy::sum(std::move(tmp)) + p[i / 2u] * p[i / 2u]);
+                }
+            } else {
+                for (std::uint32_t j = 0; j <= (i - 1u) / 2u; ++j) {
+                    tmp.push_back(p[i - j] * p[j]);
+                }
 
-        for (std::uint32_t i = 0; i <= order / 2u; ++i) {
-            auto cf_ai_ptr = builder.CreateInBoundsGEP(fp_t, a_ptr, builder.getInt32(i));
-            auto cf_ai = builder.CreateLoad(fp_t, cf_ai_ptr);
-
-            auto cf_bi_ptr = builder.CreateInBoundsGEP(fp_t, b_ptr, builder.getInt32(i));
-            auto cf_bi = builder.CreateLoad(fp_t, cf_bi_ptr);
-
-            auto diff_i = builder.CreateFSub(cf_ai, cf_bi);
-
-            ret[2u * i] = builder.CreateFAdd(ret[2u * i], builder.CreateFMul(diff_i, diff_i));
-
-            for (auto j = i + 1u; j <= order - i; ++j) {
-                auto cf_aj_ptr = builder.CreateInBoundsGEP(fp_t, a_ptr, builder.getInt32(j));
-                auto cf_aj = builder.CreateLoad(fp_t, cf_aj_ptr);
-
-                auto cf_bj_ptr = builder.CreateInBoundsGEP(fp_t, b_ptr, builder.getInt32(j));
-                auto cf_bj = builder.CreateLoad(fp_t, cf_bj_ptr);
-
-                auto diff_j = builder.CreateFSub(cf_aj, cf_bj);
-
-                auto tmp = builder.CreateFMul(diff_i, diff_j);
-                tmp = builder.CreateFMul(llvm::ConstantFP::get(fp_t, 2.), tmp);
-
-                ret[i + j] = builder.CreateFAdd(ret[i + j], tmp);
+                ret.push_back(2_dbl * hy::sum(std::move(tmp)));
             }
         }
 
         return ret;
     };
 
-    auto diffx2 = pdiff_square(xi_ptr, xj_ptr);
-    auto diffy2 = pdiff_square(yi_ptr, yj_ptr);
-    auto diffz2 = pdiff_square(zi_ptr, zj_ptr);
+    // Compute the squares.
+    auto diff2_x = psquare(diff_x);
+    auto diff2_y = psquare(diff_y);
+    auto diff2_z = psquare(diff_z);
 
-    // Write out the sum.
+    // Build the outputs vector as the sum of the squares
+    std::vector<hy::expression> out;
+    out.reserve(order + 1u);
     for (std::uint32_t i = 0; i <= order; ++i) {
-        auto out_cf_ptr = builder.CreateInBoundsGEP(fp_t, out_ptr, builder.getInt32(i));
-
-        auto out_cf = builder.CreateFAdd(diffx2[i], diffy2[i]);
-        out_cf = builder.CreateFAdd(out_cf, diffz2[i]);
-
-        builder.CreateStore(out_cf, out_cf_ptr);
+        out.push_back(hy::sum({diff2_x[i], diff2_y[i], diff2_z[i]}));
     }
 
-    // Create the return value.
-    builder.CreateRetVoid();
-
-    // Verify the function.
-    s.verify_function(f);
-
-    // Restore the original insertion block.
-    builder.SetInsertPoint(orig_bb);
+    // Add the compiled function.
+    hy::add_cfunc<double>(s, "ssdiff3_cfunc", out, hy::kw::vars = std::move(vars));
 }
 
 } // namespace
@@ -264,7 +240,7 @@ void sim::add_jit_functions()
     auto *fp_t = heyoka::detail::to_llvm_type<double>(state.context());
 
     detail::add_poly_translator_a(state, m_data->s_ta.get_order());
-    detail::add_poly_ssdiff3(state, m_data->s_ta.get_order());
+    detail::add_poly_ssdiff3_cfunc(state, m_data->s_ta.get_order());
     heyoka::detail::llvm_add_fex_check(state, fp_t, m_data->s_ta.get_order(), 1);
     heyoka::detail::llvm_add_poly_rtscc(state, fp_t, m_data->s_ta.get_order(), 1);
 
@@ -273,7 +249,7 @@ void sim::add_jit_functions()
     state.compile();
 
     m_data->pta_cfunc = reinterpret_cast<decltype(m_data->pta_cfunc)>(state.jit_lookup("pta_cfunc"));
-    m_data->pssdiff3 = reinterpret_cast<decltype(m_data->pssdiff3)>(state.jit_lookup("poly_ssdiff3"));
+    m_data->pssdiff3_cfunc = reinterpret_cast<decltype(m_data->pssdiff3_cfunc)>(state.jit_lookup("ssdiff3_cfunc"));
     m_data->fex_check = reinterpret_cast<decltype(m_data->fex_check)>(state.jit_lookup("fex_check"));
     m_data->rtscc = reinterpret_cast<decltype(m_data->rtscc)>(state.jit_lookup("poly_rtscc"));
     // NOTE: this is implicitly added by llvm_add_poly_rtscc().

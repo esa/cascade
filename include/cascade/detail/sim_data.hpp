@@ -98,9 +98,8 @@ struct sim::sim_data {
     heyoka::llvm_state state;
     using pta_cfunc_t = void (*)(double *, const double *, const double *) noexcept;
     pta_cfunc_t pta_cfunc = nullptr;
-    using pssdiff3_t = void (*)(double *, const double *, const double *, const double *, const double *,
-                                const double *, const double *) noexcept;
-    pssdiff3_t pssdiff3 = nullptr;
+    using pssdiff3_cfunc_t = void (*)(double *, const double *, const double *) noexcept;
+    pssdiff3_cfunc_t pssdiff3_cfunc = nullptr;
     using fex_check_t = void (*)(const double *, const double *, const std::uint32_t *, std::uint32_t *) noexcept;
     fex_check_t fex_check = nullptr;
     using rtscc_t = void (*)(double *, double *, std::uint32_t *, const double *) noexcept;

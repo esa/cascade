@@ -275,7 +275,7 @@ void sim::narrow_phase_parallel()
     const auto order = m_data->s_ta.get_order();
     const auto &s_data = m_data->s_data;
     const auto pta_cfunc = m_data->pta_cfunc;
-    const auto pssdiff3 = m_data->pssdiff3;
+    const auto pssdiff3_cfunc = m_data->pssdiff3_cfunc;
     const auto fex_check = m_data->fex_check;
     const auto rtscc = m_data->rtscc;
     const auto pt1 = m_data->pt1;
@@ -518,7 +518,7 @@ void sim::narrow_phase_parallel()
                             // We can now construct the polynomial for the
                             // square of the distance.
                             auto *ss_diff_ptr = ss_diff.data();
-                            pssdiff3(ss_diff_ptr, poly_xi, poly_yi, poly_zi, poly_xj, poly_yj, poly_zj);
+                            pssdiff3_cfunc(ss_diff_ptr, diff_input.data(), nullptr);
 
                             // Modify the constant term of the polynomial to account for
                             // particle sizes.

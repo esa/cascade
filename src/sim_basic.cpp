@@ -113,7 +113,8 @@ sim::sim(const sim &other)
 
     // Need to assign the JIT function pointers.
     data_ptr->pta_cfunc = reinterpret_cast<decltype(data_ptr->pta_cfunc)>(data_ptr->state.jit_lookup("pta_cfunc"));
-    data_ptr->pssdiff3 = reinterpret_cast<decltype(data_ptr->pssdiff3)>(data_ptr->state.jit_lookup("poly_ssdiff3"));
+    data_ptr->pssdiff3_cfunc
+        = reinterpret_cast<decltype(data_ptr->pssdiff3_cfunc)>(data_ptr->state.jit_lookup("ssdiff3_cfunc"));
     data_ptr->fex_check = reinterpret_cast<decltype(data_ptr->fex_check)>(data_ptr->state.jit_lookup("fex_check"));
     data_ptr->rtscc = reinterpret_cast<decltype(data_ptr->rtscc)>(data_ptr->state.jit_lookup("poly_rtscc"));
     // NOTE: this is implicitly added by llvm_add_poly_rtscc().
