@@ -96,11 +96,10 @@ struct sim::sim_data {
 
     // The JIT data.
     heyoka::llvm_state state;
-    using pta_t = double *(*)(double *, const double *, double) noexcept;
-    pta_t pta = nullptr;
-    using pssdiff3_t = void (*)(double *, const double *, const double *, const double *, const double *,
-                                const double *, const double *) noexcept;
-    pssdiff3_t pssdiff3 = nullptr;
+    using pta_cfunc_t = void (*)(double *, const double *, const double *) noexcept;
+    pta_cfunc_t pta_cfunc = nullptr;
+    using pssdiff3_cfunc_t = void (*)(double *, const double *, const double *) noexcept;
+    pssdiff3_cfunc_t pssdiff3_cfunc = nullptr;
     using fex_check_t = void (*)(const double *, const double *, const std::uint32_t *, std::uint32_t *) noexcept;
     fex_check_t fex_check = nullptr;
     using rtscc_t = void (*)(double *, double *, std::uint32_t *, const double *) noexcept;
@@ -114,7 +113,7 @@ struct sim::sim_data {
     unsigned nchunks = 0;
     // Helper to compute the begin and end of a chunk within
     // a superstep for a given collisional timestep.
-    std::array<double, 2> get_chunk_begin_end(unsigned, double) const;
+    [[nodiscard]] std::array<double, 2> get_chunk_begin_end(unsigned, double) const;
 
     // Buffer that is used to:
     // - store the global state at the end of a superstep,
@@ -236,6 +235,9 @@ struct sim::sim_data {
         // Polynomial buffers used in the construction
         // of the dist square polynomial.
         std::array<std::vector<double>, 7> dist2;
+        // Vector to store the input for the cfunc used to compute
+        // the distance square polynomial.
+        std::vector<double> diff_input;
         // Polynomial cache for use during real root isolation.
         // NOTE: it is *really* important that this is declared
         // *before* wlist, because wlist will contain references

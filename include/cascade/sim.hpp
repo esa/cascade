@@ -12,6 +12,7 @@
 #include <array>
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -106,7 +107,7 @@ private:
     // Domain radius.
     double m_d_radius = 0;
     // Number of params in the dynamics.
-    size_type m_npars = 0;
+    std::uint32_t m_npars = 0;
 
     void finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>>, std::vector<double>,
                        std::variant<double, std::vector<double>>, double, double, bool);
@@ -122,10 +123,10 @@ private:
     CASCADE_DLL_LOCAL void dense_propagate(double);
     template <typename T>
     CASCADE_DLL_LOCAL outcome propagate_until_impl(const T &, double);
-    CASCADE_DLL_LOCAL bool with_reentry_event() const;
-    CASCADE_DLL_LOCAL bool with_exit_event() const;
-    CASCADE_DLL_LOCAL std::uint32_t reentry_event_idx() const;
-    CASCADE_DLL_LOCAL std::uint32_t exit_event_idx() const;
+    [[nodiscard]] CASCADE_DLL_LOCAL bool with_reentry_event() const;
+    [[nodiscard]] CASCADE_DLL_LOCAL bool with_exit_event() const;
+    [[nodiscard]] CASCADE_DLL_LOCAL std::uint32_t reentry_event_idx() const;
+    [[nodiscard]] CASCADE_DLL_LOCAL std::uint32_t exit_event_idx() const;
     CASCADE_DLL_LOCAL void verify_state_vector(const std::vector<double> &) const;
     CASCADE_DLL_LOCAL void copy_from_final_state() noexcept;
 
@@ -268,7 +269,7 @@ public:
 
     [[nodiscard]] double get_tol() const;
     [[nodiscard]] bool get_high_accuracy() const;
-    [[nodiscard]] size_type get_npars() const;
+    [[nodiscard]] std::uint32_t get_npars() const;
 
     void set_new_state(std::vector<double>);
 

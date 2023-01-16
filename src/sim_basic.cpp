@@ -71,8 +71,10 @@ namespace
 {
 
 // The list of allowed dynamical symbols, first in dynamical order then in alphabetical order.
+// NOLINTNEXTLINE(cert-err58-cpp)
 const std::array<std::string, 6> allowed_vars = {"x", "y", "z", "vx", "vy", "vz"};
 
+// NOLINTNEXTLINE(cert-err58-cpp)
 const std::set<std::string> allowed_vars_alph(allowed_vars.begin(), allowed_vars.end());
 
 } // namespace
@@ -112,8 +114,9 @@ sim::sim(const sim &other)
     auto data_ptr = std::make_unique<sim_data>(other.m_data->s_ta, other.m_data->b_ta, other.m_data->state);
 
     // Need to assign the JIT function pointers.
-    data_ptr->pta = reinterpret_cast<decltype(data_ptr->pta)>(data_ptr->state.jit_lookup("poly_translate_a"));
-    data_ptr->pssdiff3 = reinterpret_cast<decltype(data_ptr->pssdiff3)>(data_ptr->state.jit_lookup("poly_ssdiff3"));
+    data_ptr->pta_cfunc = reinterpret_cast<decltype(data_ptr->pta_cfunc)>(data_ptr->state.jit_lookup("pta_cfunc"));
+    data_ptr->pssdiff3_cfunc
+        = reinterpret_cast<decltype(data_ptr->pssdiff3_cfunc)>(data_ptr->state.jit_lookup("ssdiff3_cfunc"));
     data_ptr->fex_check = reinterpret_cast<decltype(data_ptr->fex_check)>(data_ptr->state.jit_lookup("fex_check"));
     data_ptr->rtscc = reinterpret_cast<decltype(data_ptr->rtscc)>(data_ptr->state.jit_lookup("poly_rtscc"));
     // NOTE: this is implicitly added by llvm_add_poly_rtscc().
@@ -168,7 +171,7 @@ double sim::get_ct() const
     return m_ct;
 }
 
-sim::size_type sim::get_npars() const
+std::uint32_t sim::get_npars() const
 {
     return m_npars;
 }
@@ -219,6 +222,7 @@ void sim::set_new_state(std::vector<double> new_state)
 }
 
 void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>> dyn, std::vector<double> pars,
+                        // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
                         std::variant<double, std::vector<double>> c_radius, double d_radius, double tol, bool ha)
 {
     namespace hy = heyoka;
@@ -502,7 +506,7 @@ std::uint32_t sim::reentry_event_idx() const
     // NOTE: reentry event at index 0 or 1, depending
     // on whether we have exit event or not.
 
-    return with_exit_event();
+    return static_cast<std::uint32_t>(with_exit_event());
 }
 
 std::uint32_t sim::exit_event_idx() const

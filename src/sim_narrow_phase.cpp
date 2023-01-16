@@ -23,6 +23,7 @@
 #include <boost/math/policies/policy.hpp>
 #include <boost/math/tools/toms748_solve.hpp>
 #include <boost/numeric/conversion/cast.hpp>
+#include <boost/safe_numerics/safe_integer.hpp>
 
 #include <oneapi/tbb/blocked_range.h>
 #include <oneapi/tbb/parallel_for.h>
@@ -273,8 +274,8 @@ void sim::narrow_phase_parallel()
     const auto nchunks = m_data->nchunks;
     const auto order = m_data->s_ta.get_order();
     const auto &s_data = m_data->s_data;
-    const auto pta = m_data->pta;
-    const auto pssdiff3 = m_data->pssdiff3;
+    const auto pta_cfunc = m_data->pta_cfunc;
+    const auto pssdiff3_cfunc = m_data->pssdiff3_cfunc;
     const auto fex_check = m_data->fex_check;
     const auto rtscc = m_data->rtscc;
     const auto pt1 = m_data->pt1;
@@ -330,6 +331,9 @@ void sim::narrow_phase_parallel()
                     for (auto &v : pcaches->dist2) {
                         assert(v.size() == order + 1u);
                     }
+
+                    using safe_size_t = boost::safe_numerics::safe<decltype(pcaches->diff_input.size())>;
+                    assert(pcaches->diff_input.size() == (order + 1u) * safe_size_t(6));
 #endif
                 } else {
                     SPDLOG_LOGGER_DEBUG(logger, "Creating new local polynomials for narrow phase collision detection");
@@ -340,10 +344,14 @@ void sim::narrow_phase_parallel()
                     for (auto &v : pcaches->dist2) {
                         v.resize(boost::numeric_cast<decltype(v.size())>(order + 1u));
                     }
+
+                    using safe_size_t = boost::safe_numerics::safe<decltype(pcaches->diff_input.size())>;
+                    pcaches->diff_input.resize((order + 1u) * safe_size_t(6));
                 }
 
                 // Cache a few quantities.
                 auto &[xi_temp, yi_temp, zi_temp, xj_temp, yj_temp, zj_temp, ss_diff] = pcaches->dist2;
+                auto &diff_input = pcaches->diff_input;
                 auto &wlist = pcaches->wlist;
                 auto &isol = pcaches->isol;
                 auto &r_iso_cache = pcaches->r_iso_cache;
@@ -449,8 +457,13 @@ void sim::narrow_phase_parallel()
                             }
 
                             // Fetch pointers to the original Taylor polynomials for the two particles.
-                            // NOTE: static_cast because overflow checking and numeric cast are already
-                            // done in sim_propagate_for.
+                            // NOTE: static_cast because:
+                            // - we have verified during the propagation that we can safely compute
+                            //   differences between iterators of tcoords vectors (see overflow checking in the
+                            //   step() function), and
+                            // - we know that there are multiple Taylor coefficients being recorded
+                            //   for each time coordinate, thus the size type of the vector of Taylor
+                            //   coefficients can certainly represent the size of the tcoords vectors.
                             const auto ss_idx_i = static_cast<decltype(s_data[pi].tc_x.size())>(it_i - tcoords_begin_i);
                             const auto ss_idx_j = static_cast<decltype(s_data[pj].tc_x.size())>(it_j - tcoords_begin_j);
 
@@ -465,23 +478,47 @@ void sim::narrow_phase_parallel()
                             // Perform the translations, if needed.
                             // NOTE: perhaps we can write a dedicated function
                             // that does the translation for all 3 coordinates
-                            // at once, for better performance?
+                            // at once, for better performance? It seems like
+                            // this needs the new tc layout so that the x/y/z
+                            // coords are contiguous.
+                            // NOTE: need to re-assign the poly_*i pointers if the
+                            // translation happens, otherwise we can keep the pointer
+                            // to the original polynomials.
                             if (delta_i != 0) {
-                                poly_xi = pta(xi_temp.data(), poly_xi, delta_i);
-                                poly_yi = pta(yi_temp.data(), poly_yi, delta_i);
-                                poly_zi = pta(zi_temp.data(), poly_zi, delta_i);
+                                pta_cfunc(xi_temp.data(), poly_xi, &delta_i);
+                                poly_xi = xi_temp.data();
+                                pta_cfunc(yi_temp.data(), poly_yi, &delta_i);
+                                poly_yi = yi_temp.data();
+                                pta_cfunc(zi_temp.data(), poly_zi, &delta_i);
+                                poly_zi = zi_temp.data();
                             }
 
                             if (delta_j != 0) {
-                                poly_xj = pta(xj_temp.data(), poly_xj, delta_j);
-                                poly_yj = pta(yj_temp.data(), poly_yj, delta_j);
-                                poly_zj = pta(zj_temp.data(), poly_zj, delta_j);
+                                pta_cfunc(xj_temp.data(), poly_xj, &delta_j);
+                                poly_xj = xj_temp.data();
+                                pta_cfunc(yj_temp.data(), poly_yj, &delta_j);
+                                poly_yj = yj_temp.data();
+                                pta_cfunc(zj_temp.data(), poly_zj, &delta_j);
+                                poly_zj = zj_temp.data();
                             }
+
+                            // Copy over the data to diff_input.
+                            using di_size_t = decltype(diff_input.size());
+                            std::copy(poly_xi, poly_xi + (order + 1u), diff_input.data());
+                            std::copy(poly_yi, poly_yi + (order + 1u), diff_input.data() + (order + 1u));
+                            std::copy(poly_zi, poly_zi + (order + 1u),
+                                      diff_input.data() + static_cast<di_size_t>(2) * (order + 1u));
+                            std::copy(poly_xj, poly_xj + (order + 1u),
+                                      diff_input.data() + static_cast<di_size_t>(3) * (order + 1u));
+                            std::copy(poly_yj, poly_yj + (order + 1u),
+                                      diff_input.data() + static_cast<di_size_t>(4) * (order + 1u));
+                            std::copy(poly_zj, poly_zj + (order + 1u),
+                                      diff_input.data() + static_cast<di_size_t>(5) * (order + 1u));
 
                             // We can now construct the polynomial for the
                             // square of the distance.
                             auto *ss_diff_ptr = ss_diff.data();
-                            pssdiff3(ss_diff_ptr, poly_xi, poly_yi, poly_zi, poly_xj, poly_yj, poly_zj);
+                            pssdiff3_cfunc(ss_diff_ptr, diff_input.data(), nullptr);
 
                             // Modify the constant term of the polynomial to account for
                             // particle sizes.
