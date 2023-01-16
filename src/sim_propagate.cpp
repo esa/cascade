@@ -102,6 +102,7 @@ struct ival {
 
     ival() : ival(0) {}
     explicit ival(double val) : ival(val, val) {}
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     explicit ival(double l, double u) : lower(l), upper(u) {}
 };
 
