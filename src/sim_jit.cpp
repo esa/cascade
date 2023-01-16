@@ -18,6 +18,7 @@
 #include <fmt/core.h>
 
 #include <heyoka/detail/event_detection.hpp>
+#include <heyoka/detail/llvm_helpers.hpp>
 #include <heyoka/expression.hpp>
 #include <heyoka/llvm_state.hpp>
 #include <heyoka/math/sum.hpp>
@@ -222,14 +223,16 @@ void add_poly_ssdiff3_cfunc(hy::llvm_state &s, std::uint32_t order)
 
 void sim::add_jit_functions()
 {
+    namespace hy = heyoka;
+
     auto &state = m_data->state;
 
-    auto *fp_t = heyoka::detail::to_llvm_type<double>(state.context());
+    auto *fp_t = hy::detail::to_llvm_type<double>(state.context());
 
     detail::add_poly_translator_a(state, m_data->s_ta.get_order());
     detail::add_poly_ssdiff3_cfunc(state, m_data->s_ta.get_order());
-    heyoka::detail::llvm_add_fex_check(state, fp_t, m_data->s_ta.get_order(), 1);
-    heyoka::detail::llvm_add_poly_rtscc(state, fp_t, m_data->s_ta.get_order(), 1);
+    hy::detail::llvm_add_fex_check(state, fp_t, m_data->s_ta.get_order(), 1);
+    hy::detail::llvm_add_poly_rtscc(state, fp_t, m_data->s_ta.get_order(), 1);
 
     state.optimise();
 
