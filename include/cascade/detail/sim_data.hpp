@@ -137,8 +137,16 @@ struct sim::sim_data {
     // Particle substep data to be filled in at each superstep.
     struct step_data {
         // Taylor coefficients for the state variables.
-        // Each vector contains data for multiple substeps.
-        std::vector<double> tc_x, tc_y, tc_z, tc_vx, tc_vy, tc_vz, tc_r;
+        // The coefficients are stored row-major in a 3D array
+        // in which the dimensions are (n_substeps, c_idx, tc_idx),
+        // where:
+        // - n_substeps is the total number of substeps taken
+        //   within the superstep,
+        // - c_idx is the coordinate index (in the [0, 7) range,
+        //   representing respectively x,y,z,vx,vy,vz,r),
+        // - tc_idx is the index within the array of Taylor
+        //   coefficients (in the [0, order] range).
+        std::vector<double, detail::no_init_alloc<double>> tcs;
         // Time coordinates of the end of each substep.
         std::vector<heyoka::detail::dfloat<double>> tcoords;
     };

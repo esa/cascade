@@ -377,6 +377,16 @@ void sim::narrow_phase_parallel()
                         const auto &sd_i = s_data[pi];
                         const auto &sd_j = s_data[pj];
 
+                        // Fetch views for reading the Taylor coefficients
+                        // for the two particles.
+                        using tc_size_t = decltype(sd_i.tcs.size());
+                        stdex::mdspan tcs_i(sd_i.tcs.data(),
+                                            stdex::extents<tc_size_t, stdex::dynamic_extent, 7u, stdex::dynamic_extent>(
+                                                sd_i.tcoords.size(), order + 1u));
+                        stdex::mdspan tcs_j(sd_j.tcs.data(),
+                                            stdex::extents<tc_size_t, stdex::dynamic_extent, 7u, stdex::dynamic_extent>(
+                                                sd_j.tcoords.size(), order + 1u));
+
                         // Load the particle radiuses.
                         const auto p_rad_i = sv(pi, 6);
                         const auto p_rad_j = sv(pj, 6);
@@ -464,23 +474,21 @@ void sim::narrow_phase_parallel()
                             // - we know that there are multiple Taylor coefficients being recorded
                             //   for each time coordinate, thus the size type of the vector of Taylor
                             //   coefficients can certainly represent the size of the tcoords vectors.
-                            const auto ss_idx_i = static_cast<decltype(s_data[pi].tc_x.size())>(it_i - tcoords_begin_i);
-                            const auto ss_idx_j = static_cast<decltype(s_data[pj].tc_x.size())>(it_j - tcoords_begin_j);
+                            const auto ss_idx_i = static_cast<tc_size_t>(it_i - tcoords_begin_i);
+                            const auto ss_idx_j = static_cast<tc_size_t>(it_j - tcoords_begin_j);
 
-                            const auto *poly_xi = s_data[pi].tc_x.data() + ss_idx_i * (order + 1u);
-                            const auto *poly_yi = s_data[pi].tc_y.data() + ss_idx_i * (order + 1u);
-                            const auto *poly_zi = s_data[pi].tc_z.data() + ss_idx_i * (order + 1u);
+                            const auto *poly_xi = &tcs_i(ss_idx_i, 0, 0);
+                            const auto *poly_yi = &tcs_i(ss_idx_i, 1, 0);
+                            const auto *poly_zi = &tcs_i(ss_idx_i, 2, 0);
 
-                            const auto *poly_xj = s_data[pj].tc_x.data() + ss_idx_j * (order + 1u);
-                            const auto *poly_yj = s_data[pj].tc_y.data() + ss_idx_j * (order + 1u);
-                            const auto *poly_zj = s_data[pj].tc_z.data() + ss_idx_j * (order + 1u);
+                            const auto *poly_xj = &tcs_j(ss_idx_j, 0, 0);
+                            const auto *poly_yj = &tcs_j(ss_idx_j, 1, 0);
+                            const auto *poly_zj = &tcs_j(ss_idx_j, 2, 0);
 
                             // Perform the translations, if needed.
                             // NOTE: perhaps we can write a dedicated function
                             // that does the translation for all 3 coordinates
-                            // at once, for better performance? It seems like
-                            // this needs the new tc layout so that the x/y/z
-                            // coords are contiguous.
+                            // at once, for better performance?
                             // NOTE: need to re-assign the poly_*i pointers if the
                             // translation happens, otherwise we can keep the pointer
                             // to the original polynomials.

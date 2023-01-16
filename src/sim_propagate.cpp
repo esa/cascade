@@ -21,6 +21,7 @@
 #include <utility>
 
 #include <boost/numeric/conversion/cast.hpp>
+#include <boost/safe_numerics/safe_integer.hpp>
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
@@ -301,9 +302,15 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
     // Cache a few quantities.
     const auto order = m_data->s_ta.get_order();
     const auto &s_data = m_data->s_data;
-    const auto &tcoords = s_data[pidx].tcoords;
+    const auto &cur_sd = s_data[pidx];
+    const auto &tcoords = cur_sd.tcoords;
     const auto tcoords_begin = tcoords.begin();
     const auto tcoords_end = tcoords.end();
+
+    // Fetch a view for reading from tcs.
+    using tc_size_t = decltype(cur_sd.tcs.size());
+    stdex::mdspan tcs(cur_sd.tcs.data(), stdex::extents<tc_size_t, stdex::dynamic_extent, 7u, stdex::dynamic_extent>(
+                                             tcoords.size(), order + 1u));
 
     // We need to locate the substep range that fully includes
     // the current chunk.
@@ -358,14 +365,17 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
         // NOTE: we checked at the end of the numerical integration
         // that the size of tcoords can be represented by its iterator
         // type's difference. Thus, the computation it - tcoords_begin is safe.
-        const auto ss_idx = boost::numeric_cast<decltype(s_data[pidx].tc_x.size())>(it - tcoords_begin);
+        // NOTE: static_cast because we know that there are multiple Taylor coefficients being recorded
+        // for each time coordinate, thus the size type of the vector of Taylor
+        // coefficients can certainly represent the size of the tcoords vectors.
+        const auto ss_idx = static_cast<tc_size_t>(it - tcoords_begin);
 
         // Compute the pointers to the TCs for the current particle
         // and substep.
-        const auto tc_ptr_x = s_data[pidx].tc_x.data() + ss_idx * (order + 1u);
-        const auto tc_ptr_y = s_data[pidx].tc_y.data() + ss_idx * (order + 1u);
-        const auto tc_ptr_z = s_data[pidx].tc_z.data() + ss_idx * (order + 1u);
-        const auto tc_ptr_r = s_data[pidx].tc_r.data() + ss_idx * (order + 1u);
+        const auto *tc_ptr_x = &tcs(ss_idx, 0, 0);
+        const auto *tc_ptr_y = &tcs(ss_idx, 1, 0);
+        const auto *tc_ptr_z = &tcs(ss_idx, 2, 0);
+        const auto *tc_ptr_r = &tcs(ss_idx, 6, 0);
 
         // Run the polynomial evaluations using interval arithmetic.
         // NOTE: jit for performance? If so, we can do all 4 coordinates
@@ -688,10 +698,17 @@ outcome sim::step(double dt)
         // Cache a few variables.
         auto &ta = bdata_ptr->ta;
         auto &pfor_ts = bdata_ptr->pfor_ts;
+        auto &s_data = m_data->s_data;
+
+        // View on the state data of the integrator.
         stdex::mdspan st(std::as_const(ta).get_state_data(),
                          stdex::extents<std::uint32_t, 7u, stdex::dynamic_extent>(batch_size));
-        auto &s_data = m_data->s_data;
-        const auto &ta_tc = ta.get_tc();
+
+        // View on the Taylor coefficients of the integrator.
+        stdex::mdspan tct(
+            ta.get_tc().data(),
+            stdex::extents<std::uint32_t, 7u, stdex::dynamic_extent, stdex::dynamic_extent>(order + 1u, batch_size));
+        assert(ta.get_tc().size() == 7u * (order + 1u) * batch_size);
 
         // The first step is the numerical integration for all particles
         // in range throughout the entire superstep.
@@ -703,17 +720,10 @@ outcome sim::step(double dt)
             const auto pidx_begin = idx * batch_size;
             const auto pidx_end = pidx_begin + batch_size;
 
-            // Clear up the Taylor coefficients and the times
-            // of the substeps for the current particle, and fill in
-            // the pfor_ts vector.
+            // Clear up the Taylor coefficients and the time
+            // coordinates, and fill in the pfor_ts vector.
             for (auto i = pidx_begin; i < pidx_end; ++i) {
-                s_data[i].tc_x.clear();
-                s_data[i].tc_y.clear();
-                s_data[i].tc_z.clear();
-                s_data[i].tc_vx.clear();
-                s_data[i].tc_vy.clear();
-                s_data[i].tc_vz.clear();
-                s_data[i].tc_r.clear();
+                s_data[i].tcs.clear();
 
                 s_data[i].tcoords.clear();
 
@@ -732,33 +742,39 @@ outcome sim::step(double dt)
                         continue;
                     }
 
+                    // Cache a reference to the step data for
+                    // the current particle.
+                    auto &cur_sd = s_data[pidx_begin + i];
+
                     // Record the time coordinate at the end of the step, relative
                     // to the initial time.
                     const auto time_f = dfloat(ta.get_dtime().first[i], ta.get_dtime().second[i]);
-                    s_data[pidx_begin + i].tcoords.push_back(time_f - init_time);
-                    if (!isfinite(s_data[pidx_begin + i].tcoords.back())) {
+                    cur_sd.tcoords.push_back(time_f - init_time);
+                    if (!isfinite(cur_sd.tcoords.back())) {
                         throw std::invalid_argument(fmt::format("A non-finite time coordinate was generated during the "
                                                                 "numerical integration of the particle at index {}",
                                                                 pidx_begin + i));
                     }
 
+                    // Fetch the number of steps taken so far for the particle
+                    // from the tcoords vector.
+                    const auto nsteps = cur_sd.tcoords.size();
+
+                    // Prepare the tcs vector for the new coefficients.
+                    using tc_size_t = decltype(cur_sd.tcs.size());
+                    using safe_size_t = boost::safe_numerics::safe<tc_size_t>;
+                    cur_sd.tcs.resize(safe_size_t(cur_sd.tcs.size()) + 7u * (order + 1u));
+
+                    // Fetch a view for writing into tcs.
+                    stdex::mdspan tcs(cur_sd.tcs.data(),
+                                      stdex::extents<tc_size_t, stdex::dynamic_extent, 7u, stdex::dynamic_extent>(
+                                          nsteps, order + 1u));
+
                     // Copy over the Taylor coefficients.
-                    // NOTE: resize + copy, instead of push back? In such
-                    // a case, we should probably use the no init allocator
-                    // for the tc vectors.
-                    for (std::uint32_t o = 0; o <= order; ++o) {
-                        s_data[pidx_begin + i].tc_x.push_back(ta_tc[o * batch_size + i]);
-                        s_data[pidx_begin + i].tc_y.push_back(ta_tc[(order + 1u) * batch_size + o * batch_size + i]);
-                        s_data[pidx_begin + i].tc_z.push_back(
-                            ta_tc[2u * (order + 1u) * batch_size + o * batch_size + i]);
-                        s_data[pidx_begin + i].tc_vx.push_back(
-                            ta_tc[3u * (order + 1u) * batch_size + o * batch_size + i]);
-                        s_data[pidx_begin + i].tc_vy.push_back(
-                            ta_tc[4u * (order + 1u) * batch_size + o * batch_size + i]);
-                        s_data[pidx_begin + i].tc_vz.push_back(
-                            ta_tc[5u * (order + 1u) * batch_size + o * batch_size + i]);
-                        s_data[pidx_begin + i].tc_r.push_back(
-                            ta_tc[6u * (order + 1u) * batch_size + o * batch_size + i]);
+                    for (auto cidx = 0u; cidx < 7u; ++cidx) {
+                        for (std::uint32_t o = 0; o <= order; ++o) {
+                            tcs(nsteps - 1u, cidx, o) = tct(cidx, o, i);
+                        }
                     }
                 }
 
@@ -973,23 +989,23 @@ outcome sim::step(double dt)
         auto &ta = *ta_ptr;
         const auto *st_data = ta.get_state_data();
         auto &s_data = m_data->s_data;
-        const auto &ta_tc = ta.get_tc();
+
+        // View on the Taylor coefficients of the integrator.
+        stdex::mdspan tct(ta.get_tc().data(), stdex::extents<std::uint32_t, 7u, stdex::dynamic_extent>(order + 1u));
+        assert(ta.get_tc().size() == 7u * (order + 1u));
 
         // The first step is the numerical integration for all particles
         // in range throughout the entire superstep.
         for (auto pidx = range.begin(); pidx != range.end(); ++pidx) {
-            auto &tcoords = s_data[pidx].tcoords;
+            // Cache a reference to the step data for
+            // the current particle.
+            auto &cur_sd = s_data[pidx];
 
-            // Clear up the Taylor coefficients and the times
-            // of the substeps for the current particle.
-            s_data[pidx].tc_x.clear();
-            s_data[pidx].tc_y.clear();
-            s_data[pidx].tc_z.clear();
-            s_data[pidx].tc_vx.clear();
-            s_data[pidx].tc_vy.clear();
-            s_data[pidx].tc_vz.clear();
-            s_data[pidx].tc_r.clear();
+            // Cache a reference to the time coordinates.
+            auto &tcoords = cur_sd.tcoords;
 
+            // Clear up the Taylor coefficients and the time coordinates.
+            cur_sd.tcs.clear();
             tcoords.clear();
 
             // Setup the integrator.
@@ -1012,18 +1028,25 @@ outcome sim::step(double dt)
                                                             pidx));
                 }
 
+                // Fetch the number of steps taken so far for the particle
+                // from the tcoords vector.
+                const auto nsteps = cur_sd.tcoords.size();
+
+                // Prepare the tcs vector for the new coefficients.
+                using tc_size_t = decltype(cur_sd.tcs.size());
+                using safe_size_t = boost::safe_numerics::safe<tc_size_t>;
+                cur_sd.tcs.resize(safe_size_t(cur_sd.tcs.size()) + 7u * (order + 1u));
+
+                // Fetch a view for writing into tcs.
+                stdex::mdspan tcs(
+                    cur_sd.tcs.data(),
+                    stdex::extents<tc_size_t, stdex::dynamic_extent, 7u, stdex::dynamic_extent>(nsteps, order + 1u));
+
                 // Copy over the Taylor coefficients.
-                // NOTE: resize + copy, instead of push back? In such
-                // a case, we should probably use the no init allocator
-                // for the tc vectors.
-                for (std::uint32_t o = 0; o <= order; ++o) {
-                    s_data[pidx].tc_x.push_back(ta_tc[o]);
-                    s_data[pidx].tc_y.push_back(ta_tc[order + 1u + o]);
-                    s_data[pidx].tc_z.push_back(ta_tc[2u * (order + 1u) + o]);
-                    s_data[pidx].tc_vx.push_back(ta_tc[3u * (order + 1u) + o]);
-                    s_data[pidx].tc_vy.push_back(ta_tc[4u * (order + 1u) + o]);
-                    s_data[pidx].tc_vz.push_back(ta_tc[5u * (order + 1u) + o]);
-                    s_data[pidx].tc_r.push_back(ta_tc[6u * (order + 1u) + o]);
+                for (auto cidx = 0u; cidx < 7u; ++cidx) {
+                    for (std::uint32_t o = 0; o <= order; ++o) {
+                        tcs(nsteps - 1u, cidx, o) = tct(cidx, o);
+                    }
                 }
 
                 return true;
@@ -1608,9 +1631,16 @@ void sim::dense_propagate(double t)
         const dfloat dt(t);
 
         for (auto pidx = range.begin(); pidx != range.end(); ++pidx) {
-            const auto &tcoords = s_data[pidx].tcoords;
+            const auto &cur_sd = s_data[pidx];
+            const auto &tcoords = cur_sd.tcoords;
             const auto tcoords_begin = tcoords.begin();
             const auto tcoords_end = tcoords.end();
+
+            // Fetch a view for reading from tcs.
+            using tc_size_t = decltype(cur_sd.tcs.size());
+            stdex::mdspan tcs(cur_sd.tcs.data(),
+                              stdex::extents<tc_size_t, stdex::dynamic_extent, 7u, stdex::dynamic_extent>(
+                                  tcoords.size(), order + 1u));
 
             if (tcoords_begin == tcoords_end) {
                 // NOTE: this should never happen because
@@ -1650,16 +1680,16 @@ void sim::dense_propagate(double t)
             // Determine the index of the substep within the chunk.
             // NOTE: static cast because overflow detection has been
             // done already in earlier steps.
-            const auto ss_idx = static_cast<decltype(s_data[pidx].tc_x.size())>(it - tcoords_begin);
+            const auto ss_idx = static_cast<tc_size_t>(it - tcoords_begin);
 
             // Compute the pointers to the TCs for the current particle
             // and substep.
-            const auto tc_ptr_x = s_data[pidx].tc_x.data() + ss_idx * (order + 1u);
-            const auto tc_ptr_y = s_data[pidx].tc_y.data() + ss_idx * (order + 1u);
-            const auto tc_ptr_z = s_data[pidx].tc_z.data() + ss_idx * (order + 1u);
-            const auto tc_ptr_vx = s_data[pidx].tc_vx.data() + ss_idx * (order + 1u);
-            const auto tc_ptr_vy = s_data[pidx].tc_vy.data() + ss_idx * (order + 1u);
-            const auto tc_ptr_vz = s_data[pidx].tc_vz.data() + ss_idx * (order + 1u);
+            const auto *tc_ptr_x = &tcs(ss_idx, 0, 0);
+            const auto *tc_ptr_y = &tcs(ss_idx, 1, 0);
+            const auto *tc_ptr_z = &tcs(ss_idx, 2, 0);
+            const auto *tc_ptr_vx = &tcs(ss_idx, 3, 0);
+            const auto *tc_ptr_vy = &tcs(ss_idx, 4, 0);
+            const auto *tc_ptr_vz = &tcs(ss_idx, 5, 0);
 
             // Run the polynomial evaluations.
             // NOTE: jit for performance? If so, we can do all variables
