@@ -71,8 +71,10 @@ namespace
 {
 
 // The list of allowed dynamical symbols, first in dynamical order then in alphabetical order.
+// NOLINTNEXTLINE(cert-err58-cpp)
 const std::array<std::string, 6> allowed_vars = {"x", "y", "z", "vx", "vy", "vz"};
 
+// NOLINTNEXTLINE(cert-err58-cpp)
 const std::set<std::string> allowed_vars_alph(allowed_vars.begin(), allowed_vars.end());
 
 } // namespace
@@ -220,6 +222,7 @@ void sim::set_new_state(std::vector<double> new_state)
 }
 
 void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>> dyn, std::vector<double> pars,
+                        // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
                         std::variant<double, std::vector<double>> c_radius, double d_radius, double tol, bool ha)
 {
     namespace hy = heyoka;
@@ -503,7 +506,7 @@ std::uint32_t sim::reentry_event_idx() const
     // NOTE: reentry event at index 0 or 1, depending
     // on whether we have exit event or not.
 
-    return with_exit_event();
+    return static_cast<std::uint32_t>(with_exit_event());
 }
 
 std::uint32_t sim::exit_event_idx() const
