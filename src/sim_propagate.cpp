@@ -762,8 +762,8 @@ outcome sim::step(double dt)
 
                     // Prepare the tcs vector for the new coefficients.
                     using tc_size_t = decltype(cur_sd.tcs.size());
-                    using safe_size_t = boost::safe_numerics::safe<tc_size_t>;
-                    cur_sd.tcs.resize(safe_size_t(cur_sd.tcs.size()) + 7u * (order + 1u));
+                    using safe_tc_size_t = boost::safe_numerics::safe<tc_size_t>;
+                    cur_sd.tcs.resize(safe_tc_size_t(cur_sd.tcs.size()) + 7u * (order + 1u));
 
                     // Fetch a view for writing into tcs.
                     stdex::mdspan tcs(cur_sd.tcs.data(),
@@ -1034,8 +1034,8 @@ outcome sim::step(double dt)
 
                 // Prepare the tcs vector for the new coefficients.
                 using tc_size_t = decltype(cur_sd.tcs.size());
-                using safe_size_t = boost::safe_numerics::safe<tc_size_t>;
-                cur_sd.tcs.resize(safe_size_t(cur_sd.tcs.size()) + 7u * (order + 1u));
+                using safe_tc_size_t = boost::safe_numerics::safe<tc_size_t>;
+                cur_sd.tcs.resize(safe_tc_size_t(cur_sd.tcs.size()) + 7u * (order + 1u));
 
                 // Fetch a view for writing into tcs.
                 stdex::mdspan tcs(
