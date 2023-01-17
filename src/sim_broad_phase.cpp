@@ -21,13 +21,18 @@
 #include <cascade/detail/sim_data.hpp>
 #include <cascade/sim.hpp>
 
-#if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
+#if defined(__clang__) || defined(__GNUC__)
 
-#define CASCADE_RESTRICT __restrict
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 
-#else
+#endif
 
-#define CASCADE_RESTRICT
+#include "mdspan/mdspan"
+
+#if defined(__clang__) || defined(__GNUC__)
+
+#pragma GCC diagnostic pop
 
 #endif
 
@@ -38,6 +43,8 @@ namespace cascade
 // detection between the AABBs of the particles' trajectories.
 void sim::broad_phase_parallel()
 {
+    namespace stdex = std::experimental;
+
     spdlog::stopwatch sw;
 
     auto *logger = detail::get_logger();
@@ -50,22 +57,20 @@ void sim::broad_phase_parallel()
     // across all chunks.
     std::atomic<decltype(m_data->bp_coll[0].size())> tot_n_bp(0);
 
+    // Views for accessing the sorted lbs/ubs data.
+    using b_size_t = decltype(m_data->lbs.size());
+    stdex::mdspan srt_lbs(std::as_const(m_data->srt_lbs).data(),
+                          stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+    stdex::mdspan srt_ubs(std::as_const(m_data->srt_ubs).data(),
+                          stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+
+    // View for accessing the indices vector.
+    using idx_size_t = decltype(m_data->vidx.size());
+    stdex::mdspan vidx(std::as_const(m_data->vidx).data(),
+                       stdex::extents<idx_size_t, stdex::dynamic_extent, stdex::dynamic_extent>(nchunks, nparts));
+
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
-            const auto offset = nparts * chunk_idx;
-
-            const auto *CASCADE_RESTRICT x_lb_ptr = m_data->srt_x_lb.data() + offset;
-            const auto *CASCADE_RESTRICT y_lb_ptr = m_data->srt_y_lb.data() + offset;
-            const auto *CASCADE_RESTRICT z_lb_ptr = m_data->srt_z_lb.data() + offset;
-            const auto *CASCADE_RESTRICT r_lb_ptr = m_data->srt_r_lb.data() + offset;
-
-            const auto *CASCADE_RESTRICT x_ub_ptr = m_data->srt_x_ub.data() + offset;
-            const auto *CASCADE_RESTRICT y_ub_ptr = m_data->srt_y_ub.data() + offset;
-            const auto *CASCADE_RESTRICT z_ub_ptr = m_data->srt_z_ub.data() + offset;
-            const auto *CASCADE_RESTRICT r_ub_ptr = m_data->srt_r_ub.data() + offset;
-
-            const auto *CASCADE_RESTRICT vidx_ptr = m_data->vidx.data() + offset;
-
             // Fetch a reference to the tree.
             const auto &tree = m_data->bvh_trees[chunk_idx];
 
@@ -110,15 +115,15 @@ void sim::broad_phase_parallel()
                     stack.push_back(0);
 
                     // Cache the AABB of the current particle.
-                    const auto x_lb = x_lb_ptr[pidx];
-                    const auto y_lb = y_lb_ptr[pidx];
-                    const auto z_lb = z_lb_ptr[pidx];
-                    const auto r_lb = r_lb_ptr[pidx];
+                    const auto x_lb = srt_lbs(chunk_idx, pidx, 0);
+                    const auto y_lb = srt_lbs(chunk_idx, pidx, 1);
+                    const auto z_lb = srt_lbs(chunk_idx, pidx, 2);
+                    const auto r_lb = srt_lbs(chunk_idx, pidx, 3);
 
-                    const auto x_ub = x_ub_ptr[pidx];
-                    const auto y_ub = y_ub_ptr[pidx];
-                    const auto z_ub = z_ub_ptr[pidx];
-                    const auto r_ub = r_ub_ptr[pidx];
+                    const auto x_ub = srt_ubs(chunk_idx, pidx, 0);
+                    const auto y_ub = srt_ubs(chunk_idx, pidx, 1);
+                    const auto z_ub = srt_ubs(chunk_idx, pidx, 2);
+                    const auto r_ub = srt_ubs(chunk_idx, pidx, 3);
 
                     do {
                         // Pop a node.
@@ -154,8 +159,8 @@ void sim::broad_phase_parallel()
                                 // in the *original* order, not in the Morton order,
                                 // hence the indirection via vidx_ptr.
                                 for (auto i = cur_node.begin; i != cur_node.end; ++i) {
-                                    if (vidx_ptr[pidx] < vidx_ptr[i]) {
-                                        local_bp.emplace_back(vidx_ptr[pidx], vidx_ptr[i]);
+                                    if (vidx(chunk_idx, pidx) < vidx(chunk_idx, i)) {
+                                        local_bp.emplace_back(vidx(chunk_idx, pidx), vidx(chunk_idx, i));
                                     }
                                 }
                             } else {
@@ -194,6 +199,8 @@ void sim::broad_phase_parallel()
 // Debug checks on the broad phase collision detection.
 void sim::verify_broad_phase_parallel() const
 {
+    namespace stdex = std::experimental;
+
     const auto nparts = get_nparts();
     const auto nchunks = m_data->nchunks;
 
@@ -202,20 +209,15 @@ void sim::verify_broad_phase_parallel() const
         return;
     }
 
+    // Views for accessing the lbs/ubs data.
+    using b_size_t = decltype(m_data->lbs.size());
+    stdex::mdspan lbs(std::as_const(m_data->lbs).data(),
+                      stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+    stdex::mdspan ubs(std::as_const(m_data->ubs).data(),
+                      stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
-            const auto offset = nparts * chunk_idx;
-
-            const auto *CASCADE_RESTRICT x_lb_ptr = m_data->x_lb.data() + offset;
-            const auto *CASCADE_RESTRICT y_lb_ptr = m_data->y_lb.data() + offset;
-            const auto *CASCADE_RESTRICT z_lb_ptr = m_data->z_lb.data() + offset;
-            const auto *CASCADE_RESTRICT r_lb_ptr = m_data->r_lb.data() + offset;
-
-            const auto *CASCADE_RESTRICT x_ub_ptr = m_data->x_ub.data() + offset;
-            const auto *CASCADE_RESTRICT y_ub_ptr = m_data->y_ub.data() + offset;
-            const auto *CASCADE_RESTRICT z_ub_ptr = m_data->z_ub.data() + offset;
-            const auto *CASCADE_RESTRICT r_ub_ptr = m_data->r_ub.data() + offset;
-
             // Build a set version of the collision list
             // for fast lookup.
             std::set<std::pair<size_type, size_type>> coll_tree;
@@ -231,30 +233,30 @@ void sim::verify_broad_phase_parallel() const
 
             oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &ri) {
                 for (auto i = ri.begin(); i != ri.end(); ++i) {
-                    const auto xi_lb = x_lb_ptr[i];
-                    const auto yi_lb = y_lb_ptr[i];
-                    const auto zi_lb = z_lb_ptr[i];
-                    const auto ri_lb = r_lb_ptr[i];
+                    const auto xi_lb = lbs(chunk_idx, i, 0);
+                    const auto yi_lb = lbs(chunk_idx, i, 1);
+                    const auto zi_lb = lbs(chunk_idx, i, 2);
+                    const auto ri_lb = lbs(chunk_idx, i, 3);
 
-                    const auto xi_ub = x_ub_ptr[i];
-                    const auto yi_ub = y_ub_ptr[i];
-                    const auto zi_ub = z_ub_ptr[i];
-                    const auto ri_ub = r_ub_ptr[i];
+                    const auto xi_ub = ubs(chunk_idx, i, 0);
+                    const auto yi_ub = ubs(chunk_idx, i, 1);
+                    const auto zi_ub = ubs(chunk_idx, i, 2);
+                    const auto ri_ub = ubs(chunk_idx, i, 3);
 
                     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(i + 1u, nparts),
                                               [&](const auto &rj) {
                                                   decltype(coll_tree.size()) loc_ncoll = 0;
 
                                                   for (auto j = rj.begin(); j != rj.end(); ++j) {
-                                                      const auto xj_lb = x_lb_ptr[j];
-                                                      const auto yj_lb = y_lb_ptr[j];
-                                                      const auto zj_lb = z_lb_ptr[j];
-                                                      const auto rj_lb = r_lb_ptr[j];
+                                                      const auto xj_lb = lbs(chunk_idx, j, 0);
+                                                      const auto yj_lb = lbs(chunk_idx, j, 1);
+                                                      const auto zj_lb = lbs(chunk_idx, j, 2);
+                                                      const auto rj_lb = lbs(chunk_idx, j, 3);
 
-                                                      const auto xj_ub = x_ub_ptr[j];
-                                                      const auto yj_ub = y_ub_ptr[j];
-                                                      const auto zj_ub = z_ub_ptr[j];
-                                                      const auto rj_ub = r_ub_ptr[j];
+                                                      const auto xj_ub = ubs(chunk_idx, j, 0);
+                                                      const auto yj_ub = ubs(chunk_idx, j, 1);
+                                                      const auto zj_ub = ubs(chunk_idx, j, 2);
+                                                      const auto rj_ub = ubs(chunk_idx, j, 3);
 
                                                       const bool overlap = (xi_ub >= xj_lb && xi_lb <= xj_ub)
                                                                            && (yi_ub >= yj_lb && yi_lb <= yj_ub)

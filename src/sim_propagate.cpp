@@ -55,16 +55,6 @@
 
 #endif
 
-#if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
-
-#define CASCADE_RESTRICT __restrict
-
-#else
-
-#define CASCADE_RESTRICT
-
-#endif
-
 #if defined(__clang__) || defined(__GNUC__)
 
 #pragma GCC diagnostic push
@@ -264,37 +254,28 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
     using dfloat = hy::detail::dfloat<double>;
     namespace stdex = std::experimental;
 
+    // Fetch the number of particles and chunks from m_data.
     const auto nparts = get_nparts();
+    const auto nchunks = m_data->nchunks;
 
     // Fetch a view on the state vector in order to
     // access the particles' sizes.
     stdex::mdspan sv(std::as_const(m_state)->data(), stdex::extents<size_type, stdex::dynamic_extent, 7u>(nparts));
 
-    // Fetch pointers to the AABB data for the current chunk.
-    const auto offset = nparts * chunk_idx;
-
-    auto *CASCADE_RESTRICT x_lb_ptr = m_data->x_lb.data() + offset;
-    auto *CASCADE_RESTRICT y_lb_ptr = m_data->y_lb.data() + offset;
-    auto *CASCADE_RESTRICT z_lb_ptr = m_data->z_lb.data() + offset;
-    auto *CASCADE_RESTRICT r_lb_ptr = m_data->r_lb.data() + offset;
-
-    auto *CASCADE_RESTRICT x_ub_ptr = m_data->x_ub.data() + offset;
-    auto *CASCADE_RESTRICT y_ub_ptr = m_data->y_ub.data() + offset;
-    auto *CASCADE_RESTRICT z_ub_ptr = m_data->z_ub.data() + offset;
-    auto *CASCADE_RESTRICT r_ub_ptr = m_data->r_ub.data() + offset;
+    // Views for accessing the lbs/ubs data.
+    using b_size_t = decltype(m_data->lbs.size());
+    stdex::mdspan lbs(m_data->lbs.data(),
+                      stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+    stdex::mdspan ubs(m_data->ubs.data(),
+                      stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
 
     // Setup the initial values for the bounding box.
     constexpr auto finf = std::numeric_limits<float>::infinity();
 
-    x_lb_ptr[pidx] = finf;
-    y_lb_ptr[pidx] = finf;
-    z_lb_ptr[pidx] = finf;
-    r_lb_ptr[pidx] = finf;
-
-    x_ub_ptr[pidx] = -finf;
-    y_ub_ptr[pidx] = -finf;
-    z_ub_ptr[pidx] = -finf;
-    r_ub_ptr[pidx] = -finf;
+    for (auto i = 0u; i < 4u; ++i) {
+        lbs(chunk_idx, pidx, i) = finf;
+        ubs(chunk_idx, pidx, i) = -finf;
+    }
 
     // Fetch the particle radius.
     const auto p_radius = sv(pidx, 6);
@@ -390,23 +371,13 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
             return acc;
         };
 
-        auto x_int = horner_eval(tc_ptr_x);
-        auto y_int = horner_eval(tc_ptr_y);
-        auto z_int = horner_eval(tc_ptr_z);
-        auto r_int = horner_eval(tc_ptr_r);
+        std::array xyzr_int{horner_eval(tc_ptr_x), horner_eval(tc_ptr_y), horner_eval(tc_ptr_z), horner_eval(tc_ptr_r)};
 
         // Adjust the intervals accounting for the particle radius.
-        x_int.lower -= p_radius;
-        x_int.upper += p_radius;
-
-        y_int.lower -= p_radius;
-        y_int.upper += p_radius;
-
-        z_int.lower -= p_radius;
-        z_int.upper += p_radius;
-
-        r_int.lower -= p_radius;
-        r_int.upper += p_radius;
+        for (auto &val : xyzr_int) {
+            val.lower -= p_radius;
+            val.upper += p_radius;
+        }
 
         // A couple of helpers to cast lower/upper bounds from double to float. After
         // the cast, we will also move slightly the bounds to add a safety margin to account
@@ -437,15 +408,10 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
         // Update the bounding box for the current particle.
         // NOTE: min/max is fine: the make_float() helpers check for finiteness,
         // and the other operand is never NaN.
-        x_lb_ptr[pidx] = std::min(x_lb_ptr[pidx], lb_make_float(x_int.lower));
-        y_lb_ptr[pidx] = std::min(y_lb_ptr[pidx], lb_make_float(y_int.lower));
-        z_lb_ptr[pidx] = std::min(z_lb_ptr[pidx], lb_make_float(z_int.lower));
-        r_lb_ptr[pidx] = std::min(r_lb_ptr[pidx], lb_make_float(r_int.lower));
-
-        x_ub_ptr[pidx] = std::max(x_ub_ptr[pidx], ub_make_float(x_int.upper));
-        y_ub_ptr[pidx] = std::max(y_ub_ptr[pidx], ub_make_float(y_int.upper));
-        z_ub_ptr[pidx] = std::max(z_ub_ptr[pidx], ub_make_float(z_int.upper));
-        r_ub_ptr[pidx] = std::max(r_ub_ptr[pidx], ub_make_float(r_int.upper));
+        for (auto i = 0u; i < 4u; ++i) {
+            lbs(chunk_idx, pidx, i) = std::min(lbs(chunk_idx, pidx, i), lb_make_float(xyzr_int[i].lower));
+            ubs(chunk_idx, pidx, i) = std::max(ubs(chunk_idx, pidx, i), ub_make_float(xyzr_int[i].upper));
+        }
     }
 }
 
@@ -453,6 +419,8 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
 // and sort the AABB data according to the codes.
 void sim::morton_encode_sort_parallel()
 {
+    namespace stdex = std::experimental;
+
     spdlog::stopwatch sw;
 
     auto *logger = detail::get_logger();
@@ -464,6 +432,31 @@ void sim::morton_encode_sort_parallel()
     constexpr auto morton_enc = mortonnd::MortonNDLutEncoder<4, 16, 8>();
 
     constexpr auto finf = std::numeric_limits<float>::infinity();
+
+    // Views for accessing the lbs/ubs data.
+    using b_size_t = decltype(m_data->lbs.size());
+    stdex::mdspan lbs(std::as_const(m_data->lbs).data(),
+                      stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+    stdex::mdspan ubs(std::as_const(m_data->ubs).data(),
+                      stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+
+    // Same for the sorted counterparts.
+    stdex::mdspan srt_lbs(m_data->srt_lbs.data(),
+                          stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+    stdex::mdspan srt_ubs(m_data->srt_ubs.data(),
+                          stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+
+    // Morton codes views.
+    using m_size_t = decltype(m_data->mcodes.size());
+    stdex::mdspan mcodes(m_data->mcodes.data(),
+                         stdex::extents<m_size_t, stdex::dynamic_extent, stdex::dynamic_extent>(nchunks, nparts));
+    stdex::mdspan srt_mcodes(m_data->srt_mcodes.data(),
+                             stdex::extents<m_size_t, stdex::dynamic_extent, stdex::dynamic_extent>(nchunks, nparts));
+
+    // View for accessing the indices vector.
+    using idx_size_t = decltype(m_data->vidx.size());
+    stdex::mdspan vidx(m_data->vidx.data(),
+                       stdex::extents<idx_size_t, stdex::dynamic_extent, stdex::dynamic_extent>(nchunks, nparts));
 
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
@@ -485,84 +478,53 @@ void sim::morton_encode_sort_parallel()
             }
 
             // Computation of the Morton codes.
-            const auto offset = nparts * chunk_idx;
-
-            auto *CASCADE_RESTRICT x_lb_ptr = m_data->x_lb.data() + offset;
-            auto *CASCADE_RESTRICT y_lb_ptr = m_data->y_lb.data() + offset;
-            auto *CASCADE_RESTRICT z_lb_ptr = m_data->z_lb.data() + offset;
-            auto *CASCADE_RESTRICT r_lb_ptr = m_data->r_lb.data() + offset;
-
-            auto *CASCADE_RESTRICT x_ub_ptr = m_data->x_ub.data() + offset;
-            auto *CASCADE_RESTRICT y_ub_ptr = m_data->y_ub.data() + offset;
-            auto *CASCADE_RESTRICT z_ub_ptr = m_data->z_ub.data() + offset;
-            auto *CASCADE_RESTRICT r_ub_ptr = m_data->r_ub.data() + offset;
-
-            auto *CASCADE_RESTRICT mcodes_ptr = m_data->mcodes.data() + offset;
-
-            auto *CASCADE_RESTRICT srt_x_lb_ptr = m_data->srt_x_lb.data() + offset;
-            auto *CASCADE_RESTRICT srt_y_lb_ptr = m_data->srt_y_lb.data() + offset;
-            auto *CASCADE_RESTRICT srt_z_lb_ptr = m_data->srt_z_lb.data() + offset;
-            auto *CASCADE_RESTRICT srt_r_lb_ptr = m_data->srt_r_lb.data() + offset;
-
-            auto *CASCADE_RESTRICT srt_x_ub_ptr = m_data->srt_x_ub.data() + offset;
-            auto *CASCADE_RESTRICT srt_y_ub_ptr = m_data->srt_y_ub.data() + offset;
-            auto *CASCADE_RESTRICT srt_z_ub_ptr = m_data->srt_z_ub.data() + offset;
-            auto *CASCADE_RESTRICT srt_r_ub_ptr = m_data->srt_r_ub.data() + offset;
-
-            auto *CASCADE_RESTRICT srt_mcodes_ptr = m_data->srt_mcodes.data() + offset;
-
-            auto *CASCADE_RESTRICT vidx_ptr = m_data->vidx.data() + offset;
-
             oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &r2) {
+                // Array to store the coordinates of the centre of the AABB.
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init)
+                std::array<float, 4> xyzr_ctr;
+
                 // NOTE: JIT optimisation opportunity here. Worth it?
                 for (auto pidx = r2.begin(); pidx != r2.end(); ++pidx) {
                     // Compute the centre of the AABB.
-                    const auto x_ctr = x_lb_ptr[pidx] / 2 + x_ub_ptr[pidx] / 2;
-                    const auto y_ctr = y_lb_ptr[pidx] / 2 + y_ub_ptr[pidx] / 2;
-                    const auto z_ctr = z_lb_ptr[pidx] / 2 + z_ub_ptr[pidx] / 2;
-                    const auto r_ctr = r_lb_ptr[pidx] / 2 + r_ub_ptr[pidx] / 2;
+                    for (auto i = 0u; i < 4u; ++i) {
+                        xyzr_ctr[i] = lbs(chunk_idx, pidx, i) / 2 + ubs(chunk_idx, pidx, i) / 2;
+                    }
 
-                    const auto n0 = detail::disc_single_coord(x_ctr, glb[0], gub[0]);
-                    const auto n1 = detail::disc_single_coord(y_ctr, glb[1], gub[1]);
-                    const auto n2 = detail::disc_single_coord(z_ctr, glb[2], gub[2]);
-                    const auto n3 = detail::disc_single_coord(r_ctr, glb[3], gub[3]);
+                    const auto n0 = detail::disc_single_coord(xyzr_ctr[0], glb[0], gub[0]);
+                    const auto n1 = detail::disc_single_coord(xyzr_ctr[1], glb[1], gub[1]);
+                    const auto n2 = detail::disc_single_coord(xyzr_ctr[2], glb[2], gub[2]);
+                    const auto n3 = detail::disc_single_coord(xyzr_ctr[3], glb[3], gub[3]);
 
-                    mcodes_ptr[pidx] = morton_enc.Encode(n0, n1, n2, n3);
+                    mcodes(chunk_idx, pidx) = morton_enc.Encode(n0, n1, n2, n3);
                 }
             });
 
             // Indirect sorting of the indices for the current chunk
             // according to the Morton codes.
-            oneapi::tbb::parallel_sort(vidx_ptr, vidx_ptr + nparts, [mcodes_ptr](auto idx1, auto idx2) {
-                return mcodes_ptr[idx1] < mcodes_ptr[idx2];
-            });
+            oneapi::tbb::parallel_sort(&vidx(chunk_idx, 0), &vidx(chunk_idx, 0) + nparts,
+                                       [&mcodes, chunk_idx](auto idx1, auto idx2) {
+                                           return mcodes(chunk_idx, idx1) < mcodes(chunk_idx, idx2);
+                                       });
 
-            // Helper to apply the indirect sorting defined in vidx to the data in src.
-            // The sorted data will be written into out.
-            auto isort_apply = [vidx_ptr, nparts](auto *out, const auto *src) {
-                oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &rn) {
-                    for (auto i = rn.begin(); i != rn.end(); ++i) {
-                        out[i] = src[vidx_ptr[i]];
-                    }
-                });
-            };
-
-            // NOTE: can do all of these in parallel in principle, but performance
+            // Apply the indirect sorting defined in vidx to lb/ub/mcodes,
+            // writing the sorted vectors in the srt_* counterparts.
+            // NOTE: more parallelism can be extracted here in principle, but performance
             // is bottlenecked by RAM speed anyway. Perhaps revisit on machines
             // with larger core counts during performance tuning.
-            isort_apply(srt_x_lb_ptr, x_lb_ptr);
-            isort_apply(srt_y_lb_ptr, y_lb_ptr);
-            isort_apply(srt_z_lb_ptr, z_lb_ptr);
-            isort_apply(srt_r_lb_ptr, r_lb_ptr);
+            oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(0, nparts), [&](const auto &rn) {
+                for (auto pidx = rn.begin(); pidx != rn.end(); ++pidx) {
+                    const auto sorted_idx = vidx(chunk_idx, pidx);
 
-            isort_apply(srt_x_ub_ptr, x_ub_ptr);
-            isort_apply(srt_y_ub_ptr, y_ub_ptr);
-            isort_apply(srt_z_ub_ptr, z_ub_ptr);
-            isort_apply(srt_r_ub_ptr, r_ub_ptr);
+                    for (auto i = 0u; i < 4u; ++i) {
+                        srt_lbs(chunk_idx, pidx, i) = lbs(chunk_idx, sorted_idx, i);
+                        srt_ubs(chunk_idx, pidx, i) = ubs(chunk_idx, sorted_idx, i);
+                    }
 
-            isort_apply(srt_mcodes_ptr, mcodes_ptr);
+                    srt_mcodes(chunk_idx, pidx) = mcodes(chunk_idx, sorted_idx);
+                }
+            });
 
-            assert(std::is_sorted(srt_mcodes_ptr, srt_mcodes_ptr + nparts));
+            assert(std::is_sorted(&srt_mcodes(chunk_idx, 0), &srt_mcodes(chunk_idx, 0) + nparts));
         }
     });
 
@@ -631,27 +593,19 @@ outcome sim::step(double dt)
         (apply(vecs), ...);
     };
 
-    // Many of the buffers need to be of size nparts * nchunks. Do
-    // an overflow check.
-    if (nparts > std::numeric_limits<size_type>::max() / nchunks) {
-        throw std::overflow_error("An overflow condition was detected in the step() function");
-    }
-    const auto npnc = nparts * nchunks;
-
     // The substep data.
     resize_if_needed(nparts, m_data->s_data);
 
     // The AABBs data.
-    resize_if_needed(npnc, m_data->x_lb, m_data->y_lb, m_data->z_lb, m_data->r_lb);
-    resize_if_needed(npnc, m_data->x_ub, m_data->y_ub, m_data->z_ub, m_data->r_ub);
+    using safe_size_t = boost::safe_numerics::safe<size_type>;
+    resize_if_needed(safe_size_t(nchunks) * nparts * 4u, m_data->lbs, m_data->ubs);
 
     // Morton encoding/ordering.
-    resize_if_needed(npnc, m_data->mcodes, m_data->vidx);
+    resize_if_needed(safe_size_t(nchunks) * nparts, m_data->mcodes, m_data->vidx);
 
     // Morton-sorted AABBs data.
-    resize_if_needed(npnc, m_data->srt_x_lb, m_data->srt_y_lb, m_data->srt_z_lb, m_data->srt_r_lb);
-    resize_if_needed(npnc, m_data->srt_x_ub, m_data->srt_y_ub, m_data->srt_z_ub, m_data->srt_r_ub);
-    resize_if_needed(npnc, m_data->srt_mcodes);
+    resize_if_needed(safe_size_t(nchunks) * nparts * 4u, m_data->srt_lbs, m_data->srt_ubs);
+    resize_if_needed(safe_size_t(nchunks) * nparts, m_data->srt_mcodes);
 
     // Final state vector.
     // NOTE: contrary to m_state, this does not contain the particle sizes,
@@ -679,6 +633,13 @@ outcome sim::step(double dt)
     // Stopping terminal events and err_nf_state vectors.
     m_data->ste_vec.clear();
     m_data->err_nf_state_vec.clear();
+
+    // Views for accessing the lbs/ubs data.
+    using b_size_t = decltype(m_data->lbs.size());
+    stdex::mdspan lbs(m_data->lbs.data(),
+                      stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+    stdex::mdspan ubs(m_data->ubs.data(),
+                      stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
 
     // Numerical integration and computation of the AABBs in batch mode.
     auto batch_int_aabb = [&](const auto &range) {
@@ -917,18 +878,6 @@ outcome sim::step(double dt)
             auto local_lb = std::array{finf, finf, finf, finf};
             auto local_ub = std::array{-finf, -finf, -finf, -finf};
 
-            const auto offset = nparts * chunk_idx;
-
-            auto *CASCADE_RESTRICT x_lb_ptr = m_data->x_lb.data() + offset;
-            auto *CASCADE_RESTRICT y_lb_ptr = m_data->y_lb.data() + offset;
-            auto *CASCADE_RESTRICT z_lb_ptr = m_data->z_lb.data() + offset;
-            auto *CASCADE_RESTRICT r_lb_ptr = m_data->r_lb.data() + offset;
-
-            auto *CASCADE_RESTRICT x_ub_ptr = m_data->x_ub.data() + offset;
-            auto *CASCADE_RESTRICT y_ub_ptr = m_data->y_ub.data() + offset;
-            auto *CASCADE_RESTRICT z_ub_ptr = m_data->z_ub.data() + offset;
-            auto *CASCADE_RESTRICT r_ub_ptr = m_data->r_ub.data() + offset;
-
             // The time coordinate, relative to init_time, of
             // the chunk's begin/end.
             const auto [chunk_begin, chunk_end] = m_data->get_chunk_begin_end(chunk_idx, m_ct);
@@ -944,28 +893,18 @@ outcome sim::step(double dt)
                     // Update the local AABB with the bounding box for the current particle.
                     // NOTE: min/max usage is safe, because compute_particle_aabb()
                     // ensures that the bounding boxes are finite.
-                    local_lb[0] = std::min(local_lb[0], x_lb_ptr[pidx_begin + i]);
-                    local_lb[1] = std::min(local_lb[1], y_lb_ptr[pidx_begin + i]);
-                    local_lb[2] = std::min(local_lb[2], z_lb_ptr[pidx_begin + i]);
-                    local_lb[3] = std::min(local_lb[3], r_lb_ptr[pidx_begin + i]);
-
-                    local_ub[0] = std::max(local_ub[0], x_ub_ptr[pidx_begin + i]);
-                    local_ub[1] = std::max(local_ub[1], y_ub_ptr[pidx_begin + i]);
-                    local_ub[2] = std::max(local_ub[2], z_ub_ptr[pidx_begin + i]);
-                    local_ub[3] = std::max(local_ub[3], r_ub_ptr[pidx_begin + i]);
+                    for (auto j = 0u; j < 4u; ++j) {
+                        local_lb[j] = std::min(local_lb[j], lbs(chunk_idx, pidx_begin + i, j));
+                        local_ub[j] = std::max(local_ub[j], ubs(chunk_idx, pidx_begin + i, j));
+                    }
                 }
             }
 
             // Atomically update the global AABB for the current chunk.
-            detail::lb_atomic_update(glb[0], local_lb[0]);
-            detail::lb_atomic_update(glb[1], local_lb[1]);
-            detail::lb_atomic_update(glb[2], local_lb[2]);
-            detail::lb_atomic_update(glb[3], local_lb[3]);
-
-            detail::ub_atomic_update(gub[0], local_ub[0]);
-            detail::ub_atomic_update(gub[1], local_ub[1]);
-            detail::ub_atomic_update(gub[2], local_ub[2]);
-            detail::ub_atomic_update(gub[3], local_ub[3]);
+            for (auto i = 0u; i < 4u; ++i) {
+                detail::lb_atomic_update(glb[i], local_lb[i]);
+                detail::ub_atomic_update(gub[i], local_ub[i]);
+            }
         }
 
         // Put the integrator data (back) into the caches.
@@ -1115,18 +1054,6 @@ outcome sim::step(double dt)
             auto local_lb = std::array{finf, finf, finf, finf};
             auto local_ub = std::array{-finf, -finf, -finf, -finf};
 
-            const auto offset = nparts * chunk_idx;
-
-            auto *CASCADE_RESTRICT x_lb_ptr = m_data->x_lb.data() + offset;
-            auto *CASCADE_RESTRICT y_lb_ptr = m_data->y_lb.data() + offset;
-            auto *CASCADE_RESTRICT z_lb_ptr = m_data->z_lb.data() + offset;
-            auto *CASCADE_RESTRICT r_lb_ptr = m_data->r_lb.data() + offset;
-
-            auto *CASCADE_RESTRICT x_ub_ptr = m_data->x_ub.data() + offset;
-            auto *CASCADE_RESTRICT y_ub_ptr = m_data->y_ub.data() + offset;
-            auto *CASCADE_RESTRICT z_ub_ptr = m_data->z_ub.data() + offset;
-            auto *CASCADE_RESTRICT r_ub_ptr = m_data->r_ub.data() + offset;
-
             // The time coordinate, relative to init_time, of
             // the chunk's begin/end.
             const auto [chunk_begin, chunk_end] = m_data->get_chunk_begin_end(chunk_idx, m_ct);
@@ -1138,27 +1065,17 @@ outcome sim::step(double dt)
                 // Update the local AABB with the bounding box for the current particle.
                 // NOTE: min/max usage is safe, because compute_particle_aabb()
                 // ensures that the bounding boxes are finite.
-                local_lb[0] = std::min(local_lb[0], x_lb_ptr[pidx]);
-                local_lb[1] = std::min(local_lb[1], y_lb_ptr[pidx]);
-                local_lb[2] = std::min(local_lb[2], z_lb_ptr[pidx]);
-                local_lb[3] = std::min(local_lb[3], r_lb_ptr[pidx]);
-
-                local_ub[0] = std::max(local_ub[0], x_ub_ptr[pidx]);
-                local_ub[1] = std::max(local_ub[1], y_ub_ptr[pidx]);
-                local_ub[2] = std::max(local_ub[2], z_ub_ptr[pidx]);
-                local_ub[3] = std::max(local_ub[3], r_ub_ptr[pidx]);
+                for (auto i = 0u; i < 4u; ++i) {
+                    local_lb[i] = std::min(local_lb[i], lbs(chunk_idx, pidx, i));
+                    local_ub[i] = std::max(local_ub[i], ubs(chunk_idx, pidx, i));
+                }
             }
 
             // Atomically update the global AABB for the current chunk.
-            detail::lb_atomic_update(glb[0], local_lb[0]);
-            detail::lb_atomic_update(glb[1], local_lb[1]);
-            detail::lb_atomic_update(glb[2], local_lb[2]);
-            detail::lb_atomic_update(glb[3], local_lb[3]);
-
-            detail::ub_atomic_update(gub[0], local_ub[0]);
-            detail::ub_atomic_update(gub[1], local_ub[1]);
-            detail::ub_atomic_update(gub[2], local_ub[2]);
-            detail::ub_atomic_update(gub[3], local_ub[3]);
+            for (auto i = 0u; i < 4u; ++i) {
+                detail::lb_atomic_update(glb[i], local_lb[i]);
+                detail::ub_atomic_update(gub[i], local_ub[i]);
+            }
         }
 
         // Put the integrator (back) into the cache.
@@ -1567,37 +1484,29 @@ double sim::infer_superstep()
 // Helper to verify the global AABB computed for each chunk.
 void sim::verify_global_aabbs() const
 {
+    namespace stdex = std::experimental;
+
     constexpr auto finf = std::numeric_limits<float>::infinity();
 
     const auto nparts = get_nparts();
     const auto nchunks = m_data->nchunks;
 
+    // Views for accessing the lbs/ubs data.
+    using b_size_t = decltype(m_data->lbs.size());
+    stdex::mdspan lbs(m_data->lbs.data(),
+                      stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+    stdex::mdspan ubs(m_data->ubs.data(),
+                      stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+
     for (auto chunk_idx = 0u; chunk_idx < nchunks; ++chunk_idx) {
         std::array lb = {finf, finf, finf, finf};
         std::array ub = {-finf, -finf, -finf, -finf};
 
-        const auto offset = nparts * chunk_idx;
-
-        const auto *CASCADE_RESTRICT x_lb_ptr = m_data->x_lb.data() + offset;
-        const auto *CASCADE_RESTRICT y_lb_ptr = m_data->y_lb.data() + offset;
-        const auto *CASCADE_RESTRICT z_lb_ptr = m_data->z_lb.data() + offset;
-        const auto *CASCADE_RESTRICT r_lb_ptr = m_data->r_lb.data() + offset;
-
-        const auto *CASCADE_RESTRICT x_ub_ptr = m_data->x_ub.data() + offset;
-        const auto *CASCADE_RESTRICT y_ub_ptr = m_data->y_ub.data() + offset;
-        const auto *CASCADE_RESTRICT z_ub_ptr = m_data->z_ub.data() + offset;
-        const auto *CASCADE_RESTRICT r_ub_ptr = m_data->r_ub.data() + offset;
-
         for (size_type i = 0; i < nparts; ++i) {
-            lb[0] = std::min(lb[0], x_lb_ptr[i]);
-            lb[1] = std::min(lb[1], y_lb_ptr[i]);
-            lb[2] = std::min(lb[2], z_lb_ptr[i]);
-            lb[3] = std::min(lb[3], r_lb_ptr[i]);
-
-            ub[0] = std::max(ub[0], x_ub_ptr[i]);
-            ub[1] = std::max(ub[1], y_ub_ptr[i]);
-            ub[2] = std::max(ub[2], z_ub_ptr[i]);
-            ub[3] = std::max(ub[3], r_ub_ptr[i]);
+            for (auto j = 0u; j < 4u; ++j) {
+                lb[j] = std::min(lb[j], lbs(chunk_idx, i, j));
+                ub[j] = std::max(ub[j], ubs(chunk_idx, i, j));
+            }
         }
 
         assert(lb == m_data->global_lb[chunk_idx]);

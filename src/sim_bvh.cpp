@@ -28,13 +28,18 @@
 #include <cascade/detail/sim_data.hpp>
 #include <cascade/sim.hpp>
 
-#if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
+#if defined(__clang__) || defined(__GNUC__)
 
-#define CASCADE_RESTRICT __restrict
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 
-#else
+#endif
 
-#define CASCADE_RESTRICT
+#include "mdspan/mdspan"
+
+#if defined(__clang__) || defined(__GNUC__)
+
+#pragma GCC diagnostic pop
 
 #endif
 
@@ -83,6 +88,8 @@ int first_diff_bit(T n1, T n2)
 // Construct the BVH tree for each chunk.
 void sim::construct_bvh_trees_parallel()
 {
+    namespace stdex = std::experimental;
+
     spdlog::stopwatch sw;
 
     auto *logger = detail::get_logger();
@@ -105,22 +112,20 @@ void sim::construct_bvh_trees_parallel()
         throw std::overflow_error(overflow_err_msg);
     }
 
+    // Views for accessing the sorted lb/ub data.
+    using b_size_t = decltype(m_data->lbs.size());
+    stdex::mdspan srt_lbs(std::as_const(m_data->srt_lbs).data(),
+                          stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+    stdex::mdspan srt_ubs(std::as_const(m_data->srt_ubs).data(),
+                          stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+
+    // Views for accessing the sorted Morton code data.
+    using m_size_t = decltype(m_data->mcodes.size());
+    stdex::mdspan srt_mcodes(std::as_const(m_data->srt_mcodes).data(),
+                             stdex::extents<m_size_t, stdex::dynamic_extent, stdex::dynamic_extent>(nchunks, nparts));
+
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
-            const auto offset = nparts * chunk_idx;
-
-            const auto *CASCADE_RESTRICT x_lb_ptr = m_data->srt_x_lb.data() + offset;
-            const auto *CASCADE_RESTRICT y_lb_ptr = m_data->srt_y_lb.data() + offset;
-            const auto *CASCADE_RESTRICT z_lb_ptr = m_data->srt_z_lb.data() + offset;
-            const auto *CASCADE_RESTRICT r_lb_ptr = m_data->srt_r_lb.data() + offset;
-
-            const auto *CASCADE_RESTRICT x_ub_ptr = m_data->srt_x_ub.data() + offset;
-            const auto *CASCADE_RESTRICT y_ub_ptr = m_data->srt_y_ub.data() + offset;
-            const auto *CASCADE_RESTRICT z_ub_ptr = m_data->srt_z_ub.data() + offset;
-            const auto *CASCADE_RESTRICT r_ub_ptr = m_data->srt_r_ub.data() + offset;
-
-            const auto *CASCADE_RESTRICT mcodes_ptr = m_data->srt_mcodes.data() + offset;
-
             // Fetch a reference to the tree and clear it out.
             auto &tree = m_data->bvh_trees[chunk_idx];
             tree.clear();
@@ -187,8 +192,8 @@ void sim::construct_bvh_trees_parallel()
 
                             const std::uint64_t *split_ptr;
 
-                            const auto mcodes_begin = mcodes_ptr + cur_node.begin;
-                            const auto mcodes_end = mcodes_ptr + cur_node.end;
+                            const auto mcodes_begin = &srt_mcodes(chunk_idx, 0) + cur_node.begin;
+                            const auto mcodes_end = &srt_mcodes(chunk_idx, 0) + cur_node.end;
 
                             if (cur_node.end - cur_node.begin > 1u && cur_node.split_idx <= 63) {
                                 // The node contains more than 1 particle,
@@ -256,15 +261,10 @@ void sim::construct_bvh_trees_parallel()
                                 for (auto pidx = cur_node.begin; pidx != cur_node.end; ++pidx) {
                                     // NOTE: min/max is fine here, we already checked
                                     // that all AABBs are finite.
-                                    cur_node.lb[0] = std::min(cur_node.lb[0], x_lb_ptr[pidx]);
-                                    cur_node.lb[1] = std::min(cur_node.lb[1], y_lb_ptr[pidx]);
-                                    cur_node.lb[2] = std::min(cur_node.lb[2], z_lb_ptr[pidx]);
-                                    cur_node.lb[3] = std::min(cur_node.lb[3], r_lb_ptr[pidx]);
-
-                                    cur_node.ub[0] = std::max(cur_node.ub[0], x_ub_ptr[pidx]);
-                                    cur_node.ub[1] = std::max(cur_node.ub[1], y_ub_ptr[pidx]);
-                                    cur_node.ub[2] = std::max(cur_node.ub[2], z_ub_ptr[pidx]);
-                                    cur_node.ub[3] = std::max(cur_node.ub[3], r_ub_ptr[pidx]);
+                                    for (auto i = 0u; i < 4u; ++i) {
+                                        cur_node.lb[i] = std::min(cur_node.lb[i], srt_lbs(chunk_idx, pidx, i));
+                                        cur_node.ub[i] = std::max(cur_node.ub[i], srt_ubs(chunk_idx, pidx, i));
+                                    }
                                 }
                             } else {
                                 // An internal node has 2 children.
@@ -433,15 +433,10 @@ void sim::construct_bvh_trees_parallel()
                                 auto dbg_lb = default_lb, dbg_ub = default_ub;
 
                                 for (auto pidx = cur_node.begin; pidx != cur_node.end; ++pidx) {
-                                    dbg_lb[0] = std::min(dbg_lb[0], x_lb_ptr[pidx]);
-                                    dbg_lb[1] = std::min(dbg_lb[1], y_lb_ptr[pidx]);
-                                    dbg_lb[2] = std::min(dbg_lb[2], z_lb_ptr[pidx]);
-                                    dbg_lb[3] = std::min(dbg_lb[3], r_lb_ptr[pidx]);
-
-                                    dbg_ub[0] = std::max(dbg_ub[0], x_ub_ptr[pidx]);
-                                    dbg_ub[1] = std::max(dbg_ub[1], y_ub_ptr[pidx]);
-                                    dbg_ub[2] = std::max(dbg_ub[2], z_ub_ptr[pidx]);
-                                    dbg_ub[3] = std::max(dbg_ub[3], r_ub_ptr[pidx]);
+                                    for (auto i = 0u; i < 4u; ++i) {
+                                        dbg_lb[i] = std::min(dbg_lb[i], srt_lbs(chunk_idx, pidx, i));
+                                        dbg_ub[i] = std::max(dbg_ub[i], srt_ubs(chunk_idx, pidx, i));
+                                    }
                                 }
 
                                 assert(cur_node.lb == dbg_lb);
@@ -488,38 +483,38 @@ void sim::construct_bvh_trees_parallel()
 
 void sim::verify_bvh_trees_parallel() const
 {
+    namespace stdex = std::experimental;
+
     const auto nparts = get_nparts();
     const auto nchunks = m_data->nchunks;
 
+    // Views for accessing the lbs/ubs data.
+    using b_size_t = decltype(m_data->lbs.size());
+    stdex::mdspan lbs(m_data->lbs.data(),
+                      stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+    stdex::mdspan ubs(m_data->ubs.data(),
+                      stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+
+    // Same for the sorted counterparts.
+    stdex::mdspan srt_lbs(m_data->srt_lbs.data(),
+                          stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+    stdex::mdspan srt_ubs(m_data->srt_ubs.data(),
+                          stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+
+    // Morton codes views.
+    using m_size_t = decltype(m_data->mcodes.size());
+    stdex::mdspan mcodes(m_data->mcodes.data(),
+                         stdex::extents<m_size_t, stdex::dynamic_extent, stdex::dynamic_extent>(nchunks, nparts));
+    stdex::mdspan srt_mcodes(m_data->srt_mcodes.data(),
+                             stdex::extents<m_size_t, stdex::dynamic_extent, stdex::dynamic_extent>(nchunks, nparts));
+
+    // View for accessing the indices vector.
+    using idx_size_t = decltype(m_data->vidx.size());
+    stdex::mdspan vidx(m_data->vidx.data(),
+                       stdex::extents<idx_size_t, stdex::dynamic_extent, stdex::dynamic_extent>(nchunks, nparts));
+
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
-            const auto offset = nparts * chunk_idx;
-
-            const auto *CASCADE_RESTRICT x_lb_ptr = m_data->srt_x_lb.data() + offset;
-            const auto *CASCADE_RESTRICT y_lb_ptr = m_data->srt_y_lb.data() + offset;
-            const auto *CASCADE_RESTRICT z_lb_ptr = m_data->srt_z_lb.data() + offset;
-            const auto *CASCADE_RESTRICT r_lb_ptr = m_data->srt_r_lb.data() + offset;
-
-            const auto *CASCADE_RESTRICT ux_lb_ptr = m_data->x_lb.data() + offset;
-            const auto *CASCADE_RESTRICT uy_lb_ptr = m_data->y_lb.data() + offset;
-            const auto *CASCADE_RESTRICT uz_lb_ptr = m_data->z_lb.data() + offset;
-            const auto *CASCADE_RESTRICT ur_lb_ptr = m_data->r_lb.data() + offset;
-
-            const auto *CASCADE_RESTRICT x_ub_ptr = m_data->srt_x_ub.data() + offset;
-            const auto *CASCADE_RESTRICT y_ub_ptr = m_data->srt_y_ub.data() + offset;
-            const auto *CASCADE_RESTRICT z_ub_ptr = m_data->srt_z_ub.data() + offset;
-            const auto *CASCADE_RESTRICT r_ub_ptr = m_data->srt_r_ub.data() + offset;
-
-            const auto *CASCADE_RESTRICT ux_ub_ptr = m_data->x_ub.data() + offset;
-            const auto *CASCADE_RESTRICT uy_ub_ptr = m_data->y_ub.data() + offset;
-            const auto *CASCADE_RESTRICT uz_ub_ptr = m_data->z_ub.data() + offset;
-            const auto *CASCADE_RESTRICT ur_ub_ptr = m_data->r_ub.data() + offset;
-
-            const auto *CASCADE_RESTRICT mcodes_ptr = m_data->srt_mcodes.data() + offset;
-            const auto *CASCADE_RESTRICT umcodes_ptr = m_data->mcodes.data() + offset;
-
-            const auto *CASCADE_RESTRICT vidx_ptr = m_data->vidx.data() + offset;
-
             const auto &bvh_tree = m_data->bvh_trees[chunk_idx];
 
             std::set<size_type> pset;
@@ -552,7 +547,7 @@ void sim::verify_bvh_trees_parallel() const
                     assert(cur_node.right == -1);
 
                     // All particles must have the same Morton code.
-                    const auto mc = mcodes_ptr[cur_node.begin];
+                    const auto mc = srt_mcodes(chunk_idx, cur_node.begin);
 
                     // Make also sure that all particles are accounted
                     // for in pset.
@@ -560,7 +555,7 @@ void sim::verify_bvh_trees_parallel() const
                     pset.insert(boost::numeric_cast<size_type>(cur_node.begin));
 
                     for (auto j = cur_node.begin + 1u; j < cur_node.end; ++j) {
-                        assert(mcodes_ptr[j] == mc);
+                        assert(srt_mcodes(chunk_idx, j) == mc);
 
                         assert(pset.find(boost::numeric_cast<size_type>(j)) == pset.end());
                         pset.insert(boost::numeric_cast<size_type>(j));
@@ -595,9 +590,10 @@ void sim::verify_bvh_trees_parallel() const
                     // cur_node.split_idx corresponds to the index of the first
                     // different bit at the boundary between first and second child).
                     const auto split_idx = bvh_tree[uleft].end - 1u;
-                    assert(detail::first_diff_bit(mcodes_ptr[split_idx], mcodes_ptr[split_idx + 1u])
-                           == cur_node.split_idx);
-                    assert(mcodes_ptr[split_idx] == umcodes_ptr[vidx_ptr[split_idx]]);
+                    assert(
+                        detail::first_diff_bit(srt_mcodes(chunk_idx, split_idx), srt_mcodes(chunk_idx, split_idx + 1u))
+                        == cur_node.split_idx);
+                    assert(srt_mcodes(chunk_idx, split_idx) == mcodes(chunk_idx, vidx(chunk_idx, split_idx)));
 #endif
                 } else {
                     // A node with no children. In this case the maximum
@@ -630,25 +626,12 @@ void sim::verify_bvh_trees_parallel() const
                 std::array<float, 4> ub = {-finf, -finf, -finf, -finf};
 
                 for (auto j = cur_node.begin; j < cur_node.end; ++j) {
-                    assert(x_lb_ptr[j] == ux_lb_ptr[vidx_ptr[j]]);
-                    assert(y_lb_ptr[j] == uy_lb_ptr[vidx_ptr[j]]);
-                    assert(z_lb_ptr[j] == uz_lb_ptr[vidx_ptr[j]]);
-                    assert(r_lb_ptr[j] == ur_lb_ptr[vidx_ptr[j]]);
-
-                    lb[0] = std::min(lb[0], x_lb_ptr[j]);
-                    lb[1] = std::min(lb[1], y_lb_ptr[j]);
-                    lb[2] = std::min(lb[2], z_lb_ptr[j]);
-                    lb[3] = std::min(lb[3], r_lb_ptr[j]);
-
-                    assert(x_ub_ptr[j] == ux_ub_ptr[vidx_ptr[j]]);
-                    assert(y_ub_ptr[j] == uy_ub_ptr[vidx_ptr[j]]);
-                    assert(z_ub_ptr[j] == uz_ub_ptr[vidx_ptr[j]]);
-                    assert(r_ub_ptr[j] == ur_ub_ptr[vidx_ptr[j]]);
-
-                    ub[0] = std::max(ub[0], x_ub_ptr[j]);
-                    ub[1] = std::max(ub[1], y_ub_ptr[j]);
-                    ub[2] = std::max(ub[2], z_ub_ptr[j]);
-                    ub[3] = std::max(ub[3], r_ub_ptr[j]);
+                    for (auto k = 0u; k < 4u; ++k) {
+                        assert(srt_lbs(chunk_idx, j, k) == lbs(chunk_idx, vidx(chunk_idx, j), k));
+                        lb[k] = std::min(lb[k], srt_lbs(chunk_idx, j, k));
+                        assert(srt_ubs(chunk_idx, j, k) == ubs(chunk_idx, vidx(chunk_idx, j), k));
+                        ub[k] = std::max(ub[k], srt_ubs(chunk_idx, j, k));
+                    }
                 }
 
                 assert(lb == cur_node.lb);
