@@ -153,7 +153,7 @@ struct sim::sim_data {
     std::vector<step_data> s_data;
 
     // Bounding box data and Morton codes for each particle.
-    // The vector of lower/upper bounds contain the data
+    // The vectors of lower/upper bounds contain the data
     // for *all* chunks and they are interpreted as row-major
     // 3D arrays with dimensions (nchunks, nparts, 4).
     // Similarly, the Morton codes vector is a 2D array
