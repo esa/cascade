@@ -137,30 +137,41 @@ struct sim::sim_data {
     // Particle substep data to be filled in at each superstep.
     struct step_data {
         // Taylor coefficients for the state variables.
-        // Each vector contains data for multiple substeps.
-        std::vector<double> tc_x, tc_y, tc_z, tc_vx, tc_vy, tc_vz, tc_r;
+        // The coefficients are stored row-major in a 3D array
+        // in which the dimensions are (n_substeps, c_idx, tc_idx),
+        // where:
+        // - n_substeps is the total number of substeps taken
+        //   within the superstep,
+        // - c_idx is the coordinate index (in the [0, 7) range,
+        //   representing respectively x,y,z,vx,vy,vz,r),
+        // - tc_idx is the index within the array of Taylor
+        //   coefficients (in the [0, order] range).
+        std::vector<double, detail::no_init_alloc<double>> tcs;
         // Time coordinates of the end of each substep.
         std::vector<heyoka::detail::dfloat<double>> tcoords;
     };
     std::vector<step_data> s_data;
 
     // Bounding box data and Morton codes for each particle.
-    // NOTE: each vector contains the data for all chunks.
-    std::vector<float> x_lb, y_lb, z_lb, r_lb;
-    std::vector<float> x_ub, y_ub, z_ub, r_ub;
+    // The vectors of lower/upper bounds contain the data
+    // for *all* chunks and they are interpreted as row-major
+    // 3D arrays with dimensions (nchunks, nparts, 4).
+    // Similarly, the Morton codes vector is a 2D array
+    // with dimensions (nchunks, nparts).
+    std::vector<float> lbs, ubs;
     std::vector<std::uint64_t> mcodes;
 
     // The global bounding boxes, one for each chunk.
     std::vector<std::array<float, 4>> global_lb;
     std::vector<std::array<float, 4>> global_ub;
 
-    // The indices vectors for indirect sorting.
+    // The indices vectors for indirect sorting. This is a 2D array
+    // with dimensions (nchunks, nparts).
     std::vector<size_type> vidx;
 
     // Versions of AABBs and Morton codes sorted
     // according to vidx.
-    std::vector<float> srt_x_lb, srt_y_lb, srt_z_lb, srt_r_lb;
-    std::vector<float> srt_x_ub, srt_y_ub, srt_z_ub, srt_r_ub;
+    std::vector<float> srt_lbs, srt_ubs;
     std::vector<std::uint64_t> srt_mcodes;
 
     // The BVH node struct.
