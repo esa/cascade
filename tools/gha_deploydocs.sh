@@ -10,7 +10,7 @@ set -e
 sudo apt-get install wget
 
 # Install conda+deps.
-wget https://github.com/conda-forge/miniforge/releases/download/22.9.0-3/Mambaforge-22.9.0-3-Linux-aarch64.sh -O mambaforge.sh
+wget https://github.com/conda-forge/miniforge/releases/download/22.9.0-3/Mambaforge-22.9.0-3-Linux-x86_64.sh -O mambaforge.sh
 export deps_dir=$HOME/local
 export PATH="$HOME/mambaforge/bin:$PATH"
 bash mambaforge.sh -b -p $HOME/mambaforge
