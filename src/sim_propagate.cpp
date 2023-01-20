@@ -653,7 +653,11 @@ outcome sim::step(double dt)
         } else {
             SPDLOG_LOGGER_DEBUG(logger, "Creating new batch data");
 
+#if defined(__clang__)
+            bdata_ptr = std::make_unique<sim_data::batch_data>(sim_data::batch_data{m_data->b_ta, {}});
+#else
             bdata_ptr = std::make_unique<sim_data::batch_data>(m_data->b_ta);
+#endif
             bdata_ptr->pfor_ts.resize(boost::numeric_cast<decltype(bdata_ptr->pfor_ts.size())>(batch_size));
         }
 
@@ -1351,7 +1355,11 @@ double sim::infer_superstep()
                     } else {
                         SPDLOG_LOGGER_DEBUG(logger, "Creating new batch data");
 
+#if defined(__clang__)
+                        bdata_ptr = std::make_unique<sim_data::batch_data>(sim_data::batch_data{m_data->b_ta, {}});
+#else
                         bdata_ptr = std::make_unique<sim_data::batch_data>(m_data->b_ta);
+#endif
                         bdata_ptr->pfor_ts.resize(boost::numeric_cast<decltype(bdata_ptr->pfor_ts.size())>(batch_size));
                     }
 

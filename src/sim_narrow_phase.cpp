@@ -368,7 +368,8 @@ void sim::narrow_phase_parallel()
                     pwrap tmp1(r_iso_cache, order), tmp2(r_iso_cache, order), tmp(r_iso_cache, order);
 
                     for (const auto &pc : rn) {
-                        const auto [pi, pj] = pc;
+                        const auto pi = pc.first;
+                        const auto pj = pc.second;
 
                         assert(pi != pj);
 
