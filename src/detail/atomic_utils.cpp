@@ -20,10 +20,10 @@ template <typename T>
 void lb_atomic_update(T &out_, T val)
 {
     // Create an atomic reference for out_.
-    std::atomic_ref<T> out(out_);
+    atomic_ref<T> out(out_);
 
     // Load the current value from the atomic.
-    auto orig_val = out.load(std::memory_order_relaxed);
+    auto orig_val = out.load(memorder_relaxed);
     T new_val;
 
     do {
@@ -31,7 +31,7 @@ void lb_atomic_update(T &out_, T val)
         // NOTE: min usage safe, we checked outside that
         // there are no NaN values at this point.
         new_val = std::min(val, orig_val);
-    } while (!out.compare_exchange_weak(orig_val, new_val, std::memory_order_relaxed, std::memory_order_relaxed));
+    } while (!out.compare_exchange_weak(orig_val, new_val, memorder_relaxed, memorder_relaxed));
 }
 
 // Helper to atomically update the upper bound out_ with the
@@ -40,10 +40,10 @@ template <typename T>
 void ub_atomic_update(T &out_, T val)
 {
     // Create an atomic reference for out_.
-    std::atomic_ref<T> out(out_);
+    atomic_ref<T> out(out_);
 
     // Load the current value from the atomic.
-    auto orig_val = out.load(std::memory_order_relaxed);
+    auto orig_val = out.load(memorder_relaxed);
     T new_val;
 
     do {
@@ -51,7 +51,7 @@ void ub_atomic_update(T &out_, T val)
         // NOTE: max usage safe, we checked outside that
         // there are no NaN values at this point.
         new_val = std::max(val, orig_val);
-    } while (!out.compare_exchange_weak(orig_val, new_val, std::memory_order_relaxed, std::memory_order_relaxed));
+    } while (!out.compare_exchange_weak(orig_val, new_val, memorder_relaxed, memorder_relaxed));
 }
 
 // Explicit instantiations.

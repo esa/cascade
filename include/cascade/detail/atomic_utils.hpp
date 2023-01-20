@@ -9,8 +9,36 @@
 #ifndef CASCADE_DETAIL_ATOMIC_UTILS_HPP
 #define CASCADE_DETAIL_ATOMIC_UTILS_HPP
 
+#if defined(__clang__)
+
+#include <boost/atomic/atomic_ref.hpp>
+#include <boost/memory_order.hpp>
+
+#else
+
+#include <atomic>
+
+#endif
+
 namespace cascade::detail
 {
+
+template <typename T>
+using atomic_ref =
+#if defined(__clang__)
+    boost::atomic_ref<T>
+#else
+    std::atomic_ref<T>
+#endif
+    ;
+
+inline constexpr auto memorder_relaxed =
+#if defined(__clang__)
+    boost::memory_order_relaxed
+#else
+    std::memory_order_relaxed
+#endif
+    ;
 
 template <typename T>
 void lb_atomic_update(T &, T);

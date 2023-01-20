@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <array>
-#include <atomic>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
@@ -1334,8 +1333,8 @@ double sim::infer_superstep()
 
     // Global variables to compute the mean
     // dynamical timestep.
-    alignas(std::atomic_ref<double>::required_alignment) double acc = 0;
-    alignas(std::atomic_ref<size_type>::required_alignment) size_type n_part_acc = 0;
+    alignas(detail::atomic_ref<double>::required_alignment) double acc = 0;
+    alignas(detail::atomic_ref<size_type>::required_alignment) size_type n_part_acc = 0;
 
     // NOTE: as usual, run in parallel the batch and scalar computations.
     oneapi::tbb::parallel_invoke(
@@ -1392,13 +1391,13 @@ double sim::infer_superstep()
 
             // Update the global values.
             {
-                std::atomic_ref acc_at(acc);
-                acc_at.fetch_add(batch_res.first, std::memory_order::relaxed);
+                detail::atomic_ref<double> acc_at(acc);
+                acc_at.fetch_add(batch_res.first, detail::memorder_relaxed);
             }
 
             {
-                std::atomic_ref n_part_acc_at(n_part_acc);
-                n_part_acc_at.fetch_add(batch_res.second, std::memory_order::relaxed);
+                detail::atomic_ref<size_type> n_part_acc_at(n_part_acc);
+                n_part_acc_at.fetch_add(batch_res.second, detail::memorder_relaxed);
             }
         },
         [&]() {
@@ -1446,13 +1445,13 @@ double sim::infer_superstep()
 
             // Update the global values.
             {
-                std::atomic_ref acc_at(acc);
-                acc_at.fetch_add(scal_res.first, std::memory_order::relaxed);
+                detail::atomic_ref<double> acc_at(acc);
+                acc_at.fetch_add(scal_res.first, detail::memorder_relaxed);
             }
 
             {
-                std::atomic_ref n_part_acc_at(n_part_acc);
-                n_part_acc_at.fetch_add(scal_res.second, std::memory_order::relaxed);
+                detail::atomic_ref<size_type> n_part_acc_at(n_part_acc);
+                n_part_acc_at.fetch_add(scal_res.second, detail::memorder_relaxed);
             }
         });
 

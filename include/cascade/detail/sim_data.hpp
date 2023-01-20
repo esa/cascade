@@ -10,7 +10,6 @@
 #define CASCADE_DETAIL_SIM_DATA_HPP
 
 #include <array>
-#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -26,6 +25,7 @@
 #include <heyoka/llvm_state.hpp>
 #include <heyoka/taylor.hpp>
 
+#include <cascade/detail/atomic_utils.hpp>
 #include <cascade/sim.hpp>
 
 namespace cascade
@@ -168,7 +168,7 @@ struct sim::sim_data {
     // may need stricter alignment. Hence, we use this auxiliary
     // structure to over-align as needed.
     struct aa_float {
-        alignas(std::atomic_ref<float>::required_alignment) float value = 0;
+        alignas(detail::atomic_ref<float>::required_alignment) float value = 0;
     };
     std::vector<std::array<aa_float, 4>> global_lb;
     std::vector<std::array<aa_float, 4>> global_ub;
