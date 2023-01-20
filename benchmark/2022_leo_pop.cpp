@@ -35,6 +35,8 @@
 #include <cascade/logging.hpp>
 #include <cascade/sim.hpp>
 
+#include "highfive/H5Easy.hpp"
+
 using namespace cascade;
 
 constexpr double pi = boost::math::constants::pi<double>();
@@ -182,8 +184,12 @@ int main(int ac, char *av[])
     std::vector<double> state, pars;
     double drag_factor;
     if (large_dataset) {
-        state = read_file("test_ic_612813.txt");
-        pars = read_file("test_par_612813.txt");
+        H5Easy::File ic_file("test_ic_612813.hdf5", H5Easy::File::ReadOnly);
+        ic_file.getDataSet("/state").read(state);
+
+        H5Easy::File par_file("test_par_612813.hdf5", H5Easy::File::ReadOnly);
+        par_file.getDataSet("/par").read(pars);
+
         // We switch off drag as to avoid to see too many reentries (in connection to the event c_radius being halved)
         drag_factor = 0.;
     } else {
