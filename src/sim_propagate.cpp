@@ -467,11 +467,11 @@ void sim::morton_encode_sort_parallel()
             // Bump up the upper bounds to make absolutely sure that ub > lb, as required
             // by the spatial discretisation function.
             for (auto i = 0u; i < 4u; ++i) {
-                gub[i] = std::nextafter(gub[i], finf);
+                gub[i].value = std::nextafter(gub[i].value, finf);
 
                 // Check that the interval size is finite.
                 // This also ensures that ub/lb are finite.
-                if (!std::isfinite(gub[i] - glb[i])) {
+                if (!std::isfinite(gub[i].value - glb[i].value)) {
                     throw std::invalid_argument(
                         "A global bounding box with non-finite boundaries and/or size was generated");
                 }
@@ -490,10 +490,10 @@ void sim::morton_encode_sort_parallel()
                         xyzr_ctr[i] = lbs(chunk_idx, pidx, i) / 2 + ubs(chunk_idx, pidx, i) / 2;
                     }
 
-                    const auto n0 = detail::disc_single_coord(xyzr_ctr[0], glb[0], gub[0]);
-                    const auto n1 = detail::disc_single_coord(xyzr_ctr[1], glb[1], gub[1]);
-                    const auto n2 = detail::disc_single_coord(xyzr_ctr[2], glb[2], gub[2]);
-                    const auto n3 = detail::disc_single_coord(xyzr_ctr[3], glb[3], gub[3]);
+                    const auto n0 = detail::disc_single_coord(xyzr_ctr[0], glb[0].value, gub[0].value);
+                    const auto n1 = detail::disc_single_coord(xyzr_ctr[1], glb[1].value, gub[1].value);
+                    const auto n2 = detail::disc_single_coord(xyzr_ctr[2], glb[2].value, gub[2].value);
+                    const auto n3 = detail::disc_single_coord(xyzr_ctr[3], glb[3].value, gub[3].value);
 
                     mcodes(chunk_idx, pidx) = morton_enc.Encode(n0, n1, n2, n3);
                 }
@@ -618,8 +618,10 @@ outcome sim::step(double dt)
     // NOTE: the global AABBs need to be set up with
     // initial values.
     constexpr auto finf = std::numeric_limits<float>::infinity();
-    std::ranges::fill(m_data->global_lb, std::array{finf, finf, finf, finf});
-    std::ranges::fill(m_data->global_ub, std::array{-finf, -finf, -finf, -finf});
+    constexpr sim_data::aa_float a_finf{finf};
+    constexpr sim_data::aa_float a_mfinf{-finf};
+    std::ranges::fill(m_data->global_lb, std::array{a_finf, a_finf, a_finf, a_finf});
+    std::ranges::fill(m_data->global_ub, std::array{a_mfinf, a_mfinf, a_mfinf, a_mfinf});
 
     // BVH data.
     resize_if_needed(nchunks, m_data->bvh_trees, m_data->nc_buffer, m_data->ps_buffer, m_data->nplc_buffer);
@@ -902,8 +904,8 @@ outcome sim::step(double dt)
 
             // Atomically update the global AABB for the current chunk.
             for (auto i = 0u; i < 4u; ++i) {
-                detail::lb_atomic_update(glb[i], local_lb[i]);
-                detail::ub_atomic_update(gub[i], local_ub[i]);
+                detail::lb_atomic_update(glb[i].value, local_lb[i]);
+                detail::ub_atomic_update(gub[i].value, local_ub[i]);
             }
         }
 
@@ -1073,8 +1075,8 @@ outcome sim::step(double dt)
 
             // Atomically update the global AABB for the current chunk.
             for (auto i = 0u; i < 4u; ++i) {
-                detail::lb_atomic_update(glb[i], local_lb[i]);
-                detail::ub_atomic_update(gub[i], local_ub[i]);
+                detail::lb_atomic_update(glb[i].value, local_lb[i]);
+                detail::ub_atomic_update(gub[i].value, local_ub[i]);
             }
         }
 
@@ -1332,8 +1334,8 @@ double sim::infer_superstep()
 
     // Global variables to compute the mean
     // dynamical timestep.
-    double acc = 0;
-    size_type n_part_acc = 0;
+    alignas(std::atomic_ref<double>::required_alignment) double acc = 0;
+    alignas(std::atomic_ref<size_type>::required_alignment) size_type n_part_acc = 0;
 
     // NOTE: as usual, run in parallel the batch and scalar computations.
     oneapi::tbb::parallel_invoke(
@@ -1509,8 +1511,10 @@ void sim::verify_global_aabbs() const
             }
         }
 
-        assert(lb == m_data->global_lb[chunk_idx]);
-        assert(ub == m_data->global_ub[chunk_idx]);
+        for (auto j = 0u; j < 4u; ++j) {
+            assert(lb[j] == m_data->global_lb[chunk_idx][j].value);
+            assert(ub[j] == m_data->global_ub[chunk_idx][j].value);
+        }
     }
 }
 

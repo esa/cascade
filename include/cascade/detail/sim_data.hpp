@@ -10,6 +10,7 @@
 #define CASCADE_DETAIL_SIM_DATA_HPP
 
 #include <array>
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -162,8 +163,15 @@ struct sim::sim_data {
     std::vector<std::uint64_t> mcodes;
 
     // The global bounding boxes, one for each chunk.
-    std::vector<std::array<float, 4>> global_lb;
-    std::vector<std::array<float, 4>> global_ub;
+    // NOTE: the values of these bounding boxes need
+    // to be accessed atomically via atomic_ref, and thus
+    // may need stricter alignment. Hence, we use this auxiliary
+    // structure to over-align as needed.
+    struct aa_float {
+        alignas(std::atomic_ref<float>::required_alignment) float value = 0;
+    };
+    std::vector<std::array<aa_float, 4>> global_lb;
+    std::vector<std::array<aa_float, 4>> global_ub;
 
     // The indices vectors for indirect sorting. This is a 2D array
     // with dimensions (nchunks, nparts).
