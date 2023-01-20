@@ -20,7 +20,7 @@ jobs:
       - name: Install and Build 🔧 
         run: bash tools/gha_deploydocs.sh
       - name: Upload to github pages 🚀
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'push' }}
         uses: JamesIves/github-pages-deploy-action@v4
-        with: 
+        with:
           folder: doc/_build/html # The folder the action should deploy.
