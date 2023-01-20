@@ -6,7 +6,7 @@
 Welcome to cascade's documentation!
 ===================================
 
-Under construction...
+Under construction... be patient!
 
 .. toctree::
    :maxdepth: 2
