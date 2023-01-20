@@ -13,3 +13,14 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build
         run: bash tools/gha_conda_asan.sh
+  build-and-deploydocs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install and Build 🔧 
+        run: bash tools/gha_deploydocs.sh
+      - name: Upload to github pages 🚀
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: JamesIves/github-pages-deploy-action@v4
+        with: 
+          folder: doc/_build/html # The folder the action should deploy.

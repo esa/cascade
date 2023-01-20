@@ -15,18 +15,21 @@ export deps_dir=$HOME/local
 export PATH="$HOME/mambaforge/bin:$PATH"
 bash mambaforge.sh -b -p $HOME/mambaforge
 mamba env create -f cascade_devel.yml -q -p $deps_dir
+# adding the necessary tools for doc building
+mamba install sphinx myst-nb sphinx-book-theme matplotlib
 source activate $deps_dir
 
-export CXXFLAGS="$CXXFLAGS -fsanitize=address"
-
+# Create the build dir and cd into it.
 mkdir build
 cd build
 
-cmake -G "Ninja" ../ -DCMAKE_INSTALL_PREFIX=$deps_dir -DCMAKE_PREFIX_PATH=$deps_dir -DCMAKE_BUILD_TYPE=Debug -DCASCADE_BUILD_TESTS=yes -DBoost_NO_BOOST_CMAKE=ON
+# Build cascade.
+cmake -G "Ninja" ../ -DCMAKE_INSTALL_PREFIX=$deps_dir -DCMAKE_PREFIX_PATH=$deps_dir -DCASCADE_BUILD_PYTHON_BINDINGS=yes -DCMAKE_BUILD_TYPE=Release -DCASCADE_BUILD_TESTS=no -DBoost_NO_BOOST_CMAKE=ON
+cmake --build . --target install
 
-cmake --build .
-
-ctest -j4 -VV
+# Build the documentation.
+cd ${GITHUB_WORKSPACE}/doc
+make html linkcheck
 
 set +e
 set +x
