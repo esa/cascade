@@ -200,7 +200,103 @@ void sim::set_ct(double ct)
     m_ct = ct;
 }
 
-void sim::set_new_state(std::vector<double> new_state)
+// A helper that validates (and possibly modifies in-place) the input
+// array of parameters pars. The validation checks that pars is consistent
+// both with m_npars (the number of parameters in the dynamics) and with
+// the number of particles in the simulation nparts. Note that nparts
+// is passed explicitly to this function (rather than being established via
+// get_nparts()) because this function is also used in set_new_state_pars(),
+// where nparts is given by the new state vector.
+void sim::validate_pars_vector(std::vector<double> &pars, size_type nparts) const
+{
+    using safe_size_t = boost::safe_numerics::safe<std::vector<double>::size_type>;
+
+    if (m_npars == 0u) {
+        // If there are no params in the dynamics, then the array of
+        // param values must be empty.
+        if (!pars.empty()) {
+            throw std::invalid_argument(
+                "The input array of parameter values must be empty when the number of parameters "
+                "in the dynamics is zero");
+        }
+    } else {
+        if (pars.empty()) {
+            // There are parameters in the dynamics but the user did not
+            // provide an array of param values (or an empty one as provided).
+            // In such a case, zero-init the array of param values with the correct size.
+            pars.resize(safe_size_t(nparts) * m_npars);
+        } else if (pars.size() % m_npars != 0u || pars.size() / m_npars != nparts) {
+            // There are parameters in the dynamics and the user provided
+            // an array of param values, but the shape is wrong.
+            throw std::invalid_argument(fmt::format("The input array of parameter values must have shape ({}, {}), "
+                                                    "but instead its flattened size is {}",
+                                                    nparts, m_npars, pars.size()));
+        }
+    }
+}
+
+void sim::remove_particles(std::vector<size_type> idxs)
+{
+    // Sort the indices.
+    std::ranges::sort(idxs);
+
+    // Remove consecutive (adjacent) duplicates.
+    const auto ret = std::ranges::unique(idxs);
+    idxs.erase(ret.begin(), ret.end());
+
+    // Create the new state/pars filtering out
+    // the particles in idxs.
+    std::vector<double> new_state, new_pars;
+    auto idxs_it = idxs.cbegin();
+    const auto idxs_end = idxs.cend();
+
+    const auto nparts = get_nparts();
+    const auto npars = get_npars();
+
+    for (size_type i = 0; i < nparts; ++i) {
+        if (idxs_it != idxs_end && *idxs_it == i) {
+            ++idxs_it;
+            continue;
+        }
+
+        for (auto j = 0u; j < 7u; ++j) {
+            new_state.push_back((*m_state)[i * 7u + j]);
+        }
+
+        for (std::uint32_t j = 0; j < npars; ++j) {
+            new_pars.push_back((*m_pars)[i * npars + j]);
+        }
+    }
+
+    if (idxs_it != idxs_end) {
+        throw std::invalid_argument(
+            fmt::format("An invalid vector of indices was passed to the function for particle removal: {}", idxs));
+    }
+
+    // NOTE: the new state/pars do not need additional validation.
+#if !defined(NDEBUG)
+
+    assert(new_state.size() % 7u == 0u);
+    const auto new_nparts = new_state.size() / 7u;
+
+    if (npars == 0u) {
+        assert(new_pars.empty());
+    } else {
+        assert(new_pars.size() % npars == 0u);
+        assert(new_pars.size() / npars == new_nparts);
+    }
+
+#endif
+
+    // Create and assign the new vectors.
+    auto new_st_ptr = std::make_shared<std::vector<double>>(std::move(new_state));
+    auto new_pars_ptr = std::make_shared<std::vector<double>>(std::move(new_pars));
+    // NOTE: noexcept from here.
+    m_state = std::move(new_st_ptr);
+    m_pars = std::move(new_pars_ptr);
+}
+
+void sim::set_new_state_pars(std::vector<double> new_state, std::vector<double> new_pars)
 {
     // Verify the new state.
     verify_state_vector(new_state);
@@ -208,10 +304,8 @@ void sim::set_new_state(std::vector<double> new_state)
     // Fetch the new number of particles.
     const auto new_nparts = new_state.size() / 7u;
 
-    // Prepare the new parameters vector.
-    using safe_size_t = boost::safe_numerics::safe<std::vector<double>::size_type>;
-    std::vector<double> new_pars;
-    new_pars.resize(safe_size_t(new_nparts) * m_npars);
+    // Validate/prepare the new parameters vector.
+    validate_pars_vector(new_pars, new_nparts);
 
     // Create and assign the new vectors.
     auto new_st_ptr = std::make_shared<std::vector<double>>(std::move(new_state));
@@ -294,31 +388,11 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
         }
     }
 
-    if (npars == 0u) {
-        // If there are no params in the dynamics, then the array of
-        // param values must be empty.
-        if (!m_pars->empty()) {
-            throw std::invalid_argument(
-                "The input array of parameter values must be empty when the number of parameters "
-                "in the dynamics is zero");
-        }
-    } else {
-        if (m_pars->empty()) {
-            // There are parameters in the dynamics but the user did not
-            // provide an array of param values (or an empty one as provided).
-            // In such a case, zero-init the array of param values with the correct size.
-            m_pars->resize(safe_size_t(nparts) * npars);
-        } else if (m_pars->size() % npars != 0u || m_pars->size() / npars != nparts) {
-            // There are parameters in the dynamics and the user provided
-            // an array of param values, but the shape is wrong.
-            throw std::invalid_argument(fmt::format("The input array of parameter values must have shape ({}, {}), "
-                                                    "but instead its flattened size is {}",
-                                                    nparts, npars, m_pars->size()));
-        }
-    }
-
     // Assign m_npars.
     m_npars = npars;
+
+    // Validate m_pars.
+    validate_pars_vector(*m_pars, nparts);
 
     // Add the differential equation for r.
     const auto sym_vars = hy::make_vars("x", "y", "z", "vx", "vy", "vz", "r");

@@ -7,8 +7,10 @@
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
@@ -207,8 +209,8 @@ PYBIND11_MODULE(core, m)
                                    return ret;
                                })
         .def(
-            "set_new_state",
-            [](sim &s, const py::array_t<double> &new_state) {
+            "set_new_state_pars",
+            [](sim &s, const py::array_t<double> &new_state, const std::optional<py::array_t<double>> &new_pars_) {
                 // Check the new state.
                 if (new_state.ndim() != 2) {
                     throw std::invalid_argument(fmt::format(
@@ -222,14 +224,40 @@ PYBIND11_MODULE(core, m)
                         new_state.shape(1)));
                 }
 
-                // Flatten it out.
+                // Flatten out.
                 auto state_vec = py::cast<std::vector<double>>(new_state.attr("flatten")());
+
+                // Prepare the pars vector.
+                std::vector<double> pars_vec;
+
+                if (new_pars_) {
+                    const auto &new_pars = *new_pars_;
+
+                    // Check the new pars vector.
+                    if (new_pars.ndim() != 2) {
+                        throw std::invalid_argument(fmt::format(
+                            "The input array of parameter values must have 2 dimensions, but instead an array "
+                            "with {} dimensions was provided",
+                            new_pars.ndim()));
+                    }
+
+                    if (boost::numeric_cast<std::uint32_t>(new_pars.shape(1)) != s.get_npars()) {
+                        throw std::invalid_argument(fmt::format("An array of parameter values with {} column(s) is "
+                                                                "expected, but the number of columns is instead {}",
+                                                                s.get_npars(), new_pars.shape(1)));
+                    }
+
+                    // Flatten out into pars_vec.
+                    pars_vec = py::cast<std::vector<double>>(new_pars.attr("flatten")());
+                }
 
                 py::gil_scoped_release release;
 
-                s.set_new_state(std::move(state_vec));
+                s.set_new_state_pars(std::move(state_vec), std::move(pars_vec));
             },
-            "new_state"_a)
+            "new_state"_a, "new_pars"_a = py::none{})
+        // Remove particles.
+        .def("remove_particles", &sim::remove_particles)
         // Repr.
         .def("__repr__", [](const sim &s) {
             std::ostringstream oss;

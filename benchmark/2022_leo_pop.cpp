@@ -313,7 +313,7 @@ int main(int ac, char *av[])
             auto new_state = s.get_state();
             auto new_pars = s.get_pars();
             remove_particles(new_state, new_pars, {i, j});
-            s.set_new_state(new_state); // this will also reset all pars to zero and resize
+            s.set_new_state_pars(new_state); // this will also reset all pars to zero and resize
             std::vector<cascade::sim::size_type> shape = {s.get_nparts()};
             auto pars = xt::adapt(s.get_pars_data(), shape);
             pars = xt::adapt(new_pars.data(), shape);
@@ -326,7 +326,7 @@ int main(int ac, char *av[])
             auto new_state = s.get_state();
             auto new_pars = s.get_pars();
             remove_particles(new_state, new_pars, {i});
-            s.set_new_state(new_state); // this will also reset all pars to zero and resize
+            s.set_new_state_pars(new_state); // this will also reset all pars to zero and resize
             std::vector<cascade::sim::size_type> shape = {s.get_nparts()};
             auto pars = xt::adapt(s.get_pars_data(), shape);
             pars = xt::adapt(new_pars.data(), shape);
