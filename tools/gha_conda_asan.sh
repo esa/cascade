@@ -19,8 +19,7 @@ conda config --set channel_priority strict
 conda env create -f cascade_devel.yml -q -p $deps_dir
 source activate $deps_dir
 
-#export CXXFLAGS="$CXXFLAGS -fsanitize=address -D_GLIBCXX_DEBUG"
-export CXXFLAGS="$CXXFLAGS -D_GLIBCXX_DEBUG"
+export CXXFLAGS="$CXXFLAGS -fsanitize=address"
 
 mkdir build
 cd build
