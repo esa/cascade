@@ -2,10 +2,10 @@ name: GitHub CI
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 jobs:
   conda_asan:
     runs-on: ubuntu-latest
