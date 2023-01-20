@@ -75,9 +75,10 @@ PYBIND11_MODULE(core, m)
     py::class_<sim>(m, "sim", py::dynamic_attr{})
         .def(py::init<>())
         .def(py::init([](const py::array_t<double> &state, double ct,
-                         std::vector<std::pair<hy::expression, hy::expression>> dyn,
-                         const std::variant<double, std::vector<double>> &c_radius, double d_radius,
-                         const py::array_t<double> &pars, double tol, bool ha) {
+                         std::optional<std::vector<std::pair<hy::expression, hy::expression>>> dyn_,
+                         std::optional<std::variant<double, std::vector<double>>> c_radius_,
+                         std::optional<double> d_radius_, const std::optional<py::array_t<double>> &pars_,
+                         std::optional<double> tol_, bool ha) {
                  // Check the input state.
                  if (state.ndim() != 2) {
                      throw std::invalid_argument(fmt::format(
@@ -94,40 +95,59 @@ PYBIND11_MODULE(core, m)
                  // Fetch the number of particles.
                  const auto nparts = state.shape(0);
 
-                 // Check the parameters array.
-                 // NOTE: the parameters array is allowed to have 0 dimensions,
-                 // in which case it is considered equivalent to an empty vector.
-                 if (pars.ndim() != 0 && pars.ndim() != 2) {
-                     throw std::invalid_argument(
-                         fmt::format("The input array of parameter values must have either 0 or 2 dimensions, but "
-                                     "instead an array with {} dimensions was provided",
-                                     pars.ndim()));
-                 }
-
-                 if (pars.ndim() == 2 && pars.shape(0) != nparts) {
-                     throw std::invalid_argument(fmt::format("An input array of parameter values with {} rows is "
-                                                             "expected, but the number of rows is instead {}",
-                                                             nparts, pars.shape(0)));
-                 }
-
-                 // Turn the input NumPy arrays into flattened vectors.
+                 // Flatten out the state vector.
                  auto state_vec = py::cast<std::vector<double>>(state.attr("flatten")());
-                 auto pars_vec = py::cast<std::vector<double>>(pars.attr("flatten")());
+
+                 // Init the dynamics.
+                 auto dyn = dyn_ ? std::move(*dyn_) : std::vector<std::pair<hy::expression, hy::expression>>{};
+
+                 // Init c_radius.
+                 auto c_radius = c_radius_ ? std::move(*c_radius_) : 0.;
+
+                 // Init d_radius.
+                 auto d_radius = d_radius_ ? *d_radius_ : 0.;
+
+                 // Prepare the pars vector.
+                 std::vector<double> pars_vec;
+
+                 if (pars_) {
+                     const auto &pars = *pars_;
+
+                     // Check the parameters array.
+                     if (pars.ndim() != 2) {
+                         throw std::invalid_argument(
+                             fmt::format("The input array of parameter values must have 2 dimensions, but "
+                                         "instead an array with {} dimensions was provided",
+                                         pars.ndim()));
+                     }
+
+                     if (pars.shape(0) != nparts) {
+                         throw std::invalid_argument(fmt::format("An input array of parameter values with {} rows is "
+                                                                 "expected, but the number of rows is instead {}",
+                                                                 nparts, pars.shape(0)));
+                     }
+
+                     // Flatten it out into pars_vec.
+                     pars_vec = py::cast<std::vector<double>>(pars.attr("flatten")());
+                 }
+
+                 // Prepare the tolerance.
+                 auto tol = tol_ ? *tol_ : 0.;
 
                  // NOTE: might have to re-check this if we ever offer the
                  // option to define event callbacks in the dynamics.
                  py::gil_scoped_release release;
 
                  return std::visit(
-                     [&](const auto &cr_val) {
-                         return sim(std::move(state_vec), ct, kw::dyn = std::move(dyn), kw::c_radius = cr_val,
-                                    kw::d_radius = d_radius, kw::pars = std::move(pars_vec), kw::tol = tol,
-                                    kw::high_accuracy = ha);
+                     [&](auto &&cr_val) {
+                         return sim(std::move(state_vec), ct, kw::dyn = std::move(dyn),
+                                    kw::c_radius = std::forward<decltype(cr_val)>(cr_val), kw::d_radius = d_radius,
+                                    kw::pars = std::move(pars_vec), kw::tol = tol, kw::high_accuracy = ha);
                      },
-                     c_radius);
+                     std::move(c_radius));
              }),
-             "state"_a, "ct"_a, "dyn"_a = py::list{}, "c_radius"_a = 0., "d_radius"_a = 0.,
-             "pars"_a = py::array_t<double>{}, "tol"_a = 0., "high_accuracy"_a = false)
+             "state"_a, "ct"_a, "dyn"_a = py::none{}, "c_radius"_a = py::none{}, "d_radius"_a = py::none{},
+             "pars"_a = py::none{}, "tol"_a = py::none{}, "high_accuracy"_a = false)
         .def_property_readonly("interrupt_info", &sim::get_interrupt_info)
         .def_property("time", &sim::get_time, &sim::set_time)
         .def_property("ct", &sim::get_ct, &sim::set_ct)
@@ -213,9 +233,9 @@ PYBIND11_MODULE(core, m)
             [](sim &s, const py::array_t<double> &new_state, const std::optional<py::array_t<double>> &new_pars_) {
                 // Check the new state.
                 if (new_state.ndim() != 2) {
-                    throw std::invalid_argument(fmt::format(
-                        "The input state must have 2 dimensions, but instead an array with {} dimensions was provided",
-                        new_state.ndim()));
+                    throw std::invalid_argument(fmt::format("The input state must have 2 dimensions, but instead an "
+                                                            "array with {} dimension(s) was provided",
+                                                            new_state.ndim()));
                 }
 
                 if (new_state.shape(1) != 7) {
@@ -237,7 +257,7 @@ PYBIND11_MODULE(core, m)
                     if (new_pars.ndim() != 2) {
                         throw std::invalid_argument(fmt::format(
                             "The input array of parameter values must have 2 dimensions, but instead an array "
-                            "with {} dimensions was provided",
+                            "with {} dimension(s) was provided",
                             new_pars.ndim()));
                     }
 
