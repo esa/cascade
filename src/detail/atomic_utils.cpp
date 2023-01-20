@@ -55,7 +55,7 @@ void ub_atomic_update(T &out_, T val)
 }
 
 // Explicit instantiations.
-template void lb_atomic_update(double &, double);
-template void ub_atomic_update(double &, double);
+template void lb_atomic_update(float &, float);
+template void ub_atomic_update(float &, float);
 
 } // namespace cascade::detail
