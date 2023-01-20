@@ -388,7 +388,12 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
         // Check the list of variables in the RHS.
         const auto eq_vars = hy::get_variables(eq);
         std::vector<std::string> set_diff;
+#if defined(__clang__)
+        std::set_difference(eq_vars.cbegin(), eq_vars.cend(), detail::allowed_vars_alph.cbegin(),
+                            detail::allowed_vars_alph.cend(), std::back_inserter(set_diff));
+#else
         std::ranges::set_difference(eq_vars, detail::allowed_vars_alph, std::back_inserter(set_diff));
+#endif
 
         if (!set_diff.empty()) {
             throw std::invalid_argument(
@@ -424,7 +429,8 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                 vcr_ptr->size()));
         }
 
-        if (std::ranges::any_of(*vcr_ptr, [](double val) { return !std::isfinite(val) || val <= 0; })) {
+        if (std::any_of(vcr_ptr->cbegin(), vcr_ptr->cend(),
+                        [](double val) { return !std::isfinite(val) || val <= 0; })) {
             throw std::invalid_argument(fmt::format(
                 "A non-finite or non-positive value was detected among the 3 semiaxes of the central body: {}",
                 *vcr_ptr));
@@ -578,7 +584,7 @@ bool sim::with_reentry_event() const
 #if !defined(NDEBUG)
         const auto &vec = std::get<std::vector<double>>(m_c_radius);
         assert(vec.size() == 3u);
-        assert(std::ranges::all_of(vec, [](double val) { return std::isfinite(val) && val > 0; }));
+        assert(std::all_of(vec.cbegin(), vec.cend(), [](double val) { return std::isfinite(val) && val > 0; }));
 #endif
 
         return true;

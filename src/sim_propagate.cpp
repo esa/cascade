@@ -619,8 +619,8 @@ outcome sim::step(double dt)
     constexpr auto finf = std::numeric_limits<float>::infinity();
     constexpr sim_data::aa_float a_finf{finf};
     constexpr sim_data::aa_float a_mfinf{-finf};
-    std::ranges::fill(m_data->global_lb, std::array{a_finf, a_finf, a_finf, a_finf});
-    std::ranges::fill(m_data->global_ub, std::array{a_mfinf, a_mfinf, a_mfinf, a_mfinf});
+    std::fill(m_data->global_lb.begin(), m_data->global_lb.end(), std::array{a_finf, a_finf, a_finf, a_finf});
+    std::fill(m_data->global_ub.begin(), m_data->global_ub.end(), std::array{a_mfinf, a_mfinf, a_mfinf, a_mfinf});
 
     // BVH data.
     resize_if_needed(nchunks, m_data->bvh_trees, m_data->nc_buffer, m_data->ps_buffer, m_data->nplc_buffer);
@@ -1116,9 +1116,9 @@ outcome sim::step(double dt)
     // non-finite values.
     if (!m_data->err_nf_state_vec.empty()) {
         // Fetch the earliest element in err_nf_state_vec.
-        const auto nf_it = std::ranges::min_element(m_data->err_nf_state_vec, [](const auto &tup1, const auto &tup2) {
-            return std::get<1>(tup1) < std::get<1>(tup2);
-        });
+        const auto nf_it = std::min_element(
+            m_data->err_nf_state_vec.cbegin(), m_data->err_nf_state_vec.cend(),
+            [](const auto &tup1, const auto &tup2) { return std::get<1>(tup1) < std::get<1>(tup2); });
 
         // Setup the interrupt info.
         m_int_info.emplace(*nf_it);
@@ -1135,11 +1135,12 @@ outcome sim::step(double dt)
     }
 
     // Check if we ran into stopping terminal events.
-    auto ste_it = m_data->ste_vec.end();
+    auto ste_it = m_data->ste_vec.cend();
     if (!m_data->ste_vec.empty()) {
         // Fetch the earliest element in ste_vec.
-        ste_it = std::ranges::min_element(
-            m_data->ste_vec, [](const auto &tup1, const auto &tup2) { return std::get<1>(tup1) < std::get<1>(tup2); });
+        ste_it = std::min_element(
+            m_data->ste_vec.cbegin(), m_data->ste_vec.cend(),
+            [](const auto &tup1, const auto &tup2) { return std::get<1>(tup1) < std::get<1>(tup2); });
 
         // The earliest stopping terminal event redefines the superstep
         // size and, by extension, the number of chunks.
@@ -1186,13 +1187,14 @@ outcome sim::step(double dt)
     // Iterator to the collision vector, initially set to end().
     // It will be set up to point to the earliest collision
     // within the superstep, if any.
-    auto coll_it = m_data->coll_vec.end();
+    auto coll_it = m_data->coll_vec.cend();
 
     // Check for particle-particle collisions.
     if (!m_data->coll_vec.empty()) {
         // Fetch the earliest collision.
-        coll_it = std::ranges::min_element(
-            m_data->coll_vec, [](const auto &tup1, const auto &tup2) { return std::get<2>(tup1) < std::get<2>(tup2); });
+        coll_it = std::min_element(
+            m_data->coll_vec.cbegin(), m_data->coll_vec.cend(),
+            [](const auto &tup1, const auto &tup2) { return std::get<2>(tup1) < std::get<2>(tup2); });
 
         // Set the interrupt time.
         interrupt_time = &std::get<2>(*coll_it);
