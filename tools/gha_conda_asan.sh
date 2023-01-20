@@ -16,7 +16,7 @@ export PATH="$HOME/miniconda/bin:$PATH"
 bash miniconda.sh -b -p $HOME/miniconda
 conda config --add channels conda-forge
 conda config --set channel_priority strict
-conda env create -f cascade_devel.yml -y -q -p $deps_dir
+conda env create -f cascade_devel.yml -q -p $deps_dir
 source activate $deps_dir
 
 export CXXFLAGS="$CXXFLAGS -fsanitize=address"
