@@ -1,7 +1,7 @@
 # Find the xtensor bits.
 find_package(xtensor REQUIRED CONFIG)
 find_package(xtensor-blas REQUIRED CONFIG)
-find_package(Boost 1.69 COMPONENTS program_options REQUIRED)
+find_package(Boost COMPONENTS program_options REQUIRED)
 
 # Find HDF5.
 find_package(HDF5 COMPONENTS C REQUIRED)
