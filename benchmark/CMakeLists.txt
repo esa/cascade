@@ -25,8 +25,6 @@ endfunction()
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/data/test_ic_19647.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/data/test_par_19647.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/data/best_fit_density.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/data/test_ic_612813.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/data/test_par_612813.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/data/test_ic_612813.hdf5" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/data/test_par_612813.hdf5" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
 
