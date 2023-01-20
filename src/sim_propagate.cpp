@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <array>
-#include <atomic>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
@@ -467,11 +466,11 @@ void sim::morton_encode_sort_parallel()
             // Bump up the upper bounds to make absolutely sure that ub > lb, as required
             // by the spatial discretisation function.
             for (auto i = 0u; i < 4u; ++i) {
-                gub[i] = std::nextafter(gub[i], finf);
+                gub[i].value = std::nextafter(gub[i].value, finf);
 
                 // Check that the interval size is finite.
                 // This also ensures that ub/lb are finite.
-                if (!std::isfinite(gub[i] - glb[i])) {
+                if (!std::isfinite(gub[i].value - glb[i].value)) {
                     throw std::invalid_argument(
                         "A global bounding box with non-finite boundaries and/or size was generated");
                 }
@@ -490,10 +489,10 @@ void sim::morton_encode_sort_parallel()
                         xyzr_ctr[i] = lbs(chunk_idx, pidx, i) / 2 + ubs(chunk_idx, pidx, i) / 2;
                     }
 
-                    const auto n0 = detail::disc_single_coord(xyzr_ctr[0], glb[0], gub[0]);
-                    const auto n1 = detail::disc_single_coord(xyzr_ctr[1], glb[1], gub[1]);
-                    const auto n2 = detail::disc_single_coord(xyzr_ctr[2], glb[2], gub[2]);
-                    const auto n3 = detail::disc_single_coord(xyzr_ctr[3], glb[3], gub[3]);
+                    const auto n0 = detail::disc_single_coord(xyzr_ctr[0], glb[0].value, gub[0].value);
+                    const auto n1 = detail::disc_single_coord(xyzr_ctr[1], glb[1].value, gub[1].value);
+                    const auto n2 = detail::disc_single_coord(xyzr_ctr[2], glb[2].value, gub[2].value);
+                    const auto n3 = detail::disc_single_coord(xyzr_ctr[3], glb[3].value, gub[3].value);
 
                     mcodes(chunk_idx, pidx) = morton_enc.Encode(n0, n1, n2, n3);
                 }
@@ -618,8 +617,10 @@ outcome sim::step(double dt)
     // NOTE: the global AABBs need to be set up with
     // initial values.
     constexpr auto finf = std::numeric_limits<float>::infinity();
-    std::ranges::fill(m_data->global_lb, std::array{finf, finf, finf, finf});
-    std::ranges::fill(m_data->global_ub, std::array{-finf, -finf, -finf, -finf});
+    constexpr sim_data::aa_float a_finf{finf};
+    constexpr sim_data::aa_float a_mfinf{-finf};
+    std::fill(m_data->global_lb.begin(), m_data->global_lb.end(), std::array{a_finf, a_finf, a_finf, a_finf});
+    std::fill(m_data->global_ub.begin(), m_data->global_ub.end(), std::array{a_mfinf, a_mfinf, a_mfinf, a_mfinf});
 
     // BVH data.
     resize_if_needed(nchunks, m_data->bvh_trees, m_data->nc_buffer, m_data->ps_buffer, m_data->nplc_buffer);
@@ -652,7 +653,11 @@ outcome sim::step(double dt)
         } else {
             SPDLOG_LOGGER_DEBUG(logger, "Creating new batch data");
 
+#if defined(__clang__)
+            bdata_ptr = std::make_unique<sim_data::batch_data>(sim_data::batch_data{m_data->b_ta, {}});
+#else
             bdata_ptr = std::make_unique<sim_data::batch_data>(m_data->b_ta);
+#endif
             bdata_ptr->pfor_ts.resize(boost::numeric_cast<decltype(bdata_ptr->pfor_ts.size())>(batch_size));
         }
 
@@ -902,8 +907,8 @@ outcome sim::step(double dt)
 
             // Atomically update the global AABB for the current chunk.
             for (auto i = 0u; i < 4u; ++i) {
-                detail::lb_atomic_update(glb[i], local_lb[i]);
-                detail::ub_atomic_update(gub[i], local_ub[i]);
+                detail::lb_atomic_update(glb[i].value, local_lb[i]);
+                detail::ub_atomic_update(gub[i].value, local_ub[i]);
             }
         }
 
@@ -1073,8 +1078,8 @@ outcome sim::step(double dt)
 
             // Atomically update the global AABB for the current chunk.
             for (auto i = 0u; i < 4u; ++i) {
-                detail::lb_atomic_update(glb[i], local_lb[i]);
-                detail::ub_atomic_update(gub[i], local_ub[i]);
+                detail::lb_atomic_update(glb[i].value, local_lb[i]);
+                detail::ub_atomic_update(gub[i].value, local_ub[i]);
             }
         }
 
@@ -1111,9 +1116,9 @@ outcome sim::step(double dt)
     // non-finite values.
     if (!m_data->err_nf_state_vec.empty()) {
         // Fetch the earliest element in err_nf_state_vec.
-        const auto nf_it = std::ranges::min_element(m_data->err_nf_state_vec, [](const auto &tup1, const auto &tup2) {
-            return std::get<1>(tup1) < std::get<1>(tup2);
-        });
+        const auto nf_it = std::min_element(
+            m_data->err_nf_state_vec.cbegin(), m_data->err_nf_state_vec.cend(),
+            [](const auto &tup1, const auto &tup2) { return std::get<1>(tup1) < std::get<1>(tup2); });
 
         // Setup the interrupt info.
         m_int_info.emplace(*nf_it);
@@ -1130,11 +1135,12 @@ outcome sim::step(double dt)
     }
 
     // Check if we ran into stopping terminal events.
-    auto ste_it = m_data->ste_vec.end();
+    auto ste_it = m_data->ste_vec.cend();
     if (!m_data->ste_vec.empty()) {
         // Fetch the earliest element in ste_vec.
-        ste_it = std::ranges::min_element(
-            m_data->ste_vec, [](const auto &tup1, const auto &tup2) { return std::get<1>(tup1) < std::get<1>(tup2); });
+        ste_it = std::min_element(
+            m_data->ste_vec.cbegin(), m_data->ste_vec.cend(),
+            [](const auto &tup1, const auto &tup2) { return std::get<1>(tup1) < std::get<1>(tup2); });
 
         // The earliest stopping terminal event redefines the superstep
         // size and, by extension, the number of chunks.
@@ -1181,13 +1187,14 @@ outcome sim::step(double dt)
     // Iterator to the collision vector, initially set to end().
     // It will be set up to point to the earliest collision
     // within the superstep, if any.
-    auto coll_it = m_data->coll_vec.end();
+    auto coll_it = m_data->coll_vec.cend();
 
     // Check for particle-particle collisions.
     if (!m_data->coll_vec.empty()) {
         // Fetch the earliest collision.
-        coll_it = std::ranges::min_element(
-            m_data->coll_vec, [](const auto &tup1, const auto &tup2) { return std::get<2>(tup1) < std::get<2>(tup2); });
+        coll_it = std::min_element(
+            m_data->coll_vec.cbegin(), m_data->coll_vec.cend(),
+            [](const auto &tup1, const auto &tup2) { return std::get<2>(tup1) < std::get<2>(tup2); });
 
         // Set the interrupt time.
         interrupt_time = &std::get<2>(*coll_it);
@@ -1332,8 +1339,8 @@ double sim::infer_superstep()
 
     // Global variables to compute the mean
     // dynamical timestep.
-    double acc = 0;
-    size_type n_part_acc = 0;
+    alignas(detail::atomic_ref<double>::required_alignment) double acc = 0;
+    alignas(detail::atomic_ref<size_type>::required_alignment) size_type n_part_acc = 0;
 
     // NOTE: as usual, run in parallel the batch and scalar computations.
     oneapi::tbb::parallel_invoke(
@@ -1350,7 +1357,11 @@ double sim::infer_superstep()
                     } else {
                         SPDLOG_LOGGER_DEBUG(logger, "Creating new batch data");
 
+#if defined(__clang__)
+                        bdata_ptr = std::make_unique<sim_data::batch_data>(sim_data::batch_data{m_data->b_ta, {}});
+#else
                         bdata_ptr = std::make_unique<sim_data::batch_data>(m_data->b_ta);
+#endif
                         bdata_ptr->pfor_ts.resize(boost::numeric_cast<decltype(bdata_ptr->pfor_ts.size())>(batch_size));
                     }
 
@@ -1390,13 +1401,13 @@ double sim::infer_superstep()
 
             // Update the global values.
             {
-                std::atomic_ref acc_at(acc);
-                acc_at.fetch_add(batch_res.first, std::memory_order::relaxed);
+                detail::atomic_ref<double> acc_at(acc);
+                acc_at.fetch_add(batch_res.first, detail::memorder_relaxed);
             }
 
             {
-                std::atomic_ref n_part_acc_at(n_part_acc);
-                n_part_acc_at.fetch_add(batch_res.second, std::memory_order::relaxed);
+                detail::atomic_ref<size_type> n_part_acc_at(n_part_acc);
+                n_part_acc_at.fetch_add(batch_res.second, detail::memorder_relaxed);
             }
         },
         [&]() {
@@ -1444,13 +1455,13 @@ double sim::infer_superstep()
 
             // Update the global values.
             {
-                std::atomic_ref acc_at(acc);
-                acc_at.fetch_add(scal_res.first, std::memory_order::relaxed);
+                detail::atomic_ref<double> acc_at(acc);
+                acc_at.fetch_add(scal_res.first, detail::memorder_relaxed);
             }
 
             {
-                std::atomic_ref n_part_acc_at(n_part_acc);
-                n_part_acc_at.fetch_add(scal_res.second, std::memory_order::relaxed);
+                detail::atomic_ref<size_type> n_part_acc_at(n_part_acc);
+                n_part_acc_at.fetch_add(scal_res.second, detail::memorder_relaxed);
             }
         });
 
@@ -1509,8 +1520,10 @@ void sim::verify_global_aabbs() const
             }
         }
 
-        assert(lb == m_data->global_lb[chunk_idx]);
-        assert(ub == m_data->global_ub[chunk_idx]);
+        for (auto j = 0u; j < 4u; ++j) {
+            assert(lb[j] == m_data->global_lb[chunk_idx][j].value);
+            assert(ub[j] == m_data->global_ub[chunk_idx][j].value);
+        }
     }
 }
 

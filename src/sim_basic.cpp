@@ -111,7 +111,18 @@ sim::sim(const sim &other)
     // For m_data, we will be copying only:
     // - the integrator templates,
     // - the llvm state.
+#if defined(__clang__)
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+
+    auto data_ptr = std::make_unique<sim_data>(sim_data{other.m_data->s_ta, other.m_data->b_ta, other.m_data->state});
+
+#pragma GCC diagnostic pop
+
+#else
     auto data_ptr = std::make_unique<sim_data>(other.m_data->s_ta, other.m_data->b_ta, other.m_data->state);
+#endif
 
     // Need to assign the JIT function pointers.
     data_ptr->pta_cfunc = reinterpret_cast<decltype(data_ptr->pta_cfunc)>(data_ptr->state.jit_lookup("pta_cfunc"));
@@ -238,11 +249,10 @@ void sim::validate_pars_vector(std::vector<double> &pars, size_type nparts) cons
 void sim::remove_particles(std::vector<size_type> idxs)
 {
     // Sort the indices.
-    std::ranges::sort(idxs);
+    std::sort(idxs.begin(), idxs.end());
 
     // Remove consecutive (adjacent) duplicates.
-    const auto ret = std::ranges::unique(idxs);
-    idxs.erase(ret.begin(), ret.end());
+    idxs.erase(std::unique(idxs.begin(), idxs.end()), idxs.end());
 
     // Create the new state/pars filtering out
     // the particles in idxs.
@@ -378,7 +388,12 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
         // Check the list of variables in the RHS.
         const auto eq_vars = hy::get_variables(eq);
         std::vector<std::string> set_diff;
+#if defined(__clang__)
+        std::set_difference(eq_vars.cbegin(), eq_vars.cend(), detail::allowed_vars_alph.cbegin(),
+                            detail::allowed_vars_alph.cend(), std::back_inserter(set_diff));
+#else
         std::ranges::set_difference(eq_vars, detail::allowed_vars_alph, std::back_inserter(set_diff));
+#endif
 
         if (!set_diff.empty()) {
             throw std::invalid_argument(
@@ -414,7 +429,8 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                 vcr_ptr->size()));
         }
 
-        if (std::ranges::any_of(*vcr_ptr, [](double val) { return !std::isfinite(val) || val <= 0; })) {
+        if (std::any_of(vcr_ptr->cbegin(), vcr_ptr->cend(),
+                        [](double val) { return !std::isfinite(val) || val <= 0; })) {
             throw std::invalid_argument(fmt::format(
                 "A non-finite or non-positive value was detected among the 3 semiaxes of the central body: {}",
                 *vcr_ptr));
@@ -522,7 +538,18 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
 
     logger->trace("Integrators setup time: {}s", sw);
 
+#if defined(__clang__)
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+
+    auto data_ptr = std::make_unique<sim_data>(sim_data{std::move(*s_ta), std::move(*b_ta)});
+
+#pragma GCC diagnostic pop
+
+#else
     auto data_ptr = std::make_unique<sim_data>(std::move(*s_ta), std::move(*b_ta));
+#endif
     m_data = data_ptr.release();
 
     sw.reset();
@@ -557,7 +584,7 @@ bool sim::with_reentry_event() const
 #if !defined(NDEBUG)
         const auto &vec = std::get<std::vector<double>>(m_c_radius);
         assert(vec.size() == 3u);
-        assert(std::ranges::all_of(vec, [](double val) { return std::isfinite(val) && val > 0; }));
+        assert(std::all_of(vec.cbegin(), vec.cend(), [](double val) { return std::isfinite(val) && val > 0; }));
 #endif
 
         return true;

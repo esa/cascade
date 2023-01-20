@@ -138,6 +138,7 @@ set(CASCADE_SRC_FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/sim_dynamics.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/detail/logging_impl.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/logging.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/detail/atomic_utils.cpp"
 )
 
 # Setup of the cascade shared library.
@@ -169,8 +170,8 @@ find_package(TBB REQUIRED CONFIG)
 target_link_libraries(cascade PRIVATE TBB::tbb)
 
 # Boost.
-# NOTE: need 1.69 for safe numerics.
-find_package(Boost 1.69 REQUIRED)
+# NOTE: need 1.73 for atomic_ref.
+find_package(Boost 1.73 REQUIRED)
 target_link_libraries(cascade PUBLIC Boost::boost)
 
 # fmt.

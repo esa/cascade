@@ -9,7 +9,7 @@ dependencies:
   - python=3.10
   - tbb-devel
   - tbb
-  - boost-cpp>=1.69
+  - boost-cpp>=1.73
   - fmt
   - heyoka>=0.20.1
   - heyoka.py>=0.20

@@ -173,7 +173,7 @@ TEST_CASE("set new state pars")
                     .2,
                 });
 
-        REQUIRE(std::ranges::all_of(s.get_pars(), [](auto val) { return val == 0; }));
+        REQUIRE(std::all_of(s.get_pars().cbegin(), s.get_pars().cend(), [](auto val) { return val == 0; }));
 
         // Incorrect pars vector.
         REQUIRE_THROWS_MATCHES(s.set_new_state_pars(
