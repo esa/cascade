@@ -141,7 +141,12 @@ void sim::construct_bvh_trees_parallel()
 
             // Insert the root node.
             // NOTE: nn_level is inited to zero, even if we already know it is 1.
+#if defined(__clang__)
+            tree.push_back(sim_data::bvh_node{0, boost::numeric_cast<std::uint32_t>(nparts), -1, -1, -1, default_lb,
+                                              default_ub, 0, 0});
+#else
             tree.emplace_back(0, boost::numeric_cast<std::uint32_t>(nparts), -1, -1, -1, default_lb, default_ub, 0, 0);
+#endif
 
             // The number of nodes at the current tree level.
             std::uint32_t cur_n_nodes = 1;
@@ -174,7 +179,7 @@ void sim::construct_bvh_trees_parallel()
                 // if the node is a leaf or not, and, for an internal node,
                 // the number of particles in the left child.
                 const auto n_leaf_nodes = oneapi::tbb::parallel_reduce(
-                    oneapi::tbb::blocked_range(n_begin, n_end), std::uint32_t(0),
+                    oneapi::tbb::blocked_range(n_begin, n_end), static_cast<std::uint32_t>(0),
                     [&](const auto &rn, std::uint32_t init) {
                         // Local accumulator for the number of leaf nodes
                         // detected in the range.
@@ -190,7 +195,7 @@ void sim::construct_bvh_trees_parallel()
                             // Flag to signal that this is a leaf node.
                             bool is_leaf_node = false;
 
-                            const std::uint64_t *split_ptr;
+                            const std::uint64_t *split_ptr = nullptr;
 
                             const auto mcodes_begin = &srt_mcodes(chunk_idx, 0) + cur_node.begin;
                             const auto mcodes_end = &srt_mcodes(chunk_idx, 0) + cur_node.end;
@@ -205,7 +210,7 @@ void sim::construct_bvh_trees_parallel()
                                 assert(cur_node.split_idx <= 63);
                                 split_ptr = std::lower_bound(
                                     mcodes_begin, mcodes_end, 1u,
-                                    [mask = std::uint64_t(1) << (63 - cur_node.split_idx)](
+                                    [mask = static_cast<std::uint64_t>(1) << (63 - cur_node.split_idx)](
                                         std::uint64_t mcode, unsigned val) { return (mcode & mask) < val; });
 
                                 while (split_ptr == mcodes_begin || split_ptr == mcodes_end) {
@@ -226,7 +231,7 @@ void sim::construct_bvh_trees_parallel()
                                     assert(cur_node.split_idx <= 63);
                                     split_ptr = std::lower_bound(
                                         mcodes_begin, mcodes_end, 1u,
-                                        [mask = std::uint64_t(1) << (63 - cur_node.split_idx)](
+                                        [mask = static_cast<std::uint64_t>(1) << (63 - cur_node.split_idx)](
                                             std::uint64_t mcode, unsigned val) { return (mcode & mask) < val; });
                                 }
                             } else {
@@ -267,6 +272,8 @@ void sim::construct_bvh_trees_parallel()
                                     }
                                 }
                             } else {
+                                assert(split_ptr != nullptr);
+
                                 // An internal node has 2 children.
                                 nc_buf[node_idx - n_begin] = 2;
                                 // NOTE: if we are here, it means that is_leaf_node is false,
