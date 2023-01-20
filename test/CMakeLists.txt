@@ -44,6 +44,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/haumea_00_vx.txt" "${CMAKE_CURRENT_B
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/haumea_00_vy.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/haumea_00_vz.txt" "${CMAKE_CURRENT_BINARY_DIR}/" COPYONLY)
 
+ADD_CASCADE_TESTCASE(sim_api)
 ADD_CASCADE_TESTCASE(single_collision)
 ADD_CASCADE_TESTCASE(same_morton_code)
 ADD_CASCADE_TESTCASE(heyoka_comparison)

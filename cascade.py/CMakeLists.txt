@@ -2,7 +2,10 @@
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/_version.py.in" "${CMAKE_CURRENT_BINARY_DIR}/_version.py" @ONLY)
 
 # The list of cascade.py's Python files.
-set(CASCADE_PY_PYTHON_FILES __init__.py)
+set(CASCADE_PY_PYTHON_FILES
+    __init__.py
+    test.py
+)
 
 # Copy the python files in the current binary dir,
 # so that we can import cascade from the build dir.

@@ -129,6 +129,7 @@ private:
     [[nodiscard]] CASCADE_DLL_LOCAL std::uint32_t exit_event_idx() const;
     CASCADE_DLL_LOCAL void verify_state_vector(const std::vector<double> &) const;
     CASCADE_DLL_LOCAL void copy_from_final_state() noexcept;
+    CASCADE_DLL_LOCAL void validate_pars_vector(std::vector<double> &, size_type) const;
 
 public:
     sim();
@@ -271,7 +272,8 @@ public:
     [[nodiscard]] bool get_high_accuracy() const;
     [[nodiscard]] std::uint32_t get_npars() const;
 
-    void set_new_state(std::vector<double>);
+    void set_new_state_pars(std::vector<double>, std::vector<double> = {});
+    void remove_particles(std::vector<size_type>);
 
     outcome step(double = 0);
     outcome propagate_until(double, double = 0);
@@ -286,9 +288,9 @@ public:
     // shared pointers. This is inteded to be used
     // on the Python side in order to guarantee that
     // the destruction of a sim object or the invocation
-    // of set_new_state() do not trigger the destruction of
-    // the state/params vector if a NumPy array holds
-    // a reference to them.
+    // of set_new_state_pars() & co. does not trigger
+    // the destruction of the state/params vector if a
+    // NumPy array holds a reference to them.
     // NOTE: it is prohibited to resize the vectors
     // stored in the returned shared pointers.
     // NOTE: these are to be considered as private

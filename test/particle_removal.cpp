@@ -62,7 +62,7 @@ TEST_CASE("particle removal")
     // Remove half of the paricles.
     state.resize(state.size() / 2u);
 
-    s.set_new_state(state);
+    s.set_new_state_pars(state);
     REQUIRE(s.get_nparts() == 50u);
 
     for (auto i = 0; i < 10; ++i) {
