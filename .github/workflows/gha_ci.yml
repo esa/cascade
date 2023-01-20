@@ -10,13 +10,13 @@ jobs:
   conda_asan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Build
         run: bash tools/gha_conda_asan.sh
   build-and-deploydocs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install and Build 🔧 
         run: bash tools/gha_deploydocs.sh
       - name: Upload to github pages 🚀

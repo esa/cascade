@@ -16,8 +16,8 @@ export PATH="$HOME/mambaforge/bin:$PATH"
 bash mambaforge.sh -b -p $HOME/mambaforge
 mamba env create -f cascade_devel.yml -q -p $deps_dir
 # adding the necessary tools for doc building
-mamba install sphinx myst-nb sphinx-book-theme matplotlib
 source activate $deps_dir
+mamba install sphinx myst-nb sphinx-book-theme matplotlib
 
 # Create the build dir and cd into it.
 mkdir build
