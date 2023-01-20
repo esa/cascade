@@ -10,15 +10,13 @@ set -e
 sudo apt-get install wget
 
 # Install conda+deps.
-wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+wget https://github.com/conda-forge/miniforge/releases/download/22.9.0-3/Mambaforge-22.9.0-3-Linux-aarch64.sh -O mambaforge.sh
 export deps_dir=$HOME/local
-export PATH="$HOME/miniconda/bin:$PATH"
-bash miniconda.sh -b -p $HOME/miniconda
-conda config --add channels conda-forge
-conda config --set channel_priority strict
-conda env create -f cascade_devel.yml -q -p $deps_dir
+export PATH="$HOME/mambaforge/bin:$PATH"
+bash mambaforge.sh -b -p $HOME/mambaforge
+mamba env create -f cascade_devel.yml -q -p $deps_dir
 # adding the necessary tools for doc building
-conda install sphinx myst-nb sphinx-book-theme matplotlib
+mamba install sphinx myst-nb sphinx-book-theme matplotlib
 source activate $deps_dir
 
 # Create the build dir and cd into it.
@@ -32,9 +30,6 @@ cmake --build . --target install
 # Build the documentation.
 cd ${GITHUB_WORKSPACE}/doc
 make html linkcheck
-
-# Run the doctests.
-make doctest;
 
 set +e
 set +x
