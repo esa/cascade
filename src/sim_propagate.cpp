@@ -247,6 +247,7 @@ void sim::init_batch_ta(T &ta, size_type pidx_begin, size_type pidx_end) const
 // Compute the AABB of the trajectory of the particle at index pidx within a chunk.
 // chunk_idx is the chunk index, chunk_begin/end the time range of the chunk.
 template <typename T>
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const T &chunk_end, size_type pidx)
 {
     namespace hy = heyoka;
@@ -674,7 +675,7 @@ outcome sim::step(double dt)
         stdex::mdspan tct(
             ta.get_tc().data(),
             stdex::extents<std::uint32_t, 7u, stdex::dynamic_extent, stdex::dynamic_extent>(order + 1u, batch_size));
-        assert(ta.get_tc().size() == 7u * (order + 1u) * batch_size);
+        assert(ta.get_tc().size() == static_cast<decltype(ta.get_tc().size())>(7) * (order + 1u) * batch_size);
 
         // The first step is the numerical integration for all particles
         // in range throughout the entire superstep.
@@ -936,7 +937,7 @@ outcome sim::step(double dt)
 
         // View on the Taylor coefficients of the integrator.
         stdex::mdspan tct(ta.get_tc().data(), stdex::extents<std::uint32_t, 7u, stdex::dynamic_extent>(order + 1u));
-        assert(ta.get_tc().size() == 7u * (order + 1u));
+        assert(ta.get_tc().size() == static_cast<decltype(ta.get_tc().size())>(7) * (order + 1u));
 
         // The first step is the numerical integration for all particles
         // in range throughout the entire superstep.
