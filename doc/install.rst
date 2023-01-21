@@ -1,6 +1,50 @@
 Installation
 ============
 
+Installing from a package manager
+---------------------------------
+
+Conda
+^^^^^
+
+cascade is available via the `conda <https://docs.conda.io/en/latest/>`__
+package manager for Linux, OSX and Windows
+thanks to the infrastructure provided by `conda-forge <https://conda-forge.org/>`__.
+In order to install cascade via conda, you need to add ``conda-forge``
+to the channels. Assuming a working installation of conda:
+
+.. code-block:: console
+
+   $ conda config --add channels conda-forge
+   $ conda config --set channel_priority strict
+   $ conda install cascade
+
+.. note::
+    It is useful to check the scripts we use to build and test cascade since they use conda. You can find the ones for OSX and linux in
+    `the tool folder <https://github.com/esa/cascade/tree/main/tools>`__ of our github repository.
+
+The conda packages for cascade are maintained by the core development team,
+and they are regularly updated when new cascade versions are released.
+
+Please refer to the `conda documentation <https://docs.conda.io/en/latest/>`__
+for instructions on how to setup and manage
+your conda installation.
+
+
+Installation from source
+------------------------
+
+cascade is written in modern C++, and it requires a compiler able to understand
+many new idioms introduced in C++21. The library is regularly tested on
+a continuous integration pipeline which currently includes:
+
+* GCC 12 on Linux,
+* Clang 11 on OSX,
+* MSVC 2019 on Windows.
+
+Its a good idea to check the scripts used to build cascade on these architectures, you can find the ones for OSX and linux in
+`the tool folder <https://github.com/esa/cascade/tree/main/tools>`__ of our github repository.
+
 cascade has several Python and C++ dependencies. On the C++ side, cascade depends on:
 
 * the `heyoka C++ library <https://github.com/bluescarni/heyoka>`__,
@@ -17,20 +61,6 @@ On the Python side, cascade requires at least Python 3.5
 
 The tested and supported CPU architectures at this time are x86-64.
 
-Installation from source
-------------------------
-
-cascade is written in modern C++, and it requires a compiler able to understand
-many new idioms introduced in C++21. The library is regularly tested on
-a continuous integration pipeline which currently includes:
-
-* GCC 12 on Linux,
-* Clang 11 on OSX,
-* MSVC 2019 on Windows.
-
-Its a good idea to check the scripts used to build cascade on these architectures, you can find the ones for OSX and linux in
-here: `github <https://github.com/esa/cascade/tree/main/tools>`__.
-
 In addition to the C++ dependencies enumerated :ref:`earlier <installation_deps>`,
 installation from source requires also:
 
@@ -41,7 +71,7 @@ After making sure the dependencies are installed on your system, you can
 download the cascade source code from the
 `GitHub release page <https://github.com/esa/cascade/releases>`__. Alternatively,
 and if you like living on the bleeding edge, you can get the very latest
-version of heyoka.py via ``git``:
+version of cascade via ``git``:
 
 .. code-block:: console
 
@@ -50,8 +80,8 @@ version of heyoka.py via ``git``:
 We follow the usual PR-based development workflow, thus cascade's ``main``
 branch is normally kept in a working state.
 
-After downloading and/or unpacking heyoka.py's
-source code, go to heyoka.py's
+After downloading and/or unpacking cascade's
+source code, go to cascade's
 source tree, create a ``build`` directory and ``cd`` into it. E.g.,
 on a Unix-like system:
 
@@ -80,13 +110,13 @@ as done by the various benchmarks you can also build and find in the correspondi
 * ``CASCADE_BUILD_PYTHON_BINDINGS``: builds also the python module.
 
 After configuring the build with CMake, we can then proceed to actually
-building heyoka.py:
+building cascade:
 
 .. code-block:: console
 
    $ cmake --build .
 
-Finally, we can install heyoka.py with the command:
+Finally, we can install cascade with the command:
 
 .. code-block:: console
 
@@ -95,7 +125,7 @@ Finally, we can install heyoka.py with the command:
 Verifying the installation
 --------------------------
 
-You can verify that heyoka.py was successfully compiled and
+You can verify that cascade was successfully compiled and
 installed by running the test suite with the following command:
 
 .. code-block:: bash

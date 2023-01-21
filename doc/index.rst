@@ -5,10 +5,11 @@
 
 Cascade
 ===================================
-   As the number of artificial satellites orbiting our planet grows, the likelihood of collisions increases, which can create even more debris and
-   potentially render certain orbits unusable.
+   As the number of artificial satellites orbiting our planet grows, the likelihood of collisions increases. This can create
+   even more debris and potentially render certain orbits unusable.
 
-Cascade is a Python library developed to propagate the evolution of large number of orbiting objects while detecting reliably close encounters and collisions. 
+Cascade is a Python library developed to propagate the evolution of large number of orbiting objects while detecting
+reliably close encounters and collisions. 
 
 Notable features include:
 
