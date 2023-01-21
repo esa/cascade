@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Welcome to cascade’s documentation! &#8212; cascade 0.1 documentation</title>
+    <title>Cascade &#8212; cascade 0.1 documentation</title>
     
   <link rel="stylesheet" href="_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
 
@@ -171,7 +171,7 @@
             <ul class="nav section-nav flex-column">
  <li class="toc-h1 nav-item toc-entry">
   <a class="reference internal nav-link" href="#">
-   Welcome to cascade’s documentation!
+   Cascade
   </a>
  </li>
  <li class="toc-h1 nav-item toc-entry">
@@ -191,9 +191,21 @@
         
               <div>
                 
-  <section id="welcome-to-cascade-s-documentation">
-<h1>Welcome to cascade’s documentation!<a class="headerlink" href="#welcome-to-cascade-s-documentation" title="Permalink to this heading">¶</a></h1>
-<p>Under construction… be patient!</p>
+  <section id="cascade">
+<h1>Cascade<a class="headerlink" href="#cascade" title="Permalink to this heading">¶</a></h1>
+<blockquote>
+<div><p>As the number of artificial satellites orbiting our planet grows, the likelihood of collisions increases, which can create even more debris and
+potentially render certain orbits unusable.</p>
+</div></blockquote>
+<p>Cascade is a Python library developed to propagate the evolution of large number of orbiting objects while detecting reliably close encounters and collisions.</p>
+<p>Notable features include:</p>
+<ul class="simple">
+<li><p>guaranteed detection of all occuring collisions.</p></li>
+<li><p>high precision orbital propagation via the use of Taylor integration.</p></li>
+<li><p>possibility to define custom dynamics.</p></li>
+<li><p>automatic usage of modern SIMD instruction sets (including AVX/AVX2/AVX-512/Neon/VSX).</p></li>
+<li><p>automatic multi-threaded parallelisation.</p></li>
+</ul>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
