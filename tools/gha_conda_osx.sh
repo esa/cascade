@@ -7,12 +7,10 @@ set -x
 set -e
 
 # Install conda+deps.
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+wget https://github.com/conda-forge/miniforge/releases/download/22.9.0-3/Mambaforge-22.9.0-3-MacOSX-x86_64.sh -O mambaforge.sh
 export deps_dir=$HOME/local
-export PATH="$HOME/miniconda/bin:$PATH"
-bash miniconda.sh -b -p $HOME/miniconda
-conda config --add channels conda-forge
-conda config --set channel_priority strict
+export PATH="$HOME/mambaforge/bin:$PATH"
+bash mambaforge.sh -b -p $HOME/mambaforge
 conda env create -f cascade_devel.yml -q -p $deps_dir
 source activate $deps_dir
 
