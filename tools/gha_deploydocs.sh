@@ -15,7 +15,7 @@ export deps_dir=$HOME/local
 export PATH="$HOME/mambaforge/bin:$PATH"
 bash mambaforge.sh -b -p $HOME/mambaforge
 mamba env create -f cascade_devel.yml -q -p $deps_dir
-# adding the necessary tools for doc building
+# Adding the necessary tools for doc building
 source activate $deps_dir
 mamba install sphinx myst-nb sphinx-book-theme matplotlib
 
