@@ -52,6 +52,7 @@ html_static_path = ["_static"]
 html_logo = "_static/images/logo.png"
 
 html_theme_options = {
+    "home_page_in_toc": True,
     "repository_url": "https://github.com/bluescarni/heyoka.py",
     "repository_branch": "main",
     "path_to_docs": "doc",
