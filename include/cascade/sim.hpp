@@ -92,8 +92,6 @@ private:
     std::shared_ptr<std::vector<double>> m_pars;
     // The collisional timestep.
     double m_ct = 0;
-    // The internal implementation-detail data (buffers, caches, etc.).
-    sim_data *m_data = nullptr;
     // Simulation interrupt info.
     // NOTE: the three possibilities in the variant are:
     // - particle-particle collision (two particle indices),
@@ -108,6 +106,8 @@ private:
     double m_d_radius = 0;
     // Number of params in the dynamics.
     std::uint32_t m_npars = 0;
+    // The internal implementation-detail data (buffers, caches, etc.).
+    std::unique_ptr<sim_data> m_data;
 
     void finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>>, std::vector<double>,
                        std::variant<double, std::vector<double>>, double, double, bool);
@@ -131,11 +131,19 @@ private:
     CASCADE_DLL_LOCAL void copy_from_final_state() noexcept;
     CASCADE_DLL_LOCAL void validate_pars_vector(std::vector<double> &, size_type) const;
 
+    // Private delegating constructor machinery. This is used
+    // in the generic constructor to move the initialisation of
+    // the m_data member in the .cpp file, so that we don't need
+    // the complete definition of sim_data in the implementation
+    // of the generic constructor.
+    struct ptag_t {
+    };
+    sim(ptag_t, std::vector<double>, double);
+
 public:
     sim();
     template <typename... KwArgs>
-    explicit sim(std::vector<double> state, double ct, KwArgs &&...kw_args)
-        : m_state(std::make_shared<std::vector<double>>(std::move(state))), m_ct(ct)
+    explicit sim(std::vector<double> state, double ct, KwArgs &&...kw_args) : sim(ptag_t{}, std::move(state), ct)
     {
         igor::parser p{kw_args...};
 

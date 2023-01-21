@@ -103,6 +103,11 @@ std::array<double, 2> sim::sim_data::get_chunk_begin_end(unsigned chunk_idx, dou
 
 sim::sim() : sim(std::vector<double>{}, 1) {}
 
+sim::sim(ptag_t, std::vector<double> state, double ct)
+    : m_state(std::make_shared<std::vector<double>>(std::move(state))), m_ct(ct)
+{
+}
+
 sim::sim(const sim &other)
     : m_state(std::make_shared<std::vector<double>>(*other.m_state)),
       m_pars(std::make_shared<std::vector<double>>(*other.m_pars)), m_ct(other.m_ct), m_int_info(other.m_int_info),
@@ -111,40 +116,36 @@ sim::sim(const sim &other)
     // For m_data, we will be copying only:
     // - the integrator templates,
     // - the llvm state.
+
 #if defined(__clang__)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 
-    auto data_ptr = std::make_unique<sim_data>(sim_data{other.m_data->s_ta, other.m_data->b_ta, other.m_data->state});
+    auto new_data = std::make_unique<sim_data>(sim_data{other.m_data->s_ta, other.m_data->b_ta, other.m_data->state});
 
 #pragma GCC diagnostic pop
 
 #else
-    auto data_ptr = std::make_unique<sim_data>(other.m_data->s_ta, other.m_data->b_ta, other.m_data->state);
+
+    auto new_data = std::make_unique<sim_data>(other.m_data->s_ta, other.m_data->b_ta, other.m_data->state);
+
 #endif
 
     // Need to assign the JIT function pointers.
-    data_ptr->pta_cfunc = reinterpret_cast<decltype(data_ptr->pta_cfunc)>(data_ptr->state.jit_lookup("pta_cfunc"));
-    data_ptr->pssdiff3_cfunc
-        = reinterpret_cast<decltype(data_ptr->pssdiff3_cfunc)>(data_ptr->state.jit_lookup("ssdiff3_cfunc"));
-    data_ptr->fex_check = reinterpret_cast<decltype(data_ptr->fex_check)>(data_ptr->state.jit_lookup("fex_check"));
-    data_ptr->rtscc = reinterpret_cast<decltype(data_ptr->rtscc)>(data_ptr->state.jit_lookup("poly_rtscc"));
+    new_data->pta_cfunc = reinterpret_cast<decltype(new_data->pta_cfunc)>(new_data->state.jit_lookup("pta_cfunc"));
+    new_data->pssdiff3_cfunc
+        = reinterpret_cast<decltype(new_data->pssdiff3_cfunc)>(new_data->state.jit_lookup("ssdiff3_cfunc"));
+    new_data->fex_check = reinterpret_cast<decltype(new_data->fex_check)>(new_data->state.jit_lookup("fex_check"));
+    new_data->rtscc = reinterpret_cast<decltype(new_data->rtscc)>(new_data->state.jit_lookup("poly_rtscc"));
     // NOTE: this is implicitly added by llvm_add_poly_rtscc().
-    data_ptr->pt1 = reinterpret_cast<decltype(data_ptr->pt1)>(data_ptr->state.jit_lookup("poly_translate_1"));
+    new_data->pt1 = reinterpret_cast<decltype(new_data->pt1)>(new_data->state.jit_lookup("poly_translate_1"));
 
-    // Assign the pointer.
-    m_data = data_ptr.release();
+    // Assign the new pointer.
+    m_data = std::move(new_data);
 }
 
-// Move everything, then destroy the m_data pointer in other.
-sim::sim(sim &&other) noexcept
-    : m_state(std::move(other.m_state)), m_pars(std::move(other.m_pars)), m_ct(std::move(other.m_ct)),
-      m_data(other.m_data), m_int_info(std::move(other.m_int_info)), m_c_radius(std::move(other.m_c_radius)),
-      m_d_radius(other.m_d_radius), m_npars(other.m_npars)
-{
-    other.m_data = nullptr;
-}
+sim::sim(sim &&) noexcept = default;
 
 sim &sim::operator=(const sim &other)
 {
@@ -155,27 +156,9 @@ sim &sim::operator=(const sim &other)
     return *this;
 }
 
-sim &sim::operator=(sim &&other) noexcept
-{
-    // Assign everything, then destroy the m_data pointer in other.
-    m_state = std::move(other.m_state);
-    m_pars = std::move(other.m_pars);
-    m_ct = std::move(other.m_ct);
-    m_data = other.m_data;
-    m_int_info = std::move(other.m_int_info);
-    m_c_radius = std::move(other.m_c_radius);
-    m_d_radius = std::move(other.m_d_radius);
-    m_npars = std::move(other.m_npars);
-    other.m_data = nullptr;
+sim &sim::operator=(sim &&) noexcept = default;
 
-    return *this;
-}
-
-sim::~sim()
-{
-    // NOTE: well-defined if m_data is null.
-    std::unique_ptr<sim_data> tmp_ptr(m_data);
-}
+sim::~sim() = default;
 
 double sim::get_ct() const
 {
@@ -538,6 +521,9 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
 
     logger->trace("Integrators setup time: {}s", sw);
 
+    assert(s_ta);
+    assert(b_ta);
+
 #if defined(__clang__)
 
 #pragma GCC diagnostic push
@@ -548,9 +534,12 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
 #pragma GCC diagnostic pop
 
 #else
+
     auto data_ptr = std::make_unique<sim_data>(std::move(*s_ta), std::move(*b_ta));
+
 #endif
-    m_data = data_ptr.release();
+
+    m_data = std::move(data_ptr);
 
     sw.reset();
 
