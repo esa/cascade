@@ -21,11 +21,13 @@ jobs:
         uses: microsoft/setup-msbuild@v1.1
       - uses: conda-incubator/setup-miniconda@v2
         with:
+          activate-environment: cascade_devel
+          environment-file: cascade_devel.yml
           auto-update-conda: true
           python-version: 3.10
           channels: conda-forge
           channel-priority: strict
-          environment-file: cascade_devel.yml
+          auto-activate-base: false
       - name: Build
         shell: pwsh
         run: |
