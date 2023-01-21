@@ -9,7 +9,11 @@
 project = 'cascade'
 copyright = '2023, Francesco Biscani and Dario Izzo'
 author = 'Francesco Biscani and Dario Izzo'
-release = '0.1'
+
+# The full version, including alpha/beta/rc tags
+import cascade as csc
+
+release = csc.__version__
 
 # -- General configuration ---------------------------------------------------
 
