@@ -21,10 +21,11 @@ jobs:
         uses: microsoft/setup-msbuild@v1.1
       - uses: conda-incubator/setup-miniconda@v2
         with:
+          python-version: 3.10
+          mamba-version: "*"
           activate-environment: cascade_devel
           environment-file: cascade_devel.yml
           auto-update-conda: true
-          python-version: 3.10
           channels: conda-forge
           channel-priority: strict
           auto-activate-base: false
