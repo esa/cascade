@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <initializer_list>
+#include <limits>
 #include <stdexcept>
 #include <vector>
 
@@ -18,6 +19,31 @@
 #include "catch.hpp"
 
 using namespace cascade;
+
+TEST_CASE("basic")
+{
+    // Default construction.
+    {
+        sim s;
+
+        REQUIRE(s.get_state().empty());
+        REQUIRE(s.get_pars().empty());
+        REQUIRE(s.get_nparts() == 0u);
+        REQUIRE(s.get_time() == 0);
+        REQUIRE(s.get_ct() == 1);
+        REQUIRE(s.get_tol() == std::numeric_limits<double>::epsilon());
+        REQUIRE(!s.get_high_accuracy());
+        REQUIRE(s.get_npars() == 0u);
+    }
+
+    // Construction with non-default parameters.
+    {
+        auto dyn = dynamics::kepler();
+        dyn[0].second += heyoka::par[1];
+
+        sim s({.1, .1, .1, .1, .1, .1, .1}, 1, kw::dyn = dyn, kw::pars = {.2, .2});
+    }
+}
 
 TEST_CASE("remove particles")
 {
