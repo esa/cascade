@@ -35,7 +35,7 @@ Installation from source
 ------------------------
 
 cascade is written in modern C++, and it requires a compiler able to understand
-many new idioms introduced in C++21. The library is regularly tested on
+many new idioms introduced in C++20. The library is regularly tested on
 a continuous integration pipeline which currently includes:
 
 * GCC 12 on Linux,

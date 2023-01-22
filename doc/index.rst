@@ -6,10 +6,11 @@
 Cascade
 ===================================
    As the number of artificial satellites orbiting our planet grows, the likelihood of collisions increases,
-   potentially leading to a chain reaction and making certain orbits unusable.
+   potentially leading to a chain reaction that could make certain orbits unusable.
 
 Cascade is a Python library developed to propagate the evolution of large number of orbiting objects while detecting
-reliably close encounters and collisions. 
+reliably close encounters and collisions. It is coded in modern C++20 with focus on the efficency of the underlying N-body 
+simulation and collision detection computations.
 
 Notable features include:
 
