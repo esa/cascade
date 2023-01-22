@@ -5,8 +5,8 @@
 
 Cascade
 ===================================
-   As the number of artificial satellites orbiting our planet grows, the likelihood of collisions increases. This can create
-   even more debris and potentially render certain orbits unusable.
+   As the number of artificial satellites orbiting our planet grows, the likelihood of collisions increases,
+   potentially leading to a chain reaction and making certain orbits unusable.
 
 Cascade is a Python library developed to propagate the evolution of large number of orbiting objects while detecting
 reliably close encounters and collisions. 
@@ -19,6 +19,7 @@ Notable features include:
 - automatic usage of modern SIMD instruction sets (including AVX/AVX2/AVX-512/Neon/VSX).
 - automatic multi-threaded parallelisation.
 
+cascade is released under the MPL-2.0 license. The authors are Francesco Biscani and Dario Izzo (European Space Agency).
 
 .. toctree::
    :maxdepth: 2

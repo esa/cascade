@@ -65,7 +65,7 @@ In addition to the C++ dependencies enumerated :ref:`earlier <installation_deps>
 installation from source requires also:
 
 * `pybind11 <https://github.com/pybind/pybind11>`__ (version >= 2.10),
-* `CMake <https://cmake.org/>`__, version 3.19 or later.
+* `CMake <https://cmake.org/>`__, version 3.18 or later.
 
 After making sure the dependencies are installed on your system, you can
 download the cascade source code from the
