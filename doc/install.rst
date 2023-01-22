@@ -21,7 +21,7 @@ to the channels. Assuming a working installation of conda:
 
 .. note::
     It is useful to check the scripts we use to build and test cascade since they use conda. You can find the ones for OSX and linux in
-    `the tool folder <https://github.com/esa/cascade/tree/main/tools>`__ of our github repository.
+    `the tools folder <https://github.com/esa/cascade/tree/main/tools>`__ of our github repository.
 
 The conda packages for cascade are maintained by the core development team,
 and they are regularly updated when new cascade versions are released.
@@ -105,7 +105,7 @@ for more details about CMake's variables and options.
 
 In order for the python module to be built the corresponding option will need to be activated,
 else cascade build system will only build the dynamic library, which you can still use from the C++ side
-as done by the various benchmarks you can also build and find in the corresponding directory.
+as done, for example, by the various benchmarks you can also build and find in the corresponding directory.
 
 * ``CASCADE_BUILD_PYTHON_BINDINGS``: builds also the python module.
 
@@ -125,7 +125,7 @@ Finally, we can install cascade with the command:
 Verifying the installation
 --------------------------
 
-You can verify that cascade was successfully compiled and
+You can verify that the cascade python module was successfully compiled and
 installed by running the test suite with the following command:
 
 .. code-block:: bash
