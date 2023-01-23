@@ -303,7 +303,8 @@ void sim::construct_bvh_trees_parallel()
                 // Step 3: prefix sum over the number of children for each
                 // node in the range.
                 oneapi::tbb::parallel_scan(
-                    oneapi::tbb::blocked_range<decltype(nc_buf.size())>(0, nc_buf.size()), std::uint32_t(0),
+                    oneapi::tbb::blocked_range<decltype(nc_buf.size())>(0, nc_buf.size()),
+                    static_cast<std::uint32_t>(0),
                     [&](const auto &r, auto sum, bool is_final_scan) {
                         auto temp = sum;
 
