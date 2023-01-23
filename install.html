@@ -234,7 +234,7 @@ to the channels. Assuming a working installation of conda:</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>It is useful to check the scripts we use to build and test cascade since they use conda. You can find the ones for OSX and linux in
-<a class="reference external" href="https://github.com/esa/cascade/tree/main/tools">the tool folder</a> of our github repository.</p>
+<a class="reference external" href="https://github.com/esa/cascade/tree/main/tools">the tools folder</a> of our github repository.</p>
 </div>
 <p>The conda packages for cascade are maintained by the core development team,
 and they are regularly updated when new cascade versions are released.</p>
@@ -308,7 +308,7 @@ when looking for dependencies.</p></li>
 for more details about CMake’s variables and options.</p>
 <p>In order for the python module to be built the corresponding option will need to be activated,
 else cascade build system will only build the dynamic library, which you can still use from the C++ side
-as done by the various benchmarks you can also build and find in the corresponding directory.</p>
+as done, for example, by the various benchmarks you can also build and find in the corresponding directory.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">CASCADE_BUILD_PYTHON_BINDINGS</span></code>: builds also the python module.</p></li>
 </ul>
@@ -324,7 +324,7 @@ building cascade:</p>
 </section>
 <section id="verifying-the-installation">
 <h2>Verifying the installation<a class="headerlink" href="#verifying-the-installation" title="Permalink to this heading">¶</a></h2>
-<p>You can verify that cascade was successfully compiled and
+<p>You can verify that the cascade python module was successfully compiled and
 installed by running the test suite with the following command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import cascade; cascade.test.run_test_suite();&quot;</span>
 </pre></div>
