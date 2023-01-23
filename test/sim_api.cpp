@@ -10,6 +10,8 @@
 #include <initializer_list>
 #include <limits>
 #include <stdexcept>
+#include <utility>
+#include <variant>
 #include <vector>
 
 #include <heyoka/expression.hpp>
@@ -34,6 +36,8 @@ TEST_CASE("basic")
         REQUIRE(s.get_tol() == std::numeric_limits<double>::epsilon());
         REQUIRE(!s.get_high_accuracy());
         REQUIRE(s.get_npars() == 0u);
+        REQUIRE(std::get<0>(s.get_c_radius()) == 0.);
+        REQUIRE(s.get_d_radius() == 0.);
     }
 
     // Construction with non-default parameters.
@@ -41,7 +45,81 @@ TEST_CASE("basic")
         auto dyn = dynamics::kepler();
         dyn[0].second += heyoka::par[1];
 
-        sim s({.1, .1, .1, .1, .1, .1, .1}, 1, kw::dyn = dyn, kw::pars = {.2, .2});
+        sim s({1., .001, .001, .001, 1., .001, .001}, .5, kw::dyn = dyn, kw::pars = {.002, .001},
+              kw::c_radius = {.1, .2, .3}, kw::d_radius = 100., kw::tol = 1e-12, kw::high_accuracy = true);
+
+        REQUIRE(!s.get_state().empty());
+        REQUIRE(s.get_state() == std::vector{1., .001, .001, .001, 1., .001, .001});
+        REQUIRE(!s.get_pars().empty());
+        REQUIRE(s.get_pars() == std::vector{.002, .001});
+        REQUIRE(s.get_nparts() == 1u);
+        REQUIRE(s.get_time() == 0);
+        REQUIRE(s.get_ct() == .5);
+        REQUIRE(s.get_tol() == 1e-12);
+        REQUIRE(s.get_high_accuracy());
+        REQUIRE(s.get_npars() == 2u);
+        REQUIRE(std::get<1>(s.get_c_radius()) == std::vector{.1, .2, .3});
+        REQUIRE(s.get_d_radius() == 100.);
+        REQUIRE(s.get_time() == 0.);
+
+        // Take a single step.
+        s.step();
+
+        // Make a copy.
+        auto s2 = s;
+
+        REQUIRE(s2.get_state() == s.get_state());
+        REQUIRE(s2.get_pars() == std::vector{.002, .001});
+        REQUIRE(s2.get_nparts() == 1u);
+        REQUIRE(s2.get_time() == s.get_time());
+        REQUIRE(s2.get_ct() == .5);
+        REQUIRE(s2.get_tol() == 1e-12);
+        REQUIRE(s2.get_high_accuracy());
+        REQUIRE(s2.get_npars() == 2u);
+        REQUIRE(std::get<1>(s2.get_c_radius()) == std::vector{.1, .2, .3});
+        REQUIRE(s2.get_d_radius() == 100.);
+
+        // Test also with move.
+        auto s3 = std::move(s2);
+
+        REQUIRE(s3.get_state() == s.get_state());
+        REQUIRE(s3.get_pars() == std::vector{.002, .001});
+        REQUIRE(s3.get_nparts() == 1u);
+        REQUIRE(s3.get_time() == s.get_time());
+        REQUIRE(s3.get_ct() == .5);
+        REQUIRE(s3.get_tol() == 1e-12);
+        REQUIRE(s3.get_high_accuracy());
+        REQUIRE(s3.get_npars() == 2u);
+        REQUIRE(std::get<1>(s3.get_c_radius()) == std::vector{.1, .2, .3});
+        REQUIRE(s3.get_d_radius() == 100.);
+
+        // Revive s2 via assignment.
+        s2 = std::move(s3);
+
+        REQUIRE(s2.get_state() == s.get_state());
+        REQUIRE(s2.get_pars() == std::vector{.002, .001});
+        REQUIRE(s2.get_nparts() == 1u);
+        REQUIRE(s2.get_time() == s.get_time());
+        REQUIRE(s2.get_ct() == .5);
+        REQUIRE(s2.get_tol() == 1e-12);
+        REQUIRE(s2.get_high_accuracy());
+        REQUIRE(s2.get_npars() == 2u);
+        REQUIRE(std::get<1>(s2.get_c_radius()) == std::vector{.1, .2, .3});
+        REQUIRE(s2.get_d_radius() == 100.);
+
+        // Revive s3 via assignment.
+        s3 = s2;
+
+        REQUIRE(s3.get_state() == s.get_state());
+        REQUIRE(s3.get_pars() == std::vector{.002, .001});
+        REQUIRE(s3.get_nparts() == 1u);
+        REQUIRE(s3.get_time() == s.get_time());
+        REQUIRE(s3.get_ct() == .5);
+        REQUIRE(s3.get_tol() == 1e-12);
+        REQUIRE(s3.get_high_accuracy());
+        REQUIRE(s3.get_npars() == 2u);
+        REQUIRE(std::get<1>(s3.get_c_radius()) == std::vector{.1, .2, .3});
+        REQUIRE(s3.get_d_radius() == 100.);
     }
 }
 

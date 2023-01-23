@@ -98,6 +98,9 @@ struct sim::sim_data {
     // The state used to store the JIT compiled functions.
     heyoka::llvm_state state;
 
+    // The time coordinate.
+    heyoka::detail::dfloat<double> time;
+
     // The JIT-compiled functions.
     using pta_cfunc_t = void (*)(double *, const double *, const double *) noexcept;
     pta_cfunc_t pta_cfunc = nullptr;
@@ -109,9 +112,6 @@ struct sim::sim_data {
     rtscc_t rtscc = nullptr;
     using pt1_t = void (*)(double *, const double *) noexcept;
     pt1_t pt1 = nullptr;
-
-    // The time coordinate.
-    heyoka::detail::dfloat<double> time;
 
     // NOTE: IMPORTANT! past this point, all the remaining data members
     // are set up automatically at the beginning of each integration

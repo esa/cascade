@@ -115,20 +115,26 @@ sim::sim(const sim &other)
 {
     // For m_data, we will be copying only:
     // - the integrator templates,
-    // - the llvm state.
+    // - the llvm state,
+    // - the time coordinate.
+    // Below, we will also be assigning the function pointers
+    // for the jitted functions. The rest of sim_data's members are set up
+    // explicitly at the beginning of each timestep.
 
 #if defined(__clang__)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 
-    auto new_data = std::make_unique<sim_data>(sim_data{other.m_data->s_ta, other.m_data->b_ta, other.m_data->state});
+    auto new_data = std::make_unique<sim_data>(
+        sim_data{other.m_data->s_ta, other.m_data->b_ta, other.m_data->state, other.m_data->time});
 
 #pragma GCC diagnostic pop
 
 #else
 
-    auto new_data = std::make_unique<sim_data>(other.m_data->s_ta, other.m_data->b_ta, other.m_data->state);
+    auto new_data
+        = std::make_unique<sim_data>(other.m_data->s_ta, other.m_data->b_ta, other.m_data->state, other.m_data->time);
 
 #endif
 
@@ -175,6 +181,11 @@ double sim::get_tol() const
     assert(m_data->s_ta.get_tol() == m_data->b_ta.get_tol());
 
     return m_data->s_ta.get_tol();
+}
+
+std::variant<double, std::vector<double>> sim::get_c_radius() const
+{
+    return m_c_radius;
 }
 
 bool sim::get_high_accuracy() const
