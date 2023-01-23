@@ -1347,7 +1347,7 @@ double sim::infer_superstep()
     oneapi::tbb::parallel_invoke(
         [&]() {
             const auto batch_res = oneapi::tbb::parallel_deterministic_reduce(
-                oneapi::tbb::blocked_range<size_type>(0, n_batches, 100), std::pair{0., size_type(0)},
+                oneapi::tbb::blocked_range<size_type>(0, n_batches, 100), std::pair{0., static_cast<size_type>(0)},
                 [&](const auto &range, auto partial_sum) {
                     // Fetch batch data from the cache, or create it.
                     std::unique_ptr<sim_data::batch_data> bdata_ptr;
@@ -1413,7 +1413,8 @@ double sim::infer_superstep()
         },
         [&]() {
             const auto scal_res = oneapi::tbb::parallel_deterministic_reduce(
-                oneapi::tbb::blocked_range<size_type>(n_batches * batch_size, nparts, 100), std::pair{0., size_type(0)},
+                oneapi::tbb::blocked_range<size_type>(n_batches * batch_size, nparts, 100),
+                std::pair{0., static_cast<size_type>(0)},
                 [&](const auto &range, auto partial_sum) {
                     // Fetch an integrator from the cache, or create it.
                     std::unique_ptr<hy::taylor_adaptive<double>> ta_ptr;
