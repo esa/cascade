@@ -124,6 +124,21 @@ TEST_CASE("basic")
         REQUIRE(s3.get_npars() == 2u);
         REQUIRE(std::get<1>(s3.get_c_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s3.get_d_radius() == 100.);
+
+        // Take a step for both s and s3, and compare
+        s.step();
+        s3.step();
+
+        REQUIRE(s3.get_state() == s.get_state());
+        REQUIRE(s3.get_pars() == std::vector{.002, .001});
+        REQUIRE(s3.get_nparts() == 1u);
+        REQUIRE(s3.get_time() == s.get_time());
+        REQUIRE(s3.get_ct() == .5);
+        REQUIRE(s3.get_tol() == 1e-12);
+        REQUIRE(s3.get_high_accuracy());
+        REQUIRE(s3.get_npars() == 2u);
+        REQUIRE(std::get<1>(s3.get_c_radius()) == std::vector{.1, .2, .3});
+        REQUIRE(s3.get_d_radius() == 100.);
     }
 
     // Error modes.
