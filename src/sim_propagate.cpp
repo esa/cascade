@@ -1566,6 +1566,8 @@ void sim::dense_propagate(double t)
                                   tcoords.size(), order + 1u));
 
             if (tcoords_begin == tcoords_end) {
+                // LCOV_EXCL_START
+
                 // NOTE: this should never happen because
                 // this would mean that some particle took only steps
                 // of zero size during the current superstep. I.e., either:
@@ -1582,6 +1584,8 @@ void sim::dense_propagate(double t)
                     fmt::format("The computation of dense_propagate() for particle {} could not be performed because "
                                 "no timesteps have been taken for this particle",
                                 pidx));
+
+                // LCOV_EXCL_STOP
             }
 
             // Locate the first substep whose end is *greater than or
