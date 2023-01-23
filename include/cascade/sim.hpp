@@ -130,6 +130,12 @@ private:
     CASCADE_DLL_LOCAL void verify_state_vector(const std::vector<double> &) const;
     CASCADE_DLL_LOCAL void copy_from_final_state() noexcept;
     CASCADE_DLL_LOCAL void validate_pars_vector(std::vector<double> &, size_type) const;
+    template <typename T>
+    CASCADE_DLL_LOCAL void init_scalar_ta(T &, size_type) const;
+    template <typename T>
+    CASCADE_DLL_LOCAL void init_batch_ta(T &, size_type, size_type) const;
+    template <typename T>
+    CASCADE_DLL_LOCAL void compute_particle_aabb(unsigned, const T &, const T &, size_type);
 
     // Private delegating constructor machinery. This is used
     // in the generic constructor to move the initialisation of
@@ -336,14 +342,6 @@ public:
     {
         return m_pars;
     }
-
-private:
-    template <typename T>
-    CASCADE_DLL_LOCAL void init_scalar_ta(T &, size_type) const;
-    template <typename T>
-    CASCADE_DLL_LOCAL void init_batch_ta(T &, size_type, size_type) const;
-    template <typename T>
-    CASCADE_DLL_LOCAL void compute_particle_aabb(unsigned, const T &, const T &, size_type);
 };
 
 CASCADE_DLL_PUBLIC std::ostream &operator<<(std::ostream &, const sim &);
