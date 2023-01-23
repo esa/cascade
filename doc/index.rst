@@ -27,6 +27,14 @@ cascade is released under the MPL-2.0 license. The authors are Francesco Biscani
    :caption: Contents:
 
    install.rst
-   leo_population
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Utilities:
+
+   utilities/leo_population
+   utilities/simple_atmosphere
+   utilities/cubes
+
 
 

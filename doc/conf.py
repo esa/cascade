@@ -67,7 +67,9 @@ html_theme_options = {
 nb_execution_mode = "force"
 
 nb_execution_excludepatterns = [
-    "*Trappist-1*",
+    "leo_population.ipynb",
+    "simple_atmosphere.ipynb",
+    "*cubes.ipynb"
 ]
 
 latex_engine = "xelatex"
