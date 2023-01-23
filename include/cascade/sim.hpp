@@ -92,8 +92,6 @@ private:
     std::shared_ptr<std::vector<double>> m_pars;
     // The collisional timestep.
     double m_ct = 0;
-    // The internal implementation-detail data (buffers, caches, etc.).
-    sim_data *m_data = nullptr;
     // Simulation interrupt info.
     // NOTE: the three possibilities in the variant are:
     // - particle-particle collision (two particle indices),
@@ -108,6 +106,8 @@ private:
     double m_d_radius = 0;
     // Number of params in the dynamics.
     std::uint32_t m_npars = 0;
+    // The internal implementation-detail data (buffers, caches, etc.).
+    std::unique_ptr<sim_data> m_data;
 
     void finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>>, std::vector<double>,
                        std::variant<double, std::vector<double>>, double, double, bool);
@@ -131,20 +131,30 @@ private:
     CASCADE_DLL_LOCAL void copy_from_final_state() noexcept;
     CASCADE_DLL_LOCAL void validate_pars_vector(std::vector<double> &, size_type) const;
 
+    // Private delegating constructor machinery. This is used
+    // in the generic constructor to move the initialisation of
+    // the m_data member in the .cpp file, so that we don't need
+    // the complete definition of sim_data in the implementation
+    // of the generic constructor.
+    struct ptag_t {
+    };
+    sim(ptag_t, std::vector<double>, double);
+
 public:
     sim();
     template <typename... KwArgs>
-    explicit sim(std::vector<double> state, double ct, KwArgs &&...kw_args)
-        : m_state(std::make_shared<std::vector<double>>(std::move(state))), m_ct(ct)
+    explicit sim(std::vector<double> state, double ct, KwArgs &&...kw_args) : sim(ptag_t{}, std::move(state), ct)
     {
         igor::parser p{kw_args...};
 
+        // LCOV_EXCL_START
         if constexpr (p.has_unnamed_arguments()) {
             static_assert(detail::always_false_v<KwArgs...>,
                           "The variadic arguments to the constructor of a simulation "
                           "contain unnamed arguments.");
             throw;
         }
+        // LCOV_EXCL_STOP
 
         // Dynamics.
         std::vector<std::pair<heyoka::expression, heyoka::expression>> dyn;
@@ -152,7 +162,9 @@ public:
             if constexpr (std::assignable_from<decltype(dyn) &, decltype(p(kw::dyn))>) {
                 dyn = std::forward<decltype(p(kw::dyn))>(p(kw::dyn));
             } else {
+                // LCOV_EXCL_START
                 static_assert(detail::always_false_v<KwArgs...>, "The 'dyn' keyword argument is of the wrong type.");
+                // LCOV_EXCL_STOP
             }
         }
 
@@ -162,7 +174,9 @@ public:
             if constexpr (std::assignable_from<decltype(pars) &, decltype(p(kw::pars))>) {
                 pars = std::forward<decltype(p(kw::pars))>(p(kw::pars));
             } else {
+                // LCOV_EXCL_START
                 static_assert(detail::always_false_v<KwArgs...>, "The 'pars' keyword argument is of the wrong type.");
+                // LCOV_EXCL_STOP
             }
         }
 
@@ -182,8 +196,10 @@ public:
 
                 c_radius = std::move(vd);
             } else {
+                // LCOV_EXCL_START
                 static_assert(detail::always_false_v<KwArgs...>,
                               "The 'c_radius' keyword argument is of the wrong type.");
+                // LCOV_EXCL_STOP
             }
         }
 
@@ -193,8 +209,10 @@ public:
             if constexpr (std::convertible_to<decltype(p(kw::d_radius)), double>) {
                 d_radius = static_cast<double>(std::forward<decltype(p(kw::d_radius))>(p(kw::d_radius)));
             } else {
+                // LCOV_EXCL_START
                 static_assert(detail::always_false_v<KwArgs...>,
                               "The 'd_radius' keyword argument is of the wrong type.");
+                // LCOV_EXCL_STOP
             }
         }
 
@@ -205,7 +223,9 @@ public:
             if constexpr (std::convertible_to<decltype(p(kw::tol)), double>) {
                 tol = static_cast<double>(std::forward<decltype(p(kw::tol))>(p(kw::tol)));
             } else {
+                // LCOV_EXCL_START
                 static_assert(detail::always_false_v<KwArgs...>, "The 'tol' keyword argument is of the wrong type.");
+                // LCOV_EXCL_STOP
             }
         }
 
@@ -215,8 +235,10 @@ public:
             if constexpr (std::convertible_to<decltype(p(kw::high_accuracy)), bool>) {
                 ha = static_cast<bool>(std::forward<decltype(p(kw::high_accuracy))>(p(kw::high_accuracy)));
             } else {
+                // LCOV_EXCL_START
                 static_assert(detail::always_false_v<KwArgs...>,
                               "The 'high_accuracy' keyword argument is of the wrong type.");
+                // LCOV_EXCL_STOP
             }
         }
 
@@ -234,6 +256,7 @@ public:
     {
         return m_int_info;
     }
+
     [[nodiscard]] const auto &get_state() const
     {
         return *m_state;
@@ -246,6 +269,7 @@ public:
     {
         return m_state->data();
     }
+
     [[nodiscard]] const auto &get_pars() const
     {
         return *m_pars;
@@ -258,10 +282,12 @@ public:
     {
         return m_pars->data();
     }
+
     [[nodiscard]] size_type get_nparts() const
     {
         return get_state().size() / 7u;
     }
+
     [[nodiscard]] double get_time() const;
     void set_time(double);
 
@@ -271,6 +297,13 @@ public:
     [[nodiscard]] double get_tol() const;
     [[nodiscard]] bool get_high_accuracy() const;
     [[nodiscard]] std::uint32_t get_npars() const;
+
+    [[nodiscard]] std::variant<double, std::vector<double>> get_c_radius() const;
+
+    [[nodiscard]] double get_d_radius() const
+    {
+        return m_d_radius;
+    }
 
     void set_new_state_pars(std::vector<double>, std::vector<double> = {});
     void remove_particles(std::vector<size_type>);

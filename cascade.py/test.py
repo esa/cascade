@@ -11,8 +11,119 @@ import unittest as _ut
 
 class sim_test_case(_ut.TestCase):
     def runTest(self):
+        self.test_basic()
         self.test_remove_particles()
         self.test_set_new_state_pars()
+
+    def test_basic(self):
+        from . import sim, dynamics, outcome
+        import heyoka as hy
+        import numpy as np
+        import gc
+
+        s = sim()
+        self.assertEqual(s.state.shape, (0, 7))
+        self.assertEqual(s.pars.shape, (0, 0))
+        self.assertEqual(s.nparts, 0)
+        self.assertEqual(s.time, 0.0)
+        self.assertEqual(s.ct, 1.0)
+        self.assertFalse(s.high_accuracy)
+        self.assertEqual(s.npars, 0)
+        self.assertEqual(s.c_radius, 0.0)
+        self.assertEqual(s.d_radius, 0.0)
+
+        dyn = dynamics.kepler()
+        dyn[0] = (dyn[0][0], dyn[0][1] + hy.par[1])
+
+        s = sim(
+            ct=0.5,
+            state=[[1.0, 0.001, 0.001, 0.001, 1.0, 0.001, 0.001]],
+            dyn=dyn,
+            pars=[[0.002, 0.001]],
+            c_radius=[0.1, 0.2, 0.3],
+            d_radius=100.0,
+            tol=1e-12,
+            high_accuracy=True,
+        )
+
+        self.assertTrue(
+            np.all(s.state == [[1.0, 0.001, 0.001, 0.001, 1.0, 0.001, 0.001]])
+        )
+        self.assertTrue(np.all(s.pars == [[0.002, 0.001]]))
+        self.assertEqual(s.nparts, 1)
+        self.assertEqual(s.time, 0.0)
+        self.assertEqual(s.ct, 0.5)
+        self.assertTrue(s.high_accuracy)
+        self.assertEqual(s.npars, 2)
+        self.assertEqual(s.c_radius, [0.1, 0.2, 0.3])
+        self.assertEqual(s.d_radius, 100.0)
+        self.assertEqual(s.tol, 1e-12)
+
+        self.assertEqual(s.step(), outcome.success)
+
+        self.assertFalse(
+            np.all(s.state == [[1.0, 0.001, 0.001, 0.001, 1.0, 0.001, 0.001]])
+        )
+        self.assertTrue(np.all(s.pars == [[0.002, 0.001]]))
+        self.assertEqual(s.nparts, 1)
+        self.assertGreater(s.time, 0.0)
+        self.assertEqual(s.ct, 0.5)
+        self.assertTrue(s.high_accuracy)
+        self.assertEqual(s.npars, 2)
+        self.assertEqual(s.c_radius, [0.1, 0.2, 0.3])
+        self.assertEqual(s.d_radius, 100.0)
+        self.assertEqual(s.tol, 1e-12)
+
+        s = sim(
+            ct=0.5,
+            state=[[1.0, 0.001, 0.001, 0.001, 1.0, 0.001, 0.001]],
+            dyn=dyn,
+            pars=[[0.002, 0.001]],
+            c_radius=0.1,
+            d_radius=100.0,
+            tol=1e-12,
+            high_accuracy=True,
+        )
+
+        self.assertEqual(s.c_radius, 0.1)
+
+        with self.assertRaises(ValueError) as cm:
+            sim(state=[1.0, 2.0, 3.0], ct=1)
+        self.assertTrue(
+            "The input state must have 2 dimensions, but instead an array with 1 dimension(s) was provided"
+            in str(cm.exception)
+        )
+
+        with self.assertRaises(ValueError) as cm:
+            sim(state=[[1.0, 0.001, 0.001, 0.001, 1.0, 0.001]], ct=1)
+        self.assertTrue(
+            "An input state with 7 columns is expected, but the number of columns is instead 6"
+            in str(cm.exception)
+        )
+
+        with self.assertRaises(ValueError) as cm:
+            sim(
+                state=[[1.0, 0.001, 0.001, 0.001, 1.0, 0.001, 0.0]],
+                ct=1,
+                pars=[0.002, 0.001],
+                dyn=dyn,
+            )
+        self.assertTrue(
+            "The input array of parameter values must have 2 dimensions, but instead an array with 1 dimension(s) was provided"
+            in str(cm.exception)
+        )
+
+        with self.assertRaises(ValueError) as cm:
+            sim(
+                state=[[1.0, 0.001, 0.001, 0.001, 1.0, 0.001, 0.0]],
+                ct=1,
+                pars=[[0.002, 0.001], [0.002, 0.001]],
+                dyn=dyn,
+            )
+        self.assertTrue(
+            "An input array of parameter values with 1 row(s) is expected, but the number of rows is instead 2"
+            in str(cm.exception)
+        )
 
     def test_set_new_state_pars(self):
         from . import sim, dynamics

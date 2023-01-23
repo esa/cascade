@@ -95,8 +95,13 @@ struct sim::sim_data {
     heyoka::taylor_adaptive<double> s_ta;
     heyoka::taylor_adaptive_batch<double> b_ta;
 
-    // The JIT data.
+    // The state used to store the JIT compiled functions.
     heyoka::llvm_state state;
+
+    // The time coordinate.
+    heyoka::detail::dfloat<double> time;
+
+    // The JIT-compiled functions.
     using pta_cfunc_t = void (*)(double *, const double *, const double *) noexcept;
     pta_cfunc_t pta_cfunc = nullptr;
     using pssdiff3_cfunc_t = void (*)(double *, const double *, const double *) noexcept;
@@ -108,13 +113,16 @@ struct sim::sim_data {
     using pt1_t = void (*)(double *, const double *) noexcept;
     pt1_t pt1 = nullptr;
 
+    // NOTE: IMPORTANT! past this point, all the remaining data members
+    // are set up automatically at the beginning of each integration
+    // step. That is, there is no need to copy these members when
+    // copying the simulation and there is no need to save them
+    // when serialising.
+
     // The superstep size and the number of chunks.
     // NOTE: these are set up at the beginning of each superstep.
     double delta_t = 0;
     unsigned nchunks = 0;
-    // Helper to compute the begin and end of a chunk within
-    // a superstep for a given collisional timestep.
-    [[nodiscard]] std::array<double, 2> get_chunk_begin_end(unsigned, double) const;
 
     // Buffer that is used to:
     // - store the global state at the end of a superstep,
@@ -131,9 +139,6 @@ struct sim::sim_data {
         std::vector<double> pfor_ts;
     };
     oneapi::tbb::concurrent_queue<std::unique_ptr<batch_data>> b_ta_cache;
-
-    // The time coordinate.
-    heyoka::detail::dfloat<double> time;
 
     // Particle substep data to be filled in at each superstep.
     struct step_data {
@@ -205,9 +210,7 @@ struct sim::sim_data {
     using bvh_tree_t = std::vector<bvh_node, detail::no_init_alloc<bvh_node>>;
     std::vector<bvh_tree_t> bvh_trees;
     // Temporary buffer used in the construction of the BVH trees.
-    std::vector<std::vector<std::uint32_t, detail::no_init_alloc<std::uint32_t>>> nc_buffer;
-    std::vector<std::vector<std::uint32_t, detail::no_init_alloc<std::uint32_t>>> ps_buffer;
-    std::vector<std::vector<std::uint32_t, detail::no_init_alloc<std::uint32_t>>> nplc_buffer;
+    std::vector<std::vector<std::uint32_t, detail::no_init_alloc<std::uint32_t>>> nc_buffer, ps_buffer, nplc_buffer;
 
     // Chunk-local vectors of detected broad phase collisions between AABBs.
     std::vector<oneapi::tbb::concurrent_vector<std::pair<size_type, size_type>>> bp_coll;
@@ -286,6 +289,10 @@ struct sim::sim_data {
     // chunk-by-chunk.
     oneapi::tbb::concurrent_vector<std::tuple<size_type, double, std::uint32_t>> ste_vec;
     oneapi::tbb::concurrent_vector<std::tuple<size_type, double>> err_nf_state_vec;
+
+    // Helper to compute the begin and end of a chunk within
+    // a superstep for a given collisional timestep.
+    [[nodiscard]] std::array<double, 2> get_chunk_begin_end(unsigned, double) const;
 };
 
 } // namespace cascade

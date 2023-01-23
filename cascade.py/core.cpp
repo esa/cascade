@@ -82,7 +82,7 @@ PYBIND11_MODULE(core, m)
                  // Check the input state.
                  if (state.ndim() != 2) {
                      throw std::invalid_argument(fmt::format(
-                         "The input state must have 2 dimensions, but instead an array with {} dimensions was provided",
+                         "The input state must have 2 dimensions, but instead an array with {} dimension(s) was provided",
                          state.ndim()));
                  }
 
@@ -117,12 +117,12 @@ PYBIND11_MODULE(core, m)
                      if (pars.ndim() != 2) {
                          throw std::invalid_argument(
                              fmt::format("The input array of parameter values must have 2 dimensions, but "
-                                         "instead an array with {} dimensions was provided",
+                                         "instead an array with {} dimension(s) was provided",
                                          pars.ndim()));
                      }
 
                      if (pars.shape(0) != nparts) {
-                         throw std::invalid_argument(fmt::format("An input array of parameter values with {} rows is "
+                         throw std::invalid_argument(fmt::format("An input array of parameter values with {} row(s) is "
                                                                  "expected, but the number of rows is instead {}",
                                                                  nparts, pars.shape(0)));
                      }
@@ -155,6 +155,8 @@ PYBIND11_MODULE(core, m)
         .def_property_readonly("npars", &sim::get_npars)
         .def_property_readonly("tol", &sim::get_tol)
         .def_property_readonly("high_accuracy", &sim::get_high_accuracy)
+        .def_property_readonly("c_radius", &sim::get_c_radius)
+        .def_property_readonly("d_radius", &sim::get_d_radius)
         .def(
             "step",
             [](sim &s, double dt) {
