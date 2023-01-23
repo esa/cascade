@@ -46,7 +46,7 @@
 
 #endif
 
-#include <cascade/detail/mortonND_LUT.h>
+#include "detail/mortonND_LUT.h"
 
 #if defined(__clang__) || defined(__GNUC__)
 
