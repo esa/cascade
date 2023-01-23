@@ -24,6 +24,10 @@ using namespace cascade;
 
 TEST_CASE("basic")
 {
+    using Catch::Matchers::Message;
+
+    using namespace heyoka::literals;
+
     // Default construction.
     {
         sim s;
@@ -121,6 +125,44 @@ TEST_CASE("basic")
         REQUIRE(std::get<1>(s3.get_c_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s3.get_d_radius() == 100.);
     }
+
+    // Error modes.
+    REQUIRE_THROWS_MATCHES(sim({1., .001, .001, .001, 1., .001}, .5), std::invalid_argument,
+                           Message("The size of the state vector is 6, which is not a multiple of 7"));
+
+    REQUIRE_THROWS_MATCHES(sim({}, 0), std::invalid_argument,
+                           Message("The collisional timestep must be finite and positive, but it is 0 instead"));
+    REQUIRE_THROWS_AS(sim({}, std::numeric_limits<double>::infinity()), std::invalid_argument);
+
+    REQUIRE_THROWS_MATCHES(sim({1., .001, .001, .001, 1., .001, .001}, .5,
+                               kw::dyn = std::vector<std::pair<heyoka::expression, heyoka::expression>>{{}}),
+                           std::invalid_argument,
+                           Message("6 dynamical equations are expected, but 1 were provided instead"));
+    auto dyn = dynamics::kepler();
+    dyn[0].first = "foo"_var;
+    REQUIRE_THROWS_MATCHES(sim({1., .001, .001, .001, 1., .001, .001}, .5, kw::dyn = dyn), std::invalid_argument,
+                           Message("The LHS of the dynamics at index 0 must be a variable named \"x\", but instead it "
+                                   "is the expression \"foo\""));
+    dyn[0].first = "x"_var;
+    dyn[0].second += "a"_var;
+    REQUIRE_THROWS_MATCHES(
+        sim({1., .001, .001, .001, 1., .001, .001}, .5, kw::dyn = dyn), std::invalid_argument,
+        Message("The RHS of the differential equation for the variable \"x\" contains the invalid variables [\"a\"] "
+                "(the allowed variables are [\"x\", \"y\", \"z\", \"vx\", \"vy\", \"vz\"])"));
+
+    REQUIRE_THROWS_MATCHES(
+        sim({}, .5, kw::c_radius = std::vector{.1}), std::invalid_argument,
+        Message("The c_radius argument must be either a scalar (for a spherical central body) or a vector of 3 "
+                "elements (for a triaxial ellipsoid), but instead it is a vector of 1 element(s)"));
+    REQUIRE_THROWS_MATCHES(
+        sim({}, .5, kw::c_radius = std::vector{1., 2., 0.}), std::invalid_argument,
+        Message("A non-finite or non-positive value was detected among the 3 semiaxes of the central body: [1, 2, 0]"));
+    REQUIRE_THROWS_MATCHES(
+        sim({}, .5, kw::c_radius = -1), std::invalid_argument,
+        Message("The radius of the central body must be finite and non-negative, but it is -1 instead"));
+
+    REQUIRE_THROWS_MATCHES(sim({}, .5, kw::d_radius = -1), std::invalid_argument,
+                           Message("The domain radius must be finite and non-negative, but it is -1 instead"));
 }
 
 TEST_CASE("remove particles")

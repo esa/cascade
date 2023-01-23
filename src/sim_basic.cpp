@@ -393,7 +393,7 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
             throw std::invalid_argument(
                 fmt::format("The RHS of the differential equation for the variable \"{}\" contains the invalid "
                             "variables {} (the allowed variables are {})",
-                            std::get<hy::variable>(var.value()).name(), set_diff, detail::allowed_vars_alph));
+                            std::get<hy::variable>(var.value()).name(), set_diff, detail::allowed_vars));
         }
     }
 
@@ -419,7 +419,7 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
         if (vcr_ptr->size() != 3u) {
             throw std::invalid_argument(fmt::format(
                 "The c_radius argument must be either a scalar (for a spherical central body) "
-                "or a vector of 3 elements (for a triaxial ellipsoid), but instead it is a vector of {} elements",
+                "or a vector of 3 elements (for a triaxial ellipsoid), but instead it is a vector of {} element(s)",
                 vcr_ptr->size()));
         }
 
