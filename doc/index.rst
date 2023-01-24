@@ -33,8 +33,6 @@ cascade is released under the MPL-2.0 license. The authors are Francesco Biscani
    :caption: Utilities:
 
    utilities/leo_population
-   utilities/simple_atmosphere
-   utilities/cubes
 
 
 

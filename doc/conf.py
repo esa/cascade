@@ -67,7 +67,6 @@ html_theme_options = {
 nb_execution_mode = "force"
 
 nb_execution_excludepatterns = [
-    "leo_population.ipynb",
     "simple_atmosphere.ipynb",
     "*cubes.ipynb"
 ]
