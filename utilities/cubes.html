@@ -1,0 +1,603 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Implementing the “Cube” approach &#8212; cascade 0.1 documentation</title>
+    
+  <link rel="stylesheet" href="../_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-book-theme.c441f2ba0852f4cabcb80105e3a46ae6.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.d3f166471bb80abb5163.js">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/sphinx-book-theme.7d483ff0a819d6edff12ce0b1ead3928.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
+
+
+
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<div class="col-12 col-md-3 bd-sidebar site-navigation show" id="site-navigation">
+    
+        <div class="navbar-brand-box">
+<a class="navbar-brand text-wrap" href="../index.html">
+  
+  <img src="../_static/logo.png" class="logo" alt="logo">
+  
+  
+  <h1 class="site-logo" id="site-title">cascade 0.1 documentation</h1>
+  
+</a>
+</div><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
+<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+    <ul class="nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="../index.html">
+   Cascade
+  </a>
+ </li>
+</ul>
+<p class="caption collapsible-parent" role="heading">
+ <span class="caption-text">
+  Contents:
+ </span>
+</p>
+<ul class="nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="../install.html">
+   Installation
+  </a>
+ </li>
+</ul>
+<p class="caption collapsible-parent" role="heading">
+ <span class="caption-text">
+  Utilities:
+ </span>
+</p>
+<ul class="nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="leo_population.html">
+   The current LEO population
+  </a>
+ </li>
+</ul>
+
+</nav> <!-- To handle the deprecated key -->
+
+<div class="navbar_extra_footer">
+  Theme by the <a href="https://ebp.jupyterbook.org">Executable Book Project</a>
+</div>
+
+</div>
+
+
+          
+
+
+          
+<main class="col py-md-3 pl-md-4 bd-content overflow-auto" role="main">
+    
+    <div class="topbar container-xl fixed-top">
+    <div class="topbar-contents row">
+        <div class="col-12 col-md-3 bd-topbar-whitespace site-navigation show"></div>
+        <div class="col pl-md-4 topbar-main">
+            
+            <button id="navbar-toggler" class="navbar-toggler ml-0" type="button" data-toggle="collapse"
+                data-toggle="tooltip" data-placement="bottom" data-target=".site-navigation" aria-controls="navbar-menu"
+                aria-expanded="true" aria-label="Toggle navigation" aria-controls="site-navigation"
+                title="Toggle navigation" data-toggle="tooltip" data-placement="left">
+                <i class="fas fa-bars"></i>
+                <i class="fas fa-arrow-left"></i>
+                <i class="fas fa-arrow-up"></i>
+            </button>
+            
+            
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn" aria-label="Download this page"><i
+            class="fas fa-download"></i></button>
+
+    <div class="dropdown-buttons">
+        <!-- ipynb file if we had a myst markdown file -->
+        
+        <!-- Download raw file -->
+        <a class="dropdown-buttons" href="../_sources/utilities/cubes.ipynb.txt"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Download source file" data-toggle="tooltip"
+                data-placement="left">.ipynb</button></a>
+        <!-- Download PDF via print -->
+        <button type="button" id="download-print" class="btn btn-secondary topbarbtn" title="Print to PDF"
+            onClick="window.print()" data-toggle="tooltip" data-placement="left">.pdf</button>
+    </div>
+</div>
+
+            <!-- Source interaction buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Connect with source repository"><i class="fab fa-github"></i></button>
+    <div class="dropdown-buttons sourcebuttons">
+        <a class="repository-button"
+            href="https://github.com/bluescarni/heyoka.py"><button type="button" class="btn btn-secondary topbarbtn"
+                data-toggle="tooltip" data-placement="left" title="Source repository"><i
+                    class="fab fa-github"></i>repository</button></a>
+        <a class="issues-button"
+            href="https://github.com/bluescarni/heyoka.py/issues/new?title=Issue%20on%20page%20%2Futilities/cubes.html&body=Your%20issue%20content%20here."><button
+                type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip" data-placement="left"
+                title="Open an issue"><i class="fas fa-lightbulb"></i>open issue</button></a>
+        
+    </div>
+</div>
+
+
+            <!-- Full screen (wrap in <a> to have style consistency -->
+            <a class="full-screen-button"><button type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip"
+                    data-placement="bottom" onclick="toggleFullScreen()" aria-label="Fullscreen mode"
+                    title="Fullscreen mode"><i
+                        class="fas fa-expand"></i></button></a>
+
+            <!-- Launch buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Launch interactive content"><i class="fas fa-rocket"></i></button>
+    <div class="dropdown-buttons">
+        
+        <a class="binder-button" href="https://mybinder.org/v2/gh/bluescarni/heyoka.py/main?urlpath=lab/tree/doc/utilities/cubes.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Launch Binder" data-toggle="tooltip"
+                data-placement="left"><img class="binder-button-logo"
+                    src="../_static/images/logo_binder.svg"
+                    alt="Interact on binder">Binder</button></a>
+        
+        
+        
+        
+    </div>
+</div>
+
+        </div>
+
+        <!-- Table of contents -->
+        <div class="d-none d-md-block col-md-2 bd-toc show">
+            
+        </div>
+    </div>
+</div>
+    <div id="main-content" class="row">
+        <div class="col-12 col-md-9 pl-md-3 pr-md-0">
+        
+              <div>
+                
+  <section class="tex2jax_ignore mathjax_ignore" id="implementing-the-cube-approach">
+<h1>Implementing the “Cube” approach<a class="headerlink" href="#implementing-the-cube-approach" title="Permalink to this heading">¶</a></h1>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pykep</span> <span class="k">as</span> <span class="nn">pk</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">pickle</span> <span class="k">as</span> <span class="nn">pkl</span>
+
+<span class="kn">from</span> <span class="nn">mpl_toolkits.mplot3d</span> <span class="kn">import</span> <span class="n">Axes3D</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="o">%</span><span class="k">matplotlib</span> notebook
+
+<span class="kn">import</span> <span class="nn">cascade</span> <span class="k">as</span> <span class="nn">csc</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span> <span class="nn">tqdm.notebook</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span> <span class="nn">heyoka</span> <span class="k">as</span> <span class="nn">hy</span>
+
+<span class="c1"># added for the Cube approach implementation</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">sgp4</span>
+<span class="kn">from</span> <span class="nn">sgp4.api</span> <span class="kn">import</span> <span class="n">Satrec</span><span class="p">,</span> <span class="n">SatrecArray</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;data/debris_simulation_ic.pk&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+    <span class="n">r_ic</span><span class="p">,</span><span class="n">v_ic</span><span class="p">,</span><span class="n">c_radius</span><span class="p">,</span><span class="n">to_satcat</span><span class="p">,</span><span class="n">satcat</span><span class="p">,</span><span class="n">debris</span> <span class="o">=</span> <span class="n">pkl</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">period</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">v</span><span class="p">,</span> <span class="n">mu</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes the orbital period from the vis-viva equation</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        r (float): The radius (in L).</span>
+<span class="sd">        v (float): The velocity (in L/T).</span>
+<span class="sd">        mu (float): The gravitational parameter in L^3/T^2</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The orbital period (in T)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">En</span> <span class="o">=</span> <span class="n">v</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">mu</span> <span class="o">/</span> <span class="n">r</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="o">-</span><span class="n">mu</span> <span class="o">/</span> <span class="n">En</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="k">if</span> <span class="n">a</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Hyperbola!!!&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">a</span><span class="o">**</span><span class="mi">3</span><span class="o">/</span><span class="n">mu</span><span class="p">)</span><span class="o">*</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">cubes</span><span class="p">(</span><span class="n">cartesian_points</span><span class="p">,</span> <span class="n">cube_dimension</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs the Cube algorithm and returns satellites within the same cube</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        cartesian_points (Nx3 np.array): The cartesian position of the satellites (in L).</span>
+<span class="sd">        cube_dimension (float): The cube dimentsion (in L).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        a list containing lists of satelites idx occupying the same cube</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># init</span>
+    <span class="n">retval</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">cubes</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+
+    <span class="c1"># We compute the floored Cartesian coordinates identifying the bins.</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="n">cartesian_points</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="n">pos</span> <span class="o">/</span> <span class="n">cube_dimension</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="c1"># We fill the bins</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">xyz</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span>
+        <span class="n">cubes</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">xyz</span><span class="p">)]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="c1"># We find bins with more than one atellite</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">cubes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cubes</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">retval</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cubes</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">retval</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">simulate_sgp4</span><span class="p">(</span><span class="n">debris</span><span class="p">,</span> <span class="n">sim_time</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span><span class="n">time_grid</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">t0</span> <span class="o">=</span> <span class="mf">8073.603992389981</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes all satellites ephemerides on a time grid</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        debris (list of pk.planets): The objects to propagate.</span>
+<span class="sd">        sim_time (float): The total propagation time (in years).</span>
+<span class="sd">        time_grid(float): The time resolution (in days).</span>
+<span class="sd">        t0 (float): the starting epoch in mjd2000.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        a list containing lists of idx identifying the object occupying the same cube</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># This list will contain all the sgp4 Satrec objects</span>
+    <span class="n">satellite_l</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">deb</span> <span class="ow">in</span> <span class="n">debris</span><span class="p">:</span>
+        <span class="n">l1</span> <span class="o">=</span> <span class="n">deb</span><span class="o">.</span><span class="n">line1</span>
+        <span class="n">l2</span> <span class="o">=</span> <span class="n">deb</span><span class="o">.</span><span class="n">line2</span>
+        <span class="n">satellite_l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Satrec</span><span class="o">.</span><span class="n">twoline2rv</span><span class="p">(</span><span class="n">l1</span><span class="p">,</span> <span class="n">l2</span><span class="p">))</span>
+    <span class="c1"># Here we build the vectorized version allowing for speed</span>
+    <span class="n">satellites</span> <span class="o">=</span> <span class="n">SatrecArray</span><span class="p">(</span><span class="n">satellite_l</span><span class="p">)</span>
+    <span class="n">jd0</span><span class="p">,</span> <span class="n">fr</span> <span class="o">=</span> <span class="n">pk</span><span class="o">.</span><span class="n">epoch</span><span class="p">(</span><span class="n">t0</span><span class="p">)</span><span class="o">.</span><span class="n">jd</span><span class="p">,</span> <span class="mf">0.0</span>
+    <span class="c1"># The Julian dates are from jd0 to 20 years after</span>
+    <span class="n">jds</span> <span class="o">=</span> <span class="n">jd0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">sim_time</span><span class="o">*</span><span class="mf">365.25</span><span class="o">/</span><span class="n">time_grid</span><span class="p">)</span><span class="o">*</span><span class="n">time_grid</span>
+    <span class="n">frs</span> <span class="o">=</span> <span class="n">jds</span> <span class="o">*</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="n">satellites</span><span class="o">.</span><span class="n">sgp4</span><span class="p">(</span><span class="n">jds</span><span class="p">,</span> <span class="n">frs</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">timeit</span> cubes(r_ic / 1000, 10)
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>68 ms ± 604 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">e</span><span class="p">,</span><span class="n">r</span><span class="p">,</span><span class="n">v</span> <span class="o">=</span> <span class="n">simulate_sgp4</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">debris</span><span class="p">)[</span><span class="n">to_satcat</span><span class="p">],</span> <span class="n">sim_time</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span><span class="n">time_grid</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">t0</span> <span class="o">=</span> <span class="mf">8073.603992389981</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span><span class="o">*</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Time elasped: &quot;</span><span class="p">,</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Time elasped:  21.40488290786743
+objects dacayed: (19669, 1461)
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We assume all satellites are valid at the starting epoch</span>
+<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">undecayed</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+<span class="n">n_collisions</span><span class="o">=</span><span class="mi">0</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+    <span class="n">Lcube</span> <span class="o">=</span> <span class="mf">10.</span> <span class="c1">#km</span>
+    <span class="n">time_grid</span>  <span class="o">=</span> <span class="mi">5</span> <span class="c1">#days</span>
+    <span class="c1"># If signalled from the sgp4, we remove the indices of the decayed satellites</span>
+    <span class="n">decayed</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">e</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">undecayed</span> <span class="o">=</span> <span class="n">undecayed</span> <span class="o">-</span> <span class="n">decayed</span>
+    <span class="n">undecayed_l</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">undecayed</span><span class="p">])</span>
+    <span class="c1"># We detect all satellites couples in the same cube of Lcube km size</span>
+    <span class="n">collision</span> <span class="o">=</span> <span class="n">cubes</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="n">undecayed_l</span><span class="p">,</span><span class="n">i</span><span class="p">,:],</span> <span class="n">cube_dimension</span> <span class="o">=</span> <span class="n">Lcube</span><span class="p">)</span>
+    <span class="c1">#kdt = KDTree(r[undecayed_l,i,:])</span>
+    <span class="c1">#collision = list(kdt.query_pairs(Lcube))</span>
+    <span class="c1">#print(collision)</span>
+    <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">collision</span><span class="p">:</span>
+        <span class="c1"># we get the indexes in r,v</span>
+        <span class="n">idx1</span> <span class="o">=</span> <span class="n">undecayed_l</span><span class="p">[</span><span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="n">idx2</span> <span class="o">=</span> <span class="n">undecayed_l</span><span class="p">[</span><span class="n">pair</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="c1"># we store positions and velocities from r,v</span>
+        <span class="n">r1</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="n">idx1</span><span class="p">,</span><span class="n">i</span><span class="p">,:]</span>
+        <span class="n">r2</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="n">idx2</span><span class="p">,</span><span class="n">i</span><span class="p">,:]</span>
+        <span class="n">v1</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">idx1</span><span class="p">,</span><span class="n">i</span><span class="p">,:]</span>
+        <span class="n">v2</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">idx2</span><span class="p">,</span><span class="n">i</span><span class="p">,:]</span>
+        <span class="c1"># we get the collision radiu from debris (indexed differently hence to_satcat is used)</span>
+        <span class="n">c_radius1</span> <span class="o">=</span> <span class="n">debris</span><span class="p">[</span><span class="n">to_satcat</span><span class="p">[</span><span class="n">idx1</span><span class="p">]]</span><span class="o">.</span><span class="n">collision_radius</span>
+        <span class="n">c_radius2</span> <span class="o">=</span> <span class="n">debris</span><span class="p">[</span><span class="n">to_satcat</span><span class="p">[</span><span class="n">idx2</span><span class="p">]]</span><span class="o">.</span><span class="n">collision_radius</span>
+        <span class="c1"># Relative velocity </span>
+        <span class="n">Vrel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v1</span><span class="o">-</span><span class="n">v2</span><span class="p">)</span>
+        <span class="c1"># Collisional area of the couple (in km^2)</span>
+        <span class="n">sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="p">((</span><span class="n">c_radius1</span><span class="o">+</span><span class="n">c_radius2</span><span class="p">)</span><span class="o">/</span><span class="mi">1000</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> 
+        <span class="c1"># Volume of the cube (km^3)</span>
+        <span class="n">U</span> <span class="o">=</span> <span class="p">(</span><span class="n">Lcube</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span>
+        <span class="c1"># We compute the spatial densities</span>
+        <span class="c1"># densities (from &quot;Assessing collision algorithms for the newspace era&quot; )</span>
+        <span class="n">s1</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">U</span>
+        <span class="n">s2</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">U</span>
+        <span class="c1"># collision probability</span>
+        <span class="n">Pij</span> <span class="o">=</span> <span class="n">s1</span><span class="o">*</span><span class="n">s2</span><span class="o">*</span><span class="n">Vrel</span><span class="o">*</span><span class="n">sigma</span><span class="o">*</span><span class="n">U</span><span class="o">*</span><span class="n">time_grid</span><span class="o">*</span><span class="n">pk</span><span class="o">.</span><span class="n">DAY2SEC</span>
+        <span class="c1"># Store</span>
+        <span class="k">if</span> <span class="n">Pij</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Collision! pair: </span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">, years: </span><span class="si">{</span><span class="n">i</span><span class="o">*</span><span class="mi">5</span><span class="o">/</span><span class="mf">365.25</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">n_collisions</span><span class="o">+=</span><span class="mi">1</span>
+<span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Time elasped: &quot;</span><span class="p">,</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Decayed objects: &quot;</span><span class="p">,</span> <span class="n">r_ic</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">undecayed</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of collisions: &quot;</span><span class="p">,</span> <span class="n">n_collisions</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Collision! pair: (3213, 17226), years: 0.39698836413415467
+Collision! pair: (14908, 16282), years: 0.4791238877481177
+Collision! pair: (13293, 13974), years: 0.6707734428473648
+Collision! pair: (14247, 15272), years: 0.6844626967830253
+Collision! pair: (12256, 18366), years: 0.9582477754962354
+Collision! pair: (15288, 15669), years: 1.3278576317590691
+Collision! pair: (14803, 16187), years: 1.3826146475017111
+Collision! pair: (3182, 6134), years: 1.5468856947296372
+Collision! pair: (2949, 16092), years: 2.409308692676249
+Collision! pair: (13977, 15025), years: 2.7789185489390826
+Collision! pair: (13511, 14594), years: 2.8884325804243667
+Collision! pair: (6365, 13928), years: 3.969883641341547
+Collision! pair: (13291, 15034), years: 4.134154688569473
+Collision! pair: (2711, 11763), years: 5.037645448323066
+Collision! pair: (5665, 16142), years: 6.598220396988364
+Collision! pair: (1017, 12480), years: 7.214236824093087
+Collision! pair: (13274, 13894), years: 7.57015742642026
+Collision! pair: (2388, 14040), years: 8.295687885010267
+Collision! pair: (1396, 9169), years: 13.045859000684462
+Collision! pair: (5448, 14350), years: 14.33264887063655
+Collision! pair: (9867, 12512), years: 14.496919917864476
+Collision! pair: (12812, 13744), years: 14.89390828199863
+Collision! pair: (7832, 11563), years: 15.1129363449692
+Collision! pair: (7313, 11770), years: 15.263518138261464
+Collision! pair: (12097, 13574), years: 15.550992470910336
+Collision! pair: (5673, 13027), years: 15.92060232717317
+Collision! pair: (4830, 14611), years: 16.577686516084874
+Collision! pair: (12659, 13926), years: 16.960985626283367
+Collision! pair: (11535, 11887), years: 19.137577002053387
+Time elasped:  38.26705455780029
+Decayed objects:  4985
+Number of collisions:  29
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">r_ic</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">undecayed</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>4985
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">r_ic</span><span class="o">.</span><span class="n">shape</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>(19669, 3)
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">q</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="mf">2.</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="mf">23.9</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">list</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">TypeError</span><span class="g g-Whitespace">                                 </span>Traceback (most recent call last)
+<span class="nn">Input In [33],</span> in <span class="ni">&lt;cell line: 1&gt;</span><span class="nt">()</span>
+<span class="ne">----&gt; </span><span class="mi">1</span> <span class="nb">list</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
+
+<span class="ne">TypeError</span>: &#39;Queue&#39; object is not iterable
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scipy.spatial</span> <span class="kn">import</span> <span class="n">KDTree</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">kd</span> <span class="o">=</span> <span class="n">KDTree</span><span class="p">(</span><span class="n">r_ic</span><span class="o">/</span><span class="mi">1000</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">list</span><span class="p">(</span><span class="n">kd</span><span class="o">.</span><span class="n">query_pairs</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[(16909, 16931),
+ (5092, 6507),
+ (7538, 9580),
+ (18380, 18837),
+ (17397, 17399),
+ (18670, 18672),
+ (18474, 18478),
+ (18635, 18636),
+ (4854, 6471),
+ (15565, 15577)]
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">cubes</span><span class="p">(</span><span class="n">r_ic</span><span class="o">/</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[[4854, 6471], [15565, 15577]]
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="mi">4</span><span class="o">/</span><span class="mi">3</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">8</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>0.5235987755982988
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+
+
+              </div>
+              
+        
+        <div class='prev-next-bottom'>
+            
+
+        </div>
+        
+        </div>
+    </div>
+    <footer class="footer mt-5 mt-md-0">
+    <div class="container">
+      <p>
+        
+          By Francesco Biscani and Dario Izzo<br/>
+        
+            &copy; Copyright 2023, Francesco Biscani and Dario Izzo.<br/>
+      </p>
+    </div>
+  </footer>
+</main>
+
+
+      </div>
+    </div>
+
+    
+  <script src="../_static/js/index.d3f166471bb80abb5163.js"></script>
+
+
+    
+  </body>
+</html>

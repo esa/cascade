@@ -1,0 +1,550 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>The current LEO population &#8212; cascade 0.1 documentation</title>
+    
+  <link rel="stylesheet" href="../_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-book-theme.c441f2ba0852f4cabcb80105e3a46ae6.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.d3f166471bb80abb5163.js">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/sphinx-book-theme.7d483ff0a819d6edff12ce0b1ead3928.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Installation" href="../install.html" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
+
+
+
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<div class="col-12 col-md-3 bd-sidebar site-navigation show" id="site-navigation">
+    
+        <div class="navbar-brand-box">
+<a class="navbar-brand text-wrap" href="../index.html">
+  
+  <img src="../_static/logo.png" class="logo" alt="logo">
+  
+  
+  <h1 class="site-logo" id="site-title">cascade 0.1 documentation</h1>
+  
+</a>
+</div><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
+<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+    <ul class="nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="../index.html">
+   Cascade
+  </a>
+ </li>
+</ul>
+<p class="caption collapsible-parent" role="heading">
+ <span class="caption-text">
+  Contents:
+ </span>
+</p>
+<ul class="nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="../install.html">
+   Installation
+  </a>
+ </li>
+</ul>
+<p class="caption collapsible-parent" role="heading">
+ <span class="caption-text">
+  Utilities:
+ </span>
+</p>
+<ul class="current nav sidenav_l1">
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   The current LEO population
+  </a>
+ </li>
+</ul>
+
+</nav> <!-- To handle the deprecated key -->
+
+<div class="navbar_extra_footer">
+  Theme by the <a href="https://ebp.jupyterbook.org">Executable Book Project</a>
+</div>
+
+</div>
+
+
+          
+
+
+          
+<main class="col py-md-3 pl-md-4 bd-content overflow-auto" role="main">
+    
+    <div class="topbar container-xl fixed-top">
+    <div class="topbar-contents row">
+        <div class="col-12 col-md-3 bd-topbar-whitespace site-navigation show"></div>
+        <div class="col pl-md-4 topbar-main">
+            
+            <button id="navbar-toggler" class="navbar-toggler ml-0" type="button" data-toggle="collapse"
+                data-toggle="tooltip" data-placement="bottom" data-target=".site-navigation" aria-controls="navbar-menu"
+                aria-expanded="true" aria-label="Toggle navigation" aria-controls="site-navigation"
+                title="Toggle navigation" data-toggle="tooltip" data-placement="left">
+                <i class="fas fa-bars"></i>
+                <i class="fas fa-arrow-left"></i>
+                <i class="fas fa-arrow-up"></i>
+            </button>
+            
+            
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn" aria-label="Download this page"><i
+            class="fas fa-download"></i></button>
+
+    <div class="dropdown-buttons">
+        <!-- ipynb file if we had a myst markdown file -->
+        
+        <!-- Download raw file -->
+        <a class="dropdown-buttons" href="../_sources/utilities/leo_population.ipynb.txt"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Download source file" data-toggle="tooltip"
+                data-placement="left">.ipynb</button></a>
+        <!-- Download PDF via print -->
+        <button type="button" id="download-print" class="btn btn-secondary topbarbtn" title="Print to PDF"
+            onClick="window.print()" data-toggle="tooltip" data-placement="left">.pdf</button>
+    </div>
+</div>
+
+            <!-- Source interaction buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Connect with source repository"><i class="fab fa-github"></i></button>
+    <div class="dropdown-buttons sourcebuttons">
+        <a class="repository-button"
+            href="https://github.com/bluescarni/heyoka.py"><button type="button" class="btn btn-secondary topbarbtn"
+                data-toggle="tooltip" data-placement="left" title="Source repository"><i
+                    class="fab fa-github"></i>repository</button></a>
+        <a class="issues-button"
+            href="https://github.com/bluescarni/heyoka.py/issues/new?title=Issue%20on%20page%20%2Futilities/leo_population.html&body=Your%20issue%20content%20here."><button
+                type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip" data-placement="left"
+                title="Open an issue"><i class="fas fa-lightbulb"></i>open issue</button></a>
+        
+    </div>
+</div>
+
+
+            <!-- Full screen (wrap in <a> to have style consistency -->
+            <a class="full-screen-button"><button type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip"
+                    data-placement="bottom" onclick="toggleFullScreen()" aria-label="Fullscreen mode"
+                    title="Fullscreen mode"><i
+                        class="fas fa-expand"></i></button></a>
+
+            <!-- Launch buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Launch interactive content"><i class="fas fa-rocket"></i></button>
+    <div class="dropdown-buttons">
+        
+        <a class="binder-button" href="https://mybinder.org/v2/gh/bluescarni/heyoka.py/main?urlpath=lab/tree/doc/utilities/leo_population.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Launch Binder" data-toggle="tooltip"
+                data-placement="left"><img class="binder-button-logo"
+                    src="../_static/images/logo_binder.svg"
+                    alt="Interact on binder">Binder</button></a>
+        
+        
+        
+        
+    </div>
+</div>
+
+        </div>
+
+        <!-- Table of contents -->
+        <div class="d-none d-md-block col-md-2 bd-toc show">
+            
+        <div class="tocsection onthispage pt-5 pb-3">
+            <i class="fas fa-list"></i>
+            Contents
+        </div>
+        <nav id="bd-toc-nav">
+            <ul class="nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#creating-the-info-on-the-tracked-population">
+   Creating the info on the tracked population
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#we-now-produce-some-plots-on-the-satellites-to-be-simulated">
+   We now produce some plots on the satellites to be simulated
+  </a>
+ </li>
+</ul>
+
+        </nav>
+        
+        </div>
+    </div>
+</div>
+    <div id="main-content" class="row">
+        <div class="col-12 col-md-9 pl-md-3 pr-md-0">
+        
+              <div>
+                
+  <section class="tex2jax_ignore mathjax_ignore" id="the-current-leo-population">
+<h1>The current LEO population<a class="headerlink" href="#the-current-leo-population" title="Permalink to this heading">¶</a></h1>
+<p>The US government provides GP or general perturbations orbital data produced from the <a class="reference external" href="https://en.wikipedia.org/wiki/United_States_Space_Surveillance_Network">US Space Surveillance Network (SSN)</a>. These are in the form of Brouwer mean elements to be used in the SGP4 or <a class="reference external" href="https://en.wikipedia.org/wiki/Simplified_perturbations_models">Simplified General Perturbations 4 orbit propagator</a>.</p>
+<p>Together with the Brouwer mean elements, information on the orbiting object <a class="reference external" href="https://en.wikipedia.org/wiki/BSTAR">BSTAR</a> cefficient is made available, hence on the drag force acting upon it, as well as some (limited) information on the object radar cross section (RCS).</p>
+<p>Using this information, we can compute plausible initial conditions of all tracked objects and instantiate simulations in cascade representative of the current knowledge on all tracked satellites. Such simulations could be used as a starting point to study possible evolutions of the currently tracked population.</p>
+<p>Lets see how this can be achieved with Python code. We start with the necessary imports:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pykep</span> <span class="k">as</span> <span class="nn">pk</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">pickle</span> <span class="k">as</span> <span class="nn">pkl</span>
+
+<span class="kn">import</span> <span class="nn">sgp4</span>
+<span class="kn">from</span> <span class="nn">sgp4.api</span> <span class="kn">import</span> <span class="n">Satrec</span><span class="p">,</span> <span class="n">SatrecArray</span>
+
+<span class="kn">from</span> <span class="nn">mpl_toolkits.mplot3d</span> <span class="kn">import</span> <span class="n">Axes3D</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="o">%</span><span class="k">matplotlib</span> inline
+</pre></div>
+</div>
+</div>
+</div>
+<section id="creating-the-info-on-the-tracked-population">
+<h2>Creating the info on the tracked population<a class="headerlink" href="#creating-the-info-on-the-tracked-population" title="Permalink to this heading">¶</a></h2>
+<p>We will here make combined use of two files that are available through the internet and assembled from data of the the USSPACECOM managed SSN.</p>
+<p>The files are named:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://celestrak.com/satcat/search.php">satcat.txt</a> downloaded from <a class="reference external" href="https://celestrak.com">celestrack</a></p></li>
+<li><p>[satcat.json](from https://www.space-track.org/basicspacedata/query/class/gp/decay_date/null-val/epoch/%3Enow-30/orderby/norad_cat_id/format/json) downloaded from <a class="reference external" href="https://celestrak.com">space-track</a></p></li>
+</ul>
+<p>The reason to use both, is that at the time of writing, they contain slightly complementary information. While both datasets contain the tracked objects Brouwer mean elements and their BSTAR, the information on the radar cross section (RCS) is only given for some satellites in the “old” satcat.txt. For those objects that do not have such an information, the json file reports, at least, a generic “SMALL”, “MEDIUM”, “LARGE” category that can be used to assign to the object a dimension (useful in simulations where detected collision result in break-ups based on the impact energy).</p>
+<p>Note that the remaining code is written to work with the two files as downloaded in February 2022. We have obtained permission from the SSA Partnership and Coalition Engagement (SPACE) Office (US) to share these, now old, files via the cascade code. To obtain the latest versions you may need a user in the space-track website.</p>
+<p>Lets start importing the files:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import the &quot;old&quot; SATCAT</span>
+<span class="n">satcat_old</span> <span class="o">=</span> <span class="n">pk</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">read_satcat</span><span class="p">(</span><span class="s2">&quot;data/satcat.txt&quot;</span><span class="p">)</span>
+<span class="c1"># Import the json catalogue</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;data/satcat.json&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+    <span class="n">satcat</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Satellites number in json: &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">satcat</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Satellites number in txt: &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">satcat_old</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Satellites number in json:  23947
+Satellites number in txt:  51407
+</pre></div>
+</div>
+</div>
+</div>
+<p>A different number of objects in the two datsets is expected as the txt (stacat_old) contains also all past decayed objects, while the json file (satcat) contains only the orbiting ones (at the time of download).</p>
+<p>We then add to the dictionary read from the json file and for each entry, i.e. for each satellite an estimate of the object radius in meters.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We add to the JSON entries their estimated radius (key: RADIUS)</span>
+<span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="nb">object</span> <span class="ow">in</span> <span class="n">satcat</span><span class="p">:</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="nb">object</span><span class="p">[</span><span class="s2">&quot;OBJECT_ID&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">satcat_old</span> <span class="ow">and</span> <span class="n">key</span> <span class="o">!=</span><span class="s1">&#39;&#39;</span> <span class="ow">and</span> <span class="n">satcat_old</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">radarA</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;N/A&quot;</span><span class="p">:</span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">satcat_old</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">radarA</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+        <span class="n">count</span><span class="o">+=</span><span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">object</span><span class="p">[</span><span class="s2">&quot;RCS_SIZE&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;SMALL&quot;</span><span class="p">:</span>
+            <span class="n">radius</span> <span class="o">=</span> <span class="mf">0.15</span>
+        <span class="k">elif</span> <span class="nb">object</span><span class="p">[</span><span class="s2">&quot;RCS_SIZE&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;MEDIUM&quot;</span><span class="p">:</span>
+            <span class="n">radius</span> <span class="o">=</span> <span class="mf">0.55</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">radius</span> <span class="o">=</span> <span class="mf">2.</span>
+    <span class="nb">object</span><span class="p">[</span><span class="s2">&quot;RADIUS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">radius</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of objects with radius estimated from satcat_old: &quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of objects with radius estimated from satcat_old:  15941
+</pre></div>
+</div>
+</div>
+</div>
+<p>In order to maintain a correspondence between the satcat and the various propagated particles we use and keep updated the following array:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">to_satcat_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">satcat</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of satellites left in the simulation: &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_satcat_index</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of satellites left in the simulation:  23947
+</pre></div>
+</div>
+</div>
+</div>
+<p>so that, if r[j] will contain the position of an object, satcat(to_satcat_index[j]) will be the corresponding satcat entry. This is made necessary as objects will be removed for several reasons from the simulation (decayed, exploded, etc..)</p>
+<p>We are now ready to compute the various object positions at a choosen starting epoch. We will use here the reference epoch 2022-Mar-01 since our files where downloaded at the beginning of 2022. We also use the vectorized version of the SGP4 propagator, hence
+building first a SatrecArray object (see <a class="reference external" href="https://pypi.org/project/sgp4/">sgp4 module documentation</a>) and focus on objects in LEO with a semi-major axis &lt; 10000 KM</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We call the SGP4 propagator to a common initial epoch</span>
+<span class="n">jd</span> <span class="o">=</span> <span class="n">pk</span><span class="o">.</span><span class="n">epoch_from_iso_string</span><span class="p">(</span><span class="s2">&quot;20220301T000000&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">jd</span> <span class="c1"># Julian date corresponding to 2022-Mar-01 00:00:00</span>
+<span class="n">sgp4_objects_l</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="nb">object</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">satcat</span><span class="p">):</span>
+    <span class="n">l1</span> <span class="o">=</span> <span class="nb">object</span><span class="p">[</span><span class="s2">&quot;TLE_LINE1&quot;</span><span class="p">]</span>
+    <span class="n">l2</span> <span class="o">=</span> <span class="nb">object</span><span class="p">[</span><span class="s2">&quot;TLE_LINE2&quot;</span><span class="p">]</span>
+    <span class="n">sgp4_objects_l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Satrec</span><span class="o">.</span><span class="n">twoline2rv</span><span class="p">(</span><span class="n">l1</span><span class="p">,</span> <span class="n">l2</span><span class="p">))</span>
+<span class="n">sgp4_objects</span> <span class="o">=</span> <span class="n">SatrecArray</span><span class="p">(</span><span class="n">sgp4_objects_l</span><span class="p">)</span>
+<span class="n">err</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">sgp4_objects</span><span class="o">.</span><span class="n">sgp4</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">2459639.5</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">]))</span>
+<span class="c1"># Reshaping to remove the middle dimension (its 1 anyway)</span>
+<span class="n">dims</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="p">(</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">dims</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+<span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="p">(</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">dims</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Some of the orbiting objects did not make it to 2022-Mar-01 as they have re-entered the Earth atmosphere. Lets count and remove them. First we use the error code from sgp4 to detect decayed  objects:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We remove the decayed objects</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">err</span><span class="o">!=</span><span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">mask</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">to_satcat_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">to_satcat_index</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of objects decayed: &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of satellites in the simulation: &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_satcat_index</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of objects decayed:  79
+Number of satellites in the simulation:  23868
+</pre></div>
+</div>
+</div>
+</div>
+<p>And then we filter with the semimajor axis at jd to remove objects that are not LEO as well as check the sanity of values of all remaining objects as sgp4 may return nan, infs or unphysical numbers when queried at a date well past the satellite decay.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We remove other decayed objects computing the orbital elements at jd and filtering again</span>
+<span class="n">sma</span><span class="p">,</span> <span class="n">ecc</span><span class="p">,</span> <span class="n">incl</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+<span class="n">counter</span><span class="o">=</span><span class="mi">0</span>
+<span class="k">for</span> <span class="n">pos</span><span class="p">,</span><span class="n">vel</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">v</span><span class="p">):</span>
+    <span class="n">elements</span> <span class="o">=</span> <span class="n">pk</span><span class="o">.</span><span class="n">ic2par</span><span class="p">(</span><span class="n">pos</span><span class="o">*</span><span class="mi">1000</span><span class="p">,</span><span class="n">vel</span><span class="o">*</span><span class="mi">1000</span><span class="p">,</span><span class="n">pk</span><span class="o">.</span><span class="n">MU_EARTH</span><span class="p">)</span>
+    <span class="n">sma</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">elements</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">1000</span><span class="p">)</span> 
+    <span class="n">ecc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">elements</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">incl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">elements</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">180</span><span class="p">)</span> 
+
+<span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sma</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">10000</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">mask</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">to_satcat_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">to_satcat_index</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">sma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">sma</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">ecc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">ecc</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">incl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">incl</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of objects removed: &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of satellites in the simulation: &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_satcat_index</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of objects removed:  4194
+Number of satellites in the simulation:  19674
+</pre></div>
+</div>
+</div>
+</div>
+<p>Finally we detect and remove objects that are co-orbiting, like payloads attached to the ISS and similar.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># First we find all unique elements in r</span>
+<span class="n">new_r</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">count</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">r</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">return_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">return_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="c1"># We then ask where more than one element occur</span>
+<span class="n">where</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">count</span><span class="o">&gt;</span><span class="mi">2</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="c1"># And for each entry that was not unique we retreive what objects</span>
+<span class="n">not_unique_lists</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">not_unique</span> <span class="ow">in</span> <span class="n">where</span><span class="p">:</span>
+    <span class="n">not_unique_lists</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">r</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">r</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">not_unique</span><span class="p">],</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span><span class="p">])</span>
+<span class="c1"># We now print on screen our findings</span>
+<span class="k">for</span> <span class="n">not_unique</span> <span class="ow">in</span> <span class="n">not_unique_lists</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Found the following co-orbiting objects:&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">not_unique</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">satcat</span><span class="p">[</span><span class="n">to_satcat_index</span><span class="p">[</span><span class="n">idx</span><span class="p">]][</span><span class="s2">&quot;OBJECT_NAME&quot;</span><span class="p">],</span> <span class="s2">&quot;</span><span class="se">\t\t</span><span class="s2">with RCS: &quot;</span><span class="p">,</span> <span class="n">satcat</span><span class="p">[</span><span class="n">to_satcat_index</span><span class="p">[</span><span class="n">idx</span><span class="p">]][</span><span class="s2">&quot;RADIUS&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Found the following co-orbiting objects:
+TIANZHOU 2 		with RCS:  2.0
+TIANZHOU 3 		with RCS:  0.15
+SZ-13 		with RCS:  2.0
+
+Found the following co-orbiting objects:
+ISS (NAUKA) 		with RCS:  2.0
+SOYUZ MS-19 		with RCS:  0.15
+PROGRESS MS-18 		with RCS:  2.0
+DRAGON ENDURANCE 		with RCS:  2.0
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We find all indexes of entries that are not unique and (but we keep the biggest)</span>
+<span class="n">to_delete</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">not_unique</span> <span class="ow">in</span> <span class="n">not_unique_lists</span><span class="p">:</span>
+    <span class="n">to_delete</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">not_unique</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">idx</span><span class="p">:</span> <span class="n">satcat</span><span class="p">[</span><span class="n">to_satcat_index</span><span class="p">[</span><span class="n">idx</span><span class="p">]][</span><span class="s2">&quot;RADIUS&quot;</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">1</span><span class="p">:])</span>
+    
+<span class="c1"># And now we can remove and delete</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">to_delete</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">to_delete</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">to_satcat_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">to_satcat_index</span><span class="p">,</span> <span class="n">to_delete</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of co-orbiting objects deleted: &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_delete</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of satellites in the simulation: &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_satcat_index</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of co-orbiting objects deleted:  5
+Number of satellites in the simulation:  19669
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="we-now-produce-some-plots-on-the-satellites-to-be-simulated">
+<h2>We now produce some plots on the satellites to be simulated<a class="headerlink" href="#we-now-produce-some-plots-on-the-satellites-to-be-simulated" title="Permalink to this heading">¶</a></h2>
+<p>At this point, in the simulation, the initial position r[k], corresponds to the entry satcat[to_satcat_index[k]]. Let us plot the distribution and positin of the various objects.
+First we must compute their orbital elements</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">radius</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">to_satcat_index</span><span class="p">:</span>
+    <span class="n">radius</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">satcat</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s2">&quot;RADIUS&quot;</span><span class="p">])</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">9</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">incl</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;inclination&quot;</span><span class="p">)</span>
+
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">sma</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;sma&quot;</span><span class="p">)</span>
+
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">ecc</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;ecc&quot;</span><span class="p">)</span>
+
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">radius</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">80</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;collision radius&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Text(0.5, 0, &#39;collision radius&#39;)
+</pre></div>
+</div>
+<img alt="../_images/092cf0c5d9fe65952147ee196f1a4b220faa17786c7036e0300b1eea3fb150ec.png" src="../_images/092cf0c5d9fe65952147ee196f1a4b220faa17786c7036e0300b1eea3fb150ec.png" />
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">7</span><span class="p">))</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter3D</span><span class="p">(</span><span class="n">r</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">pk</span><span class="o">.</span><span class="n">EARTH_RADIUS</span><span class="p">,</span> <span class="n">r</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">pk</span><span class="o">.</span><span class="n">EARTH_RADIUS</span><span class="p">,</span> <span class="n">r</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="n">pk</span><span class="o">.</span><span class="n">EARTH_RADIUS</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">view_init</span><span class="p">(</span><span class="mi">45</span><span class="p">,</span><span class="mi">30</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/861649e4c152a600efa1364d8823bc948ab6a6f65733ad361d51fa3736abaf25.png" src="../_images/861649e4c152a600efa1364d8823bc948ab6a6f65733ad361d51fa3736abaf25.png" />
+</div>
+</div>
+<p>Finally we can save all the information into an archive.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;data/leo_population.pk&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+    <span class="n">pkl</span><span class="o">.</span><span class="n">dump</span><span class="p">((</span><span class="n">r</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">to_satcat_index</span><span class="p">,</span><span class="n">satcat</span><span class="p">),</span> <span class="n">file</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+
+
+              </div>
+              
+        
+        <div class='prev-next-bottom'>
+            
+    <a class='left-prev' id="prev-link" href="../install.html" title="previous page">Installation</a>
+
+        </div>
+        
+        </div>
+    </div>
+    <footer class="footer mt-5 mt-md-0">
+    <div class="container">
+      <p>
+        
+          By Francesco Biscani and Dario Izzo<br/>
+        
+            &copy; Copyright 2023, Francesco Biscani and Dario Izzo.<br/>
+      </p>
+    </div>
+  </footer>
+</main>
+
+
+      </div>
+    </div>
+
+    
+  <script src="../_static/js/index.d3f166471bb80abb5163.js"></script>
+
+
+    
+  </body>
+</html>

@@ -10,8 +10,7 @@ Cascade
 
 Cascade is a Python library developed to propagate the evolution of large number of orbiting objects while detecting
 reliably close encounters and collisions. It is coded in modern C++20 with focus on the efficency of the underlying N-body 
-simulation with collision detection. It does not support parallel cluster computations of a single scenario,
-being instead tailored to massively parallel indepedent runs.
+simulation with collision detection. 
 
 Notable features include:
 
@@ -28,4 +27,12 @@ cascade is released under the MPL-2.0 license. The authors are Francesco Biscani
    :caption: Contents:
 
    install.rst
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Utilities:
+
+   utilities/leo_population
+
+
 
