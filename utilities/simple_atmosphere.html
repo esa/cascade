@@ -292,7 +292,7 @@ be inefficient and not necessary. It is of value, therefore, to create a simplif
 \[
 \rho(h) = \sum_i\alpha_i\exp(-\beta_i(h-\gamma_i))
 \]</div>
-<p>where <span class="math notranslate nohighlight">\(\alpha_i, \beta_i\)</span> and <span class="math notranslate nohighlight">\(\gamma_i\)</span> are various constant to be determined as to fit well the data from the NRLMSISE00 model shown in the plot above. Note that the form
+<p>where <span class="math notranslate nohighlight">\(\alpha_i, \beta_i\)</span> and <span class="math notranslate nohighlight">\(\gamma_i\)</span> are various constant to be determined as to fit well the data from the <a class="reference external" href="https://en.wikipedia.org/wiki/NRLMSISE-00">NRLMSISE00</a> model shown in the plot above. Note that the form
 of the function choosen as a limit of zero as h goes to infinity, a desirable behaviour for the use in a numerical simulation which cannot guarantee the objects ware in a specific shell.</p>
 <p>We will make use of <a class="reference external" href="https://esa.github.io/pygmo2/">pygmo</a> to solve the problem of finding the values of <span class="math notranslate nohighlight">\(\alpha_i, \beta_i\)</span> and <span class="math notranslate nohighlight">\(\gamma_i\)</span> fitting to the numerical data. The User Defined Problem (UDP) in pygmo is then coded:</p>
 <div class="cell docutils container">
@@ -324,7 +324,7 @@ of the function choosen as a limit of zero as h goes to infinity, a desirable be
 </div>
 </div>
 </div>
-<p>We then instantiate the pygmo problem using NRLMSISE00 data as target and use 4 terms in the expression, hence 12 constants.</p>
+<p>We then instantiate the pygmo problem using <a class="reference external" href="https://en.wikipedia.org/wiki/NRLMSISE-00">NRLMSISE00</a> data as target and use 4 terms in the expression, hence 12 constants.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">udp</span> <span class="o">=</span> <span class="n">fitting_NRLMSISE00</span><span class="p">(</span><span class="n">altitude</span><span class="p">,</span> <span class="n">density_nrl</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>

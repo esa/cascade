@@ -250,32 +250,29 @@
                 
   <section class="tex2jax_ignore mathjax_ignore" id="the-cube-approach">
 <h1>The <em>Cube</em> approach<a class="headerlink" href="#the-cube-approach" title="Permalink to this heading">¶</a></h1>
-<p>During the first decade of the new millenium computational tools became refined enough for engineers to conceive numerical simulations for the long term evolution of orbital environments:</p>
+<p>During the first decade of the new millenium computational tools became refined enough for scientists to conceive numerical simulations of the long term evolution of an orbital environment:</p>
 <blockquote>
 <div><p>“With the help of modern computers, it is now possible to perform numerical simulations of the orbital evolution of an N-body system. Therefore, there is a need for a collision model that can work with an orbital evolution simulation code to allow for source and sink terms of the objects involved as well as to utilize their updated orbital elements as they evolve in time. The “Cube” approach is designed to accomplish just that.” - Liou, J-C. “Collision activities in the future orbital debris environment.” Advances in Space Research 38.9 (2006): 2102-2106.</p>
 </div></blockquote>
-<p>The <em>Cube</em> approach mentioned is essentially based on the idea that if <span class="math notranslate nohighlight">\(P_{ij}\)</span> is a collision probability between orbiting object <span class="math notranslate nohighlight">\(i\)</span> and object <span class="math notranslate nohighlight">\(j\)</span>, then the total number of collisions <span class="math notranslate nohighlight">\(N_{tot}\)</span> between the two objects in a small enough time interval where <span class="math notranslate nohighlight">\(P_{ij}\)</span> can be considered constant will be:
-$<span class="math notranslate nohighlight">\(
+<p>The <em>Cube</em> approach mentioned in the above quote is based on the idea that if <span class="math notranslate nohighlight">\(P_{ij}\)</span> is a collision probability between orbiting object <span class="math notranslate nohighlight">\(i\)</span> and object <span class="math notranslate nohighlight">\(j\)</span>, then the total number of collisions <span class="math notranslate nohighlight">\(N_{tot}\)</span> between the two objects in a time interval where <span class="math notranslate nohighlight">\(P_{ij}\)</span> can be considered constant will be:</p>
+<p><span class="math notranslate nohighlight">\(
 N_{tot} = \int_{t_s}^{t_f} P_{ij} ds = [t_f - t_s] P_{ij}
-\)</span>$</p>
-<p>The formula above is formally exact and shifts the problem to that of introducing a <span class="math notranslate nohighlight">\(P_{ij}\)</span> which, in some sense, captures the collisional dynamics. In the <em>Cube</em> approach this is done dividing the entire space in cubes of side <span class="math notranslate nohighlight">\(L\)</span> and introducing the following two hypothesis:</p>
+\)</span></p>
+<p>The formula above is formally exact and shifts the problem to that of finding such an averaged <span class="math notranslate nohighlight">\(P_{ij}\)</span> capturing the collisional dynamics. In the <em>Cube</em> approach this is obtained dividing the entire Cartesian space in cubes of dimension <span class="math notranslate nohighlight">\(L\)</span> and introducing the following two hypothesis:</p>
 <ul class="simple">
-<li><p>Two objects <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span> have a non zero impact probability in <span class="math notranslate nohighlight">\([t_f - t_s]\)</span> only if they occupy the very same cube at <span class="math notranslate nohighlight">\(t_s\)</span>.</p></li>
-<li><p>When non-zero the collision probability between the two object is derived from the kinetic theory of gass applied to the volume <span class="math notranslate nohighlight">\(U =L^3\)</span></p></li>
+<li><p>Two objects <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span> have a non zero impact probability in <span class="math notranslate nohighlight">\([t_f - t_s]\)</span> if and only if they occupy the same cube at <span class="math notranslate nohighlight">\(t_s\)</span>.</p></li>
+<li><p>When non-zero, the collision probability between the two object <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span> is derived from the kinetic theory of gas applied to the cube.</p></li>
 </ul>
-<p>In the following we describe python code implementing this approach for a large orbital population.</p>
-<p>As usual, we start with some imports:</p>
+<p>In the following we describe python code implementing this approach for a large orbital population. As usual, we start with some imports:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Core imports</span>
 <span class="kn">import</span> <span class="nn">pykep</span> <span class="k">as</span> <span class="nn">pk</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">pickle</span> <span class="k">as</span> <span class="nn">pkl</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
-<span class="kn">from</span> <span class="nn">tqdm.notebook</span> <span class="kn">import</span> <span class="n">tqdm</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
 <span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
 
 <span class="c1"># sgp4 imports</span>
 <span class="kn">import</span> <span class="nn">sgp4</span>
@@ -344,9 +341,8 @@ Velocity (km/s):  [ 1.38399824  5.88779107 -3.78530589]
 </div>
 </div>
 </div>
-<p>The following function is a central part of the Cube approach. It takes a point cloud and a linear dimension and returns all the points
-that are in the same cube of side L. It assumes the 3D space is divided into cubes starting from the origin. In other words, along the three dimensions,
-the cube vertices will have coordinates <span class="math notranslate nohighlight">\([...,-L,0,L,...]\)</span></p>
+<p>The following function is a central part of the <em>Cube</em> approach. It takes <span class="math notranslate nohighlight">\(N\)</span> points and a linear dimension and returns all the points that occupy the same cube of side L.
+In our implementation the cubes start from the origin. In other words, along the three dimensions, the cube vertices have coordinates <span class="math notranslate nohighlight">\([...,-L,0,L,...]\)</span>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">cubes</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">cube_dimension</span><span class="p">):</span>
@@ -381,7 +377,7 @@ the cube vertices will have coordinates <span class="math notranslate nohighligh
 </div>
 </div>
 <p>Note that the great advantage of the above preliminar collision detection is that it has a linear complexity in the number of particles.
-This makes the Cube approach scale remarkably well as an n-body collision simulation. Lets time its performances in our specific case:</p>
+This makes the <em>Cube</em> approach scale remarkably well as an n-body collision simulation. Lets time its performances in our specific case:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">timeit</span> cubes(r, 10)
@@ -389,12 +385,13 @@ This makes the Cube approach scale remarkably well as an n-body collision simula
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>33.2 ms ± 59.6 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>46.2 ms ± 3.56 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
 </pre></div>
 </div>
 </div>
 </div>
-<p>The following function computes the SGP4 propagation of all objects in indexes over a fixed simulation time and time grid. Note that this numerical propagation is made using the vectorized SGP4 propagator.</p>
+<p>The following function computes the SGP4 propagation of selected catalogued objects over a fixed time grid.
+This numerical propagation is here made using the vectorized version of the SGP4 propagator achieving great efficiency.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">simulate_sgp4</span><span class="p">(</span><span class="n">indexes</span><span class="p">,</span> <span class="n">sim_time</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span><span class="n">time_interval</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">jd</span> <span class="o">=</span> <span class="n">pk</span><span class="o">.</span><span class="n">epoch_from_iso_string</span><span class="p">(</span><span class="s2">&quot;20220301T000000&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">jd</span><span class="p">):</span>
@@ -440,7 +437,7 @@ We start precomputing all the positions and velocities of the orbiting objects i
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Time to perform all numerical integrations:  19.766477584838867
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Time to perform all numerical integrations:  32.64615821838379
 </pre></div>
 </div>
 </div>
@@ -448,8 +445,7 @@ We start precomputing all the positions and velocities of the orbiting objects i
 <p>We now perfrom the simulation and use within each time interval, the kinetic theory of gasses to determine whether a collision has happened or not.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We assume all satellites are valid at the starting epoch</span>
-<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
 <span class="n">undecayed</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">r_sgp4</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
 <span class="n">n_collisions</span><span class="o">=</span><span class="mi">0</span>
 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">r_sgp4</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
@@ -500,14 +496,18 @@ We start precomputing all the positions and velocities of the orbiting objects i
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Collision! pair: [11465, 16559], years: 0.7118412046543463
-Collision! pair: [14592, 15841], years: 1.9712525667351128
-Collision! pair: [12937, 14129], years: 8.172484599589323
-Collision! pair: [6026, 15549], years: 10.622861054072553
-Collision! pair: [7635, 14819], years: 18.576317590691307
-Time elasped:  67.80387353897095
-Decayed objects:  4994
-Number of collisions:  5
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Collision! pair: [14675, 16483], years: 0.05475701574264202
+Collision! pair: [14171, 16142], years: 1.0677618069815196
+Collision! pair: [12868, 13418], years: 8.145106091718
+Collision! pair: [13090, 14427], years: 10.03422313483915
+Collision! pair: [919, 14280], years: 11.704312114989733
+Collision! pair: [872, 15634], years: 11.991786447638603
+Collision! pair: [14304, 15069], years: 13.388090349075975
+Collision! pair: [3170, 5644], years: 16.290212183436
+Collision! pair: [6048, 10811], years: 18.795345653661876
+Time elasped:  86.71606779098511
+Decayed objects:  4991
+Number of collisions:  9
 </pre></div>
 </div>
 </div>

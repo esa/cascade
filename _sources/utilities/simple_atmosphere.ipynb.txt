@@ -118,7 +118,7 @@
     "\\rho(h) = \\sum_i\\alpha_i\\exp(-\\beta_i(h-\\gamma_i))\n",
     "$$\n",
     "\n",
-    "where $\\alpha_i, \\beta_i$ and $\\gamma_i$ are various constant to be determined as to fit well the data from the NRLMSISE00 model shown in the plot above. Note that the form \n",
+    "where $\\alpha_i, \\beta_i$ and $\\gamma_i$ are various constant to be determined as to fit well the data from the [NRLMSISE00](https://en.wikipedia.org/wiki/NRLMSISE-00) model shown in the plot above. Note that the form \n",
     "of the function choosen as a limit of zero as h goes to infinity, a desirable behaviour for the use in a numerical simulation which cannot guarantee the objects ware in a specific shell.\n",
     "\n",
     "We will make use of [pygmo](https://esa.github.io/pygmo2/) to solve the problem of finding the values of $\\alpha_i, \\beta_i$ and $\\gamma_i$ fitting to the numerical data. The User Defined Problem (UDP) in pygmo is then coded:"
@@ -162,7 +162,7 @@
    "id": "89e64def",
    "metadata": {},
    "source": [
-    "We then instantiate the pygmo problem using NRLMSISE00 data as target and use 4 terms in the expression, hence 12 constants."
+    "We then instantiate the pygmo problem using [NRLMSISE00](https://en.wikipedia.org/wiki/NRLMSISE-00) data as target and use 4 terms in the expression, hence 12 constants."
    ]
   },
   {

@@ -7,23 +7,22 @@
    "metadata": {},
    "source": [
     "# The *Cube* approach\n",
-    "During the first decade of the new millenium computational tools became refined enough for engineers to conceive numerical simulations for the long term evolution of orbital environments:\n",
+    "During the first decade of the new millenium computational tools became refined enough for scientists to conceive numerical simulations of the long term evolution of an orbital environment:\n",
     "\n",
     "> \"With the help of modern computers, it is now possible to perform numerical simulations of the orbital evolution of an N-body system. Therefore, there is a need for a collision model that can work with an orbital evolution simulation code to allow for source and sink terms of the objects involved as well as to utilize their updated orbital elements as they evolve in time. The “Cube” approach is designed to accomplish just that.\" - Liou, J-C. \"Collision activities in the future orbital debris environment.\" Advances in Space Research 38.9 (2006): 2102-2106.\n",
     "\n",
-    "The *Cube* approach mentioned is essentially based on the idea that if $P_{ij}$ is a collision probability between orbiting object $i$ and object $j$, then the total number of collisions $N_{tot}$ between the two objects in a small enough time interval where $P_{ij}$ can be considered constant will be:\n",
-    "$$\n",
+    "The *Cube* approach mentioned in the above quote is based on the idea that if $P_{ij}$ is a collision probability between orbiting object $i$ and object $j$, then the total number of collisions $N_{tot}$ between the two objects in a time interval where $P_{ij}$ can be considered constant will be:\n",
+    "\n",
+    "$\n",
     "N_{tot} = \\int_{t_s}^{t_f} P_{ij} ds = [t_f - t_s] P_{ij}\n",
-    "$$\n",
+    "$\n",
     "\n",
-    "The formula above is formally exact and shifts the problem to that of introducing a $P_{ij}$ which, in some sense, captures the collisional dynamics. In the *Cube* approach this is done dividing the entire space in cubes of side $L$ and introducing the following two hypothesis:\n",
+    "The formula above is formally exact and shifts the problem to that of finding such an averaged $P_{ij}$ capturing the collisional dynamics. In the *Cube* approach this is obtained dividing the entire Cartesian space in cubes of dimension $L$ and introducing the following two hypothesis:\n",
     "\n",
-    " * Two objects $i$ and $j$ have a non zero impact probability in $[t_f - t_s]$ only if they occupy the very same cube at $t_s$.\n",
-    " * When non-zero the collision probability between the two object is derived from the kinetic theory of gass applied to the volume $U =L^3$\n",
+    " * Two objects $i$ and $j$ have a non zero impact probability in $[t_f - t_s]$ if and only if they occupy the same cube at $t_s$.\n",
+    " * When non-zero, the collision probability between the two object $i$ and $j$ is derived from the kinetic theory of gas applied to the cube.\n",
     "\n",
-    "In the following we describe python code implementing this approach for a large orbital population.\n",
-    "\n",
-    "As usual, we start with some imports:"
+    "In the following we describe python code implementing this approach for a large orbital population. As usual, we start with some imports:"
    ]
   },
   {
@@ -36,12 +35,10 @@
     "# Core imports\n",
     "import pykep as pk\n",
     "import numpy as np\n",
-    "import json\n",
     "import pickle as pkl\n",
     "from copy import deepcopy\n",
-    "from tqdm.notebook import tqdm\n",
-    "from collections import defaultdict\n",
     "import time\n",
+    "from collections import defaultdict\n",
     "\n",
     "# sgp4 imports\n",
     "import sgp4\n",
@@ -147,9 +144,8 @@
    "id": "3a71edb9",
    "metadata": {},
    "source": [
-    "The following function is a central part of the Cube approach. It takes a point cloud and a linear dimension and returns all the points \n",
-    "that are in the same cube of side L. It assumes the 3D space is divided into cubes starting from the origin. In other words, along the three dimensions,\n",
-    "the cube vertices will have coordinates $[...,-L,0,L,...]$\n"
+    "The following function is a central part of the *Cube* approach. It takes $N$ points and a linear dimension and returns all the points that occupy the same cube of side L. \n",
+    "In our implementation the cubes start from the origin. In other words, along the three dimensions, the cube vertices have coordinates $[...,-L,0,L,...]$.\n"
    ]
   },
   {
@@ -195,7 +191,7 @@
    "metadata": {},
    "source": [
     "Note that the great advantage of the above preliminar collision detection is that it has a linear complexity in the number of particles. \n",
-    "This makes the Cube approach scale remarkably well as an n-body collision simulation. Lets time its performances in our specific case:\n",
+    "This makes the *Cube* approach scale remarkably well as an n-body collision simulation. Lets time its performances in our specific case:\n",
     "\n"
    ]
   },
@@ -209,7 +205,7 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "33.2 ms ± 59.6 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)\n"
+      "46.2 ms ± 3.56 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)\n"
      ]
     }
    ],
@@ -223,7 +219,8 @@
    "id": "f008300a",
    "metadata": {},
    "source": [
-    "The following function computes the SGP4 propagation of all objects in indexes over a fixed simulation time and time grid. Note that this numerical propagation is made using the vectorized SGP4 propagator."
+    "The following function computes the SGP4 propagation of selected catalogued objects over a fixed time grid. \n",
+    "This numerical propagation is here made using the vectorized version of the SGP4 propagator achieving great efficiency."
    ]
   },
   {
@@ -280,7 +277,7 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "Time to perform all numerical integrations:  19.766477584838867\n"
+      "Time to perform all numerical integrations:  32.64615821838379\n"
      ]
     }
    ],
@@ -312,19 +309,22 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "Collision! pair: [11465, 16559], years: 0.7118412046543463\n",
-      "Collision! pair: [14592, 15841], years: 1.9712525667351128\n",
-      "Collision! pair: [12937, 14129], years: 8.172484599589323\n",
-      "Collision! pair: [6026, 15549], years: 10.622861054072553\n",
-      "Collision! pair: [7635, 14819], years: 18.576317590691307\n",
-      "Time elasped:  67.80387353897095\n",
-      "Decayed objects:  4994\n",
-      "Number of collisions:  5\n"
+      "Collision! pair: [14675, 16483], years: 0.05475701574264202\n",
+      "Collision! pair: [14171, 16142], years: 1.0677618069815196\n",
+      "Collision! pair: [12868, 13418], years: 8.145106091718\n",
+      "Collision! pair: [13090, 14427], years: 10.03422313483915\n",
+      "Collision! pair: [919, 14280], years: 11.704312114989733\n",
+      "Collision! pair: [872, 15634], years: 11.991786447638603\n",
+      "Collision! pair: [14304, 15069], years: 13.388090349075975\n",
+      "Collision! pair: [3170, 5644], years: 16.290212183436\n",
+      "Collision! pair: [6048, 10811], years: 18.795345653661876\n",
+      "Time elasped:  86.71606779098511\n",
+      "Decayed objects:  4991\n",
+      "Number of collisions:  9\n"
      ]
     }
    ],
    "source": [
-    "# We assume all satellites are valid at the starting epoch\n",
     "start = time.time()\n",
     "undecayed = set(np.arange(r_sgp4.shape[0]))\n",
     "n_collisions=0\n",
@@ -400,7 +400,7 @@
    "name": "python",
    "nbconvert_exporter": "python",
    "pygments_lexer": "ipython3",
-   "version": "3.10.8 | packaged by conda-forge | (main, Nov 22 2022, 08:26:04) [GCC 10.4.0]"
+   "version": "3.10.8"
   },
   "vscode": {
    "interpreter": {
