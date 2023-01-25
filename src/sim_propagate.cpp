@@ -16,6 +16,7 @@
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <stdexcept>
 #include <tuple>
 #include <utility>
 
@@ -534,7 +535,7 @@ void sim::morton_encode_sort_parallel()
 // NOTE: exception-wise: no user-visible data is altered
 // until the end of the function, at which point the new
 // sim data is set up in a noexcept manner.
-outcome sim::step(double dt)
+outcome sim::step()
 {
     namespace hy = heyoka;
     using dfloat = hy::detail::dfloat<double>;
@@ -550,20 +551,16 @@ outcome sim::step(double dt)
         throw std::invalid_argument("Cannot integrate a simulation with no particles");
     }
 
-    if (!std::isfinite(dt)) {
-        throw std::invalid_argument("The superstep size must be finite");
-    }
+    // Setup the number of chunks.
+    m_data->nchunks = boost::numeric_cast<unsigned>(m_n_par_ct);
+    assert(m_data->nchunks > 0u);
+    logger->trace("Number of chunks: {}", m_data->nchunks);
 
     // Setup the superstep size.
-    m_data->delta_t = dt <= 0 ? infer_superstep() : dt;
-
-    // Setup the number of chunks.
-    m_data->nchunks = boost::numeric_cast<unsigned>(std::ceil(m_data->delta_t / m_ct));
-    if (m_data->nchunks == 0u) {
-        throw std::invalid_argument(
-            "The number of chunks cannot be zero (this likely indicates that a zero supertstep size was specified)");
+    m_data->delta_t = m_ct * m_data->nchunks;
+    if (!std::isfinite(m_data->delta_t) || m_data->delta_t <= 0) {
+        throw std::invalid_argument(fmt::format("An invalid superstep size of {} was inferred", m_data->delta_t));
     }
-    logger->trace("Number of chunks: {}", m_data->nchunks);
 
     // Cache a few quantities.
     const auto delta_t = m_data->delta_t;
@@ -1306,194 +1303,6 @@ outcome sim::step(double dt)
     return oc;
 }
 
-// Helper for the automatic determination
-// of the superstep size.
-double sim::infer_superstep()
-{
-    namespace hy = heyoka;
-
-    spdlog::stopwatch sw;
-
-    auto *logger = detail::get_logger();
-
-    // Cache a few quantities.
-    const auto batch_size = m_data->b_ta.get_batch_size();
-    const auto nparts = get_nparts();
-    const auto n_batches = nparts / batch_size;
-
-    // For the superstep determination, we won't
-    // iterate over all particles, but (roughly)
-    // every 'stride' particles.
-    constexpr auto stride = 10u;
-
-    // Overflow check: we will need to iterate
-    // possibly up to index nparts + stride.
-    if (stride > std::numeric_limits<size_type>::max() - nparts) {
-        throw std::overflow_error("Overflow detected during the automatic determination of the superstep size");
-    }
-
-    // Helper to perform the element-wise addition
-    // of pairs.
-    auto pair_plus = [](const auto &p1, const auto &p2) -> std::pair<double, size_type> {
-        return {p1.first + p2.first, p1.second + p2.second};
-    };
-
-    // Global variables to compute the mean
-    // dynamical timestep.
-    alignas(detail::atomic_ref<double>::required_alignment) double acc = 0;
-    alignas(detail::atomic_ref<size_type>::required_alignment) size_type n_part_acc = 0;
-
-    // NOTE: as usual, run in parallel the batch and scalar computations.
-    oneapi::tbb::parallel_invoke(
-        [&]() {
-            const auto batch_res = oneapi::tbb::parallel_deterministic_reduce(
-                oneapi::tbb::blocked_range<size_type>(0, n_batches, 100), std::pair{0., static_cast<size_type>(0)},
-                [&](const auto &range, auto partial_sum) {
-                    // Fetch batch data from the cache, or create it.
-                    std::unique_ptr<sim_data::batch_data> bdata_ptr;
-
-                    if (m_data->b_ta_cache.try_pop(bdata_ptr)) {
-                        assert(bdata_ptr);
-                        assert(bdata_ptr->pfor_ts.size() == batch_size);
-                    } else {
-                        SPDLOG_LOGGER_DEBUG(logger, "Creating new batch data");
-
-#if defined(__clang__)
-                        bdata_ptr = std::make_unique<sim_data::batch_data>(sim_data::batch_data{m_data->b_ta, {}});
-#else
-                        bdata_ptr = std::make_unique<sim_data::batch_data>(m_data->b_ta);
-#endif
-                        bdata_ptr->pfor_ts.resize(boost::numeric_cast<decltype(bdata_ptr->pfor_ts.size())>(batch_size));
-                    }
-
-                    // Cache a few variables.
-                    auto &ta = bdata_ptr->ta;
-
-                    for (auto idx = range.begin(); idx < range.end(); idx += stride) {
-                        // Particle indices corresponding to the current batch.
-                        const auto pidx_begin = idx * batch_size;
-                        const auto pidx_end = pidx_begin + batch_size;
-
-                        // Setup the integrator.
-                        init_batch_ta(ta, pidx_begin, pidx_end);
-
-                        // Integrate a single step.
-                        ta.step();
-
-                        // Accumulate into partial_sum.
-                        for (const auto &[oc, h] : ta.get_step_res()) {
-                            // NOTE: ignore batch elements which did not end with success
-                            // or whose timestep is not finite.
-                            if (oc != hy::taylor_outcome::success || !std::isfinite(h)) {
-                                continue;
-                            }
-
-                            partial_sum.first += h;
-                            ++partial_sum.second;
-                        }
-                    }
-
-                    // Put the integrator data (back) into the caches.
-                    m_data->b_ta_cache.push(std::move(bdata_ptr));
-
-                    return partial_sum;
-                },
-                pair_plus);
-
-            // Update the global values.
-            {
-                detail::atomic_ref<double> acc_at(acc);
-                acc_at.fetch_add(batch_res.first, detail::memorder_relaxed);
-            }
-
-            {
-                detail::atomic_ref<size_type> n_part_acc_at(n_part_acc);
-                n_part_acc_at.fetch_add(batch_res.second, detail::memorder_relaxed);
-            }
-        },
-        [&]() {
-            const auto scal_res = oneapi::tbb::parallel_deterministic_reduce(
-                oneapi::tbb::blocked_range<size_type>(n_batches * batch_size, nparts, 100),
-                std::pair{0., static_cast<size_type>(0)},
-                [&](const auto &range, auto partial_sum) {
-                    // Fetch an integrator from the cache, or create it.
-                    std::unique_ptr<hy::taylor_adaptive<double>> ta_ptr;
-
-                    if (m_data->s_ta_cache.try_pop(ta_ptr)) {
-                        assert(ta_ptr);
-                    } else {
-                        SPDLOG_LOGGER_DEBUG(logger, "Creating new integrator");
-
-                        ta_ptr = std::make_unique<hy::taylor_adaptive<double>>(m_data->s_ta);
-                    }
-
-                    // Cache a few variables.
-                    auto &ta = *ta_ptr;
-
-                    for (auto pidx = range.begin(); pidx < range.end(); pidx += stride) {
-                        // Setup the integrator.
-                        init_scalar_ta(ta, pidx);
-
-                        // Integrate for a single step
-                        const auto [oc, h] = ta.step();
-
-                        // Accumulate into partial_sum.
-                        if (oc != hy::taylor_outcome::success || !std::isfinite(h)) {
-                            // NOTE: ignore particles which did not end with success
-                            // or whose timestep is not finite.
-                            continue;
-                        }
-
-                        partial_sum.first += h;
-                        ++partial_sum.second;
-                    }
-
-                    // Put the integrator (back) into the cache.
-                    m_data->s_ta_cache.push(std::move(ta_ptr));
-
-                    return partial_sum;
-                },
-                pair_plus);
-
-            // Update the global values.
-            {
-                detail::atomic_ref<double> acc_at(acc);
-                acc_at.fetch_add(scal_res.first, detail::memorder_relaxed);
-            }
-
-            {
-                detail::atomic_ref<size_type> n_part_acc_at(n_part_acc);
-                n_part_acc_at.fetch_add(scal_res.second, detail::memorder_relaxed);
-            }
-        });
-
-    // NOTE: this can happen only if the simulation has zero particles, or if
-    // no particle considered in the timestep determination ended with a success
-    // outcome.
-    if (n_part_acc == 0u) {
-        throw std::invalid_argument(
-            "Cannot automatically determine the superstep size if there are no particles in the simulation");
-    }
-
-    // Compute the final result: average step size multiplied by
-    // a small constant.
-    const auto res = acc / static_cast<double>(n_part_acc) * 3;
-
-    if (!std::isfinite(res)) {
-        throw std::invalid_argument("The automatic determination of the superstep size yielded a non-finite value");
-    }
-
-    if (res == 0) {
-        throw std::invalid_argument("The automatic determination of the superstep size yielded a value of zero");
-    }
-
-    logger->trace("Timestep deduction time: {}s", sw);
-    logger->trace("Inferred superstep size: {}", res);
-    SPDLOG_LOGGER_DEBUG(logger, "Number of particles considered for timestep deduction: {}", n_part_acc);
-
-    return res;
-}
-
 // Helper to verify the global AABB computed for each chunk.
 void sim::verify_global_aabbs() const
 {
@@ -1653,7 +1462,7 @@ void sim::dense_propagate(double t)
 }
 
 template <typename T>
-outcome sim::propagate_until_impl(const T &final_t, double dt)
+outcome sim::propagate_until_impl(const T &final_t)
 {
     assert(isfinite(final_t) && final_t > m_data->time);
 
@@ -1662,7 +1471,7 @@ outcome sim::propagate_until_impl(const T &final_t, double dt)
         const auto orig_t = m_data->time;
 
         // Take a step.
-        const auto cur_oc = step(dt);
+        const auto cur_oc = step();
 
         if (cur_oc == outcome::success) {
             // Successful step with no interruption.
@@ -1733,7 +1542,7 @@ outcome sim::propagate_until_impl(const T &final_t, double dt)
     }
 }
 
-outcome sim::propagate_until(double t, double dt)
+outcome sim::propagate_until(double t)
 {
     using dfloat = heyoka::detail::dfloat<double>;
 
@@ -1749,7 +1558,7 @@ outcome sim::propagate_until(double t, double dt)
         return outcome::time_limit;
     }
 
-    return propagate_until_impl(dfloat(t), dt);
+    return propagate_until_impl(dfloat(t));
 }
 
 // Helper to copy the global state vector from

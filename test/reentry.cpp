@@ -47,7 +47,7 @@ TEST_CASE("reentry sphere")
     sv = xt::xarray<double>{{0., 1.5, 0, 0, 0., 0., 0.}};
     s.set_time(0.);
 
-    oc = s.propagate_until(1000, 0.1);
+    oc = s.propagate_until(1000);
 
     REQUIRE(oc == outcome::reentry);
 
@@ -59,7 +59,7 @@ TEST_CASE("reentry sphere")
 
     // Test possible re-trigger of the same event if we do not resolve it.
     try {
-        s.step(.1);
+        s.step();
     } catch (const std::invalid_argument &ia) {
         REQUIRE(boost::algorithm::contains(
             ia.what(), "The recomputed number of chunks after the triggering of a stopping terminal"));
@@ -70,7 +70,7 @@ TEST_CASE("reentry sphere")
                           1.1, 0., 0., 0., .953, 0., 0., 1.1, 0., 0., 0., .953, 0., 0., 1.1, 0., 0., 0., .953, 0., 0.});
     s.set_time(0.);
 
-    oc = s.propagate_until(1000, 0.1);
+    oc = s.propagate_until(1000);
 
     REQUIRE(oc == outcome::reentry);
     REQUIRE(std::get<1>(*s.get_interrupt_info()) == 1u);
@@ -86,7 +86,7 @@ TEST_CASE("reentry sphere")
 
     // Test possible re-trigger of the same event if we do not resolve it.
     try {
-        s.step(.1);
+        s.step();
     } catch (const std::invalid_argument &ia) {
         REQUIRE(boost::algorithm::contains(
             ia.what(), "The recomputed number of chunks after the triggering of a stopping terminal"));
@@ -102,7 +102,7 @@ TEST_CASE("reentry ellipsoid")
     auto sv = xt::adapt(s.get_state_data(), {1, 7});
     auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
 
-    auto oc = s.propagate_until(1000., 0.1);
+    auto oc = s.propagate_until(1000.);
 
     REQUIRE(oc == outcome::reentry);
 
@@ -116,7 +116,7 @@ TEST_CASE("reentry ellipsoid")
 
     s.set_time(0.);
 
-    oc = s.propagate_until(1000, 0.1);
+    oc = s.propagate_until(1000);
 
     REQUIRE(oc == outcome::reentry);
 
@@ -130,7 +130,7 @@ TEST_CASE("reentry ellipsoid")
 
     s.set_time(0.);
 
-    oc = s.propagate_until(1000, 0.1);
+    oc = s.propagate_until(1000);
 
     REQUIRE(oc == outcome::reentry);
 
@@ -141,7 +141,7 @@ TEST_CASE("reentry ellipsoid")
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.2).epsilon(0.).margin(1e-14));
 
     try {
-        s.step(.1);
+        s.step();
     } catch (const std::invalid_argument &ia) {
         REQUIRE(boost::algorithm::contains(
             ia.what(), "The recomputed number of chunks after the triggering of a stopping terminal"));
@@ -152,7 +152,7 @@ TEST_CASE("reentry ellipsoid")
                           1.1, 0., 0., 0., .953, 0., 0., 1.1, 0., 0., 0., .953, 0., 0., 1.1, 0., 0., 0., .953, 0., 0.});
     s.set_time(0.);
 
-    oc = s.propagate_until(1000, 0.1);
+    oc = s.propagate_until(1000);
 
     REQUIRE(oc == outcome::reentry);
     REQUIRE(std::get<1>(*s.get_interrupt_info()) == 1u);
@@ -167,7 +167,7 @@ TEST_CASE("reentry ellipsoid")
     REQUIRE(std::sqrt(x * x + y * y + z * z) == Approx(1.).epsilon(0.).margin(1e-14));
 
     try {
-        s.step(.1);
+        s.step();
     } catch (const std::invalid_argument &ia) {
         REQUIRE(boost::algorithm::contains(
             ia.what(), "The recomputed number of chunks after the triggering of a stopping terminal"));
@@ -179,7 +179,7 @@ TEST_CASE("reentry ellipsoid")
 
     s.set_time(0.);
 
-    oc = s.propagate_until(1000, 0.1);
+    oc = s.propagate_until(1000);
 
     REQUIRE(oc == outcome::reentry);
     REQUIRE(std::get<1>(*s.get_interrupt_info()) == 1u);
@@ -196,7 +196,7 @@ TEST_CASE("reentry ellipsoid")
 
     s.set_time(0.);
 
-    oc = s.propagate_until(1000, 0.1);
+    oc = s.propagate_until(1000);
 
     REQUIRE(oc == outcome::reentry);
     REQUIRE(std::get<1>(*s.get_interrupt_info()) == 3u);

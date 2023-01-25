@@ -8,6 +8,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <fstream>
 #include <initializer_list>
 #include <iostream>
@@ -104,7 +105,8 @@ Allowed options:
   -r [ --rcs_factor ] arg (=1)          factor for the radius (collisions)
   -c [ --c_timestep ] arg (=185.5663)
                                         collisional time step
-  -S [ --s_size ] arg                   superstep size
+  -p [ --n_par_ct ] arg (=30)           number of collisional timesteps to
+                                        be processed in parallel
 
 To recover the results prior to this benchmark code obtained on the large dataset, use -c 64.5448
 */
@@ -124,8 +126,8 @@ int main(int ac, char *av[])
         "steps,s", po::value<int>()->default_value(20), "set number of steps to perform")(
         "large,l", po::value<bool>()->default_value(false), "augments with >500000 small debris")(
         "rcs_factor,r", po::value<double>()->default_value(1.), "factor for the radius (collisions)")(
-        "c_timestep,c", po::value<double>()->default_value(185.5663),
-        "collisional time step")("s_size,S", po::value<double>(), "superstep size");
+        "c_timestep,c", po::value<double>()->default_value(185.5663), "collisional time step")(
+        "n_par_ct,p", po::value<std::uint32_t>(), "number of collisional timesteps to be processed in parallel");
 
     po::variables_map vm;
     po::store(po::parse_command_line(ac, av, desc), vm);
@@ -162,20 +164,15 @@ int main(int ac, char *av[])
         c_timestep = vm["c_timestep"].as<double>();
     }
 
-    double s_size;
-    if (vm.count("s_size")) {
-        s_size = vm["s_size"].as<double>();
+    std::uint32_t n_par_ct = 30;
+    if (vm.count("n_par_ct")) {
+        n_par_ct = vm["n_par_ct"].as<std::uint32_t>();
     }
 
     std::cout << "\nRunning " << max_steps << " steps with " << n_cpus << " cpus\n"
               << (large_dataset ? "Large" : "Small") << " dataset used\nRadius factor: " << rcs_factor
-              << "\nCollisional time-step: " << c_timestep << "s\nSuper step size: ";
-    if (vm.count("s_size")) {
-        std::cout << s_size << "s";
-    } else {
-        std::cout << "auto";
-    }
-    std::cout << std::endl;
+              << "\nCollisional time-step: " << c_timestep
+              << "s\nNumber of parallel collisional timesteps: " << n_par_ct << std::endl;
 
     // Construct the initial state from files. This was created using all catalogued objects from spacetrack as of 2022.
     // The large database instead adds also the debris as to match the LADDS test case.
@@ -295,7 +292,7 @@ int main(int ac, char *av[])
     } else {
         c_rad = min_radius;
     }
-    sim s(state, c_timestep, kw::dyn = dyn, kw::pars = pars, kw::c_radius = c_rad);
+    sim s(state, c_timestep, kw::dyn = dyn, kw::pars = pars, kw::c_radius = c_rad, kw::n_par_ct = n_par_ct);
     // Perform steps of the simulation.
     // ------------------------------------------------------------------------------------------------------
     outcome oc;
@@ -304,12 +301,8 @@ int main(int ac, char *av[])
         std::cout << "\nStep: " << step << '\n';
         std::cout << "Time: " << s.get_time() / 60 / 60 / 24 << '\n';
 
-        // Superstep is only used if passed as argument, else automatically detected.
-        if (vm.count("s_size")) {
-            oc = s.step(s_size);
-        } else {
-            oc = s.step();
-        }
+        oc = s.step();
+
         if (oc == outcome::collision) {
             // Fetch the indices of the collision.
             const auto [i, j] = std::get<0>(*s.get_interrupt_info());

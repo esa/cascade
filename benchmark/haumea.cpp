@@ -8,6 +8,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <fstream>
 #include <initializer_list>
 #include <iostream>
@@ -167,10 +168,11 @@ int main()
     }
 
     // Create the simulation.
-    sim s(state, ct, kw::dyn = dynamics, kw::c_radius = std::vector<double>{ra, rb, rc}, kw::d_radius = a_s * 10);
+    sim s(state, ct, kw::dyn = dynamics, kw::c_radius = std::vector<double>{ra, rb, rc}, kw::d_radius = a_s * 10,
+          kw::n_par_ct = static_cast<std::uint32_t>(dt / ct));
 
     while (true) {
-        auto oc = s.step(dt);
+        auto oc = s.step();
 
         if (oc == outcome::collision) {
             // Fetch the indices of the collision.

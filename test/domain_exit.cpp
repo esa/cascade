@@ -59,7 +59,7 @@ TEST_CASE("domain exit")
 
     s.set_time(0.);
 
-    oc = s.propagate_until(1000, 0.1);
+    oc = s.propagate_until(1000);
 
     REQUIRE(oc == outcome::exit);
     REQUIRE(std::get<1>(*s.get_interrupt_info()) == 3u);
