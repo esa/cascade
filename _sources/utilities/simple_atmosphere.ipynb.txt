@@ -6,16 +6,17 @@
    "id": "81694b2b",
    "metadata": {},
    "source": [
-    "# A simple atmosphere\n",
+    "# A differentiable atmospheric density\n",
     "One of the most relevant source of uncertainty in the propagation of satellite orbits is the atmospheric drag. \n",
-    "The drag acceleration a satellite is subject to, depends mainly on the atmospheric density which is very uncertain.\n",
+    "The drag acceleration a satellite is subject to, and mainly responsible for its [orbital decay](https://en.wikipedia.org/wiki/Orbital_decay), depends mainly on the atmospheric density encountered, which is very uncertain.\n",
     "\n",
     "Empirical atmospheric model  models such as the [NRLMSISE00](https://en.wikipedia.org/wiki/NRLMSISE-00) provide a precise description of the past\n",
-    "values of atmospheric density and are used a standard in drag reentry calculations.\n",
+    "values of atmospheric density and are often used as a standard in satellite re-entry calculations.\n",
     "\n",
-    "In order to predict the evolution of orbital environments, it is important to capture the re-entry / decay dynamics of satellites, but it is also very difficult to predict with much precision the Earth atmosphere density evolution over the course of the simulations.\n",
+    "For the purpose of the simulations of entire orbital environments for long time the direct use on the full [NRLMSISE00](https://en.wikipedia.org/wiki/NRLMSISE-00) would\n",
+    "be inefficient and not necessary. It is of value, therefore, to create a simplified model starting from [NRLMSISE00](https://en.wikipedia.org/wiki/NRLMSISE-00), and one that is differentiable and hence can be used in conjunction to [Taylor integration](https://bluescarni.github.io/heyoka/tut_taylor_method.html) techniques.\n",
     "\n",
-    "In the following code we show some python code using the NRLMSISE00 atmospheric model to derive a simple and differentiable profile to be used in such simulations. Note that the differentiability is a prerequisite in the description of the dynamics for cascade and hence NRLMSISE00 cannot be used/queried directly.\n",
+    "In the following code we show some python code using the [NRLMSISE00](https://en.wikipedia.org/wiki/NRLMSISE-00) atmospheric model to derive a simple and differentiable profile to be used in such simulations. Note that the differentiability is a prerequisite in the description of the dynamics for cascade and hence [NRLMSISE00](https://en.wikipedia.org/wiki/NRLMSISE-00) could be used directly even if one would be willing to pay the connected inefficiencies.\n",
     "\n",
     "Let us start with some imports:"
    ]
@@ -338,7 +339,8 @@
    "mimetype": "text/x-python",
    "name": "python",
    "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3"
+   "pygments_lexer": "ipython3",
+   "version": "3.10.8 | packaged by conda-forge | (main, Nov 22 2022, 08:26:04) [GCC 10.4.0]"
   },
   "vscode": {
    "interpreter": {
