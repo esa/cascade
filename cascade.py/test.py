@@ -14,6 +14,25 @@ class sim_test_case(_ut.TestCase):
         self.test_basic()
         self.test_remove_particles()
         self.test_set_new_state_pars()
+        self.test_ct_api()
+
+    def test_ct_api(self):
+        from . import sim
+
+        s = sim()
+
+        s.ct = 1.1
+        self.assertEqual(s.ct, 1.1)
+        s.n_par_ct = 5
+        self.assertEqual(s.n_par_ct, 5)
+
+        with self.assertRaises(ValueError) as cm:
+            s.ct = -1.1
+        with self.assertRaises(ValueError) as cm:
+            s.n_par_ct = 0
+
+        self.assertEqual(s.ct, 1.1)
+        self.assertEqual(s.n_par_ct, 5)
 
     def test_basic(self):
         from . import sim, dynamics, outcome
@@ -31,6 +50,7 @@ class sim_test_case(_ut.TestCase):
         self.assertEqual(s.npars, 0)
         self.assertEqual(s.c_radius, 0.0)
         self.assertEqual(s.d_radius, 0.0)
+        self.assertEqual(s.n_par_ct, 1)
 
         dyn = dynamics.kepler()
         dyn[0] = (dyn[0][0], dyn[0][1] + hy.par[1])
@@ -44,6 +64,7 @@ class sim_test_case(_ut.TestCase):
             d_radius=100.0,
             tol=1e-12,
             high_accuracy=True,
+            n_par_ct=2,
         )
 
         self.assertTrue(
@@ -58,6 +79,7 @@ class sim_test_case(_ut.TestCase):
         self.assertEqual(s.c_radius, [0.1, 0.2, 0.3])
         self.assertEqual(s.d_radius, 100.0)
         self.assertEqual(s.tol, 1e-12)
+        self.assertEqual(s.n_par_ct, 2)
 
         self.assertEqual(s.step(), outcome.success)
 
