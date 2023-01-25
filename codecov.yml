@@ -1,0 +1,7 @@
+coverage:
+    ignore:
+    - "test/.*"
+    - "src/mdspan/.*"
+    - "src/detail/mortonND_LUT.h"
+  
+  comment: off

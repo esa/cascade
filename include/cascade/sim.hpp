@@ -58,6 +58,7 @@ IGOR_MAKE_NAMED_ARGUMENT(c_radius);
 IGOR_MAKE_NAMED_ARGUMENT(d_radius);
 IGOR_MAKE_NAMED_ARGUMENT(tol);
 IGOR_MAKE_NAMED_ARGUMENT(high_accuracy);
+IGOR_MAKE_NAMED_ARGUMENT(n_par_ct);
 
 } // namespace kw
 
@@ -66,9 +67,6 @@ IGOR_MAKE_NAMED_ARGUMENT(high_accuracy);
 template <typename T>
 CASCADE_CONCEPT_DECL di_range
     = std::ranges::input_range<T> && std::convertible_to<std::ranges::range_reference_t<T>, double>;
-
-template <typename T>
-CASCADE_CONCEPT_DECL di_range_range = std::ranges::input_range<T> && di_range<std::ranges::range_reference_t<T>>;
 
 #undef CASCADE_CONCEPT_DECL
 
@@ -92,6 +90,9 @@ private:
     std::shared_ptr<std::vector<double>> m_pars;
     // The collisional timestep.
     double m_ct = 0;
+    // The number of collisional timesteps
+    // to be processed in parallel.
+    std::uint32_t m_n_par_ct = 0;
     // Simulation interrupt info.
     // NOTE: the three possibilities in the variant are:
     // - particle-particle collision (two particle indices),
@@ -110,7 +111,7 @@ private:
     std::unique_ptr<sim_data> m_data;
 
     void finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>>, std::vector<double>,
-                       std::variant<double, std::vector<double>>, double, double, bool);
+                       std::variant<double, std::vector<double>>, double, double, bool, std::uint32_t);
     CASCADE_DLL_LOCAL void add_jit_functions();
     CASCADE_DLL_LOCAL void morton_encode_sort_parallel();
     CASCADE_DLL_LOCAL void construct_bvh_trees_parallel();
@@ -118,11 +119,10 @@ private:
     CASCADE_DLL_LOCAL void broad_phase_parallel();
     CASCADE_DLL_LOCAL void verify_broad_phase_parallel() const;
     CASCADE_DLL_LOCAL void narrow_phase_parallel();
-    CASCADE_DLL_LOCAL double infer_superstep();
     CASCADE_DLL_LOCAL void verify_global_aabbs() const;
     CASCADE_DLL_LOCAL void dense_propagate(double);
     template <typename T>
-    CASCADE_DLL_LOCAL outcome propagate_until_impl(const T &, double);
+    CASCADE_DLL_LOCAL outcome propagate_until_impl(const T &);
     [[nodiscard]] CASCADE_DLL_LOCAL bool with_reentry_event() const;
     [[nodiscard]] CASCADE_DLL_LOCAL bool with_exit_event() const;
     [[nodiscard]] CASCADE_DLL_LOCAL std::uint32_t reentry_event_idx() const;
@@ -130,6 +130,12 @@ private:
     CASCADE_DLL_LOCAL void verify_state_vector(const std::vector<double> &) const;
     CASCADE_DLL_LOCAL void copy_from_final_state() noexcept;
     CASCADE_DLL_LOCAL void validate_pars_vector(std::vector<double> &, size_type) const;
+    template <typename T>
+    CASCADE_DLL_LOCAL void init_scalar_ta(T &, size_type) const;
+    template <typename T>
+    CASCADE_DLL_LOCAL void init_batch_ta(T &, size_type, size_type) const;
+    template <typename T>
+    CASCADE_DLL_LOCAL void compute_particle_aabb(unsigned, const T &, const T &, size_type);
 
     // Private delegating constructor machinery. This is used
     // in the generic constructor to move the initialisation of
@@ -156,7 +162,8 @@ public:
         }
         // LCOV_EXCL_STOP
 
-        // Dynamics.
+        // Dynamics (defaults to empty, which is then interpreted
+        // as purely Keplerian).
         std::vector<std::pair<heyoka::expression, heyoka::expression>> dyn;
         if constexpr (p.has(kw::dyn)) {
             if constexpr (std::assignable_from<decltype(dyn) &, decltype(p(kw::dyn))>) {
@@ -168,7 +175,8 @@ public:
             }
         }
 
-        // Values of runtime parameters.
+        // Values of runtime parameters (defaults to empty - if the dynamics
+        // contain params, the pars vector will then be resized to the correct size).
         std::vector<double> pars;
         if constexpr (p.has(kw::pars)) {
             if constexpr (std::assignable_from<decltype(pars) &, decltype(p(kw::pars))>) {
@@ -180,7 +188,9 @@ public:
             }
         }
 
-        // Radius of the central body.
+        // Radius of the central body (defaults to zero scalar, which
+        // means the central body is point like and thus no collisions are
+        // possible with it).
         std::variant<double, std::vector<double>> c_radius(0.);
         if constexpr (p.has(kw::c_radius)) {
             if constexpr (std::convertible_to<decltype(p(kw::c_radius)), double>) {
@@ -203,7 +213,7 @@ public:
             }
         }
 
-        // Domain radius.
+        // Domain radius (defaults to zero, which means no domain boundary).
         double d_radius = 0;
         if constexpr (p.has(kw::d_radius)) {
             if constexpr (std::convertible_to<decltype(p(kw::d_radius)), double>) {
@@ -217,7 +227,7 @@ public:
         }
 
         // Integration tolerance (defaults to zero, which means
-        // auto-detected).
+        // auto-detected by heyoka).
         auto tol = 0.;
         if constexpr (p.has(kw::tol)) {
             if constexpr (std::convertible_to<decltype(p(kw::tol)), double>) {
@@ -242,7 +252,21 @@ public:
             }
         }
 
-        finalise_ctor(std::move(dyn), std::move(pars), std::move(c_radius), d_radius, tol, ha);
+        // Number of collisional timesteps to be processed in parallel
+        // (defaults to 1).
+        std::uint32_t n_par_ct = 1;
+        if constexpr (p.has(kw::n_par_ct)) {
+            if constexpr (std::integral<std::remove_cvref_t<decltype(p(kw::n_par_ct))>>) {
+                n_par_ct = boost::numeric_cast<std::uint32_t>(p(kw::n_par_ct));
+            } else {
+                // LCOV_EXCL_START
+                static_assert(detail::always_false_v<KwArgs...>,
+                              "The 'n_par_ct' keyword argument is of the wrong type.");
+                // LCOV_EXCL_STOP
+            }
+        }
+
+        finalise_ctor(std::move(dyn), std::move(pars), std::move(c_radius), d_radius, tol, ha, n_par_ct);
     }
     sim(const sim &);
     sim(sim &&) noexcept;
@@ -294,6 +318,9 @@ public:
     [[nodiscard]] double get_ct() const;
     void set_ct(double);
 
+    [[nodiscard]] std::uint32_t get_n_par_ct() const;
+    void set_n_par_ct(std::uint32_t);
+
     [[nodiscard]] double get_tol() const;
     [[nodiscard]] bool get_high_accuracy() const;
     [[nodiscard]] std::uint32_t get_npars() const;
@@ -308,8 +335,8 @@ public:
     void set_new_state_pars(std::vector<double>, std::vector<double> = {});
     void remove_particles(std::vector<size_type>);
 
-    outcome step(double = 0);
-    outcome propagate_until(double, double = 0);
+    outcome step();
+    outcome propagate_until(double);
 
     // NOTE: these two helpers are used to fetch
     // copies of the shared pointers storing the state
@@ -336,14 +363,6 @@ public:
     {
         return m_pars;
     }
-
-private:
-    template <typename T>
-    CASCADE_DLL_LOCAL void init_scalar_ta(T &, size_type) const;
-    template <typename T>
-    CASCADE_DLL_LOCAL void init_batch_ta(T &, size_type, size_type) const;
-    template <typename T>
-    CASCADE_DLL_LOCAL void compute_particle_aabb(unsigned, const T &, const T &, size_type);
 };
 
 CASCADE_DLL_PUBLIC std::ostream &operator<<(std::ostream &, const sim &);

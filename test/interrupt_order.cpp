@@ -101,7 +101,7 @@ TEST_CASE("interrupt order")
     sv = xt::xarray<double>{{0.76, 0, 0, -1, 0, 0, 1e-6}, {1., 0, 0, 0, 1, 0, 1e-6}, {2, 0, 0, 1, 0, 0, 1e-6}};
     s.set_time(0.);
 
-    oc = s.propagate_until(1000., 10.);
+    oc = s.propagate_until(1000.);
 
     x0 = pos(0, 0);
     y0 = pos(0, 1);
@@ -115,7 +115,7 @@ TEST_CASE("interrupt order")
     sv = xt::xarray<double>{{0.76, 0, 0, 0, 0, 0, 1e-6}, {1., 0, 0, 0, 1, 0, 1e-6}, {4.9, 0, 0, 1, 0, 0, 1e-6}};
     s.set_time(0.);
 
-    oc = s.propagate_until(1000., 10.);
+    oc = s.propagate_until(1000.);
 
     x2 = pos(2, 0);
     y2 = pos(2, 1);

@@ -42,6 +42,7 @@ TEST_CASE("basic")
         REQUIRE(s.get_npars() == 0u);
         REQUIRE(std::get<0>(s.get_c_radius()) == 0.);
         REQUIRE(s.get_d_radius() == 0.);
+        REQUIRE(s.get_n_par_ct() == 1u);
     }
 
     // Construction with non-default parameters.
@@ -50,7 +51,8 @@ TEST_CASE("basic")
         dyn[0].second += heyoka::par[1];
 
         sim s({1., .001, .001, .001, 1., .001, .001}, .5, kw::dyn = dyn, kw::pars = {.002, .001},
-              kw::c_radius = {.1, .2, .3}, kw::d_radius = 100., kw::tol = 1e-12, kw::high_accuracy = true);
+              kw::c_radius = {.1, .2, .3}, kw::d_radius = 100., kw::tol = 1e-12, kw::high_accuracy = true,
+              kw::n_par_ct = 5);
 
         REQUIRE(!s.get_state().empty());
         REQUIRE(s.get_state() == std::vector{1., .001, .001, .001, 1., .001, .001});
@@ -65,6 +67,7 @@ TEST_CASE("basic")
         REQUIRE(std::get<1>(s.get_c_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s.get_d_radius() == 100.);
         REQUIRE(s.get_time() == 0.);
+        REQUIRE(s.get_n_par_ct() == 5u);
 
         // Take a single step.
         s.step();
@@ -82,6 +85,7 @@ TEST_CASE("basic")
         REQUIRE(s2.get_npars() == 2u);
         REQUIRE(std::get<1>(s2.get_c_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s2.get_d_radius() == 100.);
+        REQUIRE(s2.get_n_par_ct() == 5u);
 
         // Test also with move.
         auto s3 = std::move(s2);
@@ -96,6 +100,7 @@ TEST_CASE("basic")
         REQUIRE(s3.get_npars() == 2u);
         REQUIRE(std::get<1>(s3.get_c_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s3.get_d_radius() == 100.);
+        REQUIRE(s3.get_n_par_ct() == 5u);
 
         // Revive s2 via assignment.
         s2 = std::move(s3);
@@ -110,6 +115,7 @@ TEST_CASE("basic")
         REQUIRE(s2.get_npars() == 2u);
         REQUIRE(std::get<1>(s2.get_c_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s2.get_d_radius() == 100.);
+        REQUIRE(s2.get_n_par_ct() == 5u);
 
         // Revive s3 via assignment.
         s3 = s2;
@@ -124,6 +130,7 @@ TEST_CASE("basic")
         REQUIRE(s3.get_npars() == 2u);
         REQUIRE(std::get<1>(s3.get_c_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s3.get_d_radius() == 100.);
+        REQUIRE(s3.get_n_par_ct() == 5u);
 
         // Take a step for both s and s3, and compare
         s.step();
@@ -139,6 +146,7 @@ TEST_CASE("basic")
         REQUIRE(s3.get_npars() == 2u);
         REQUIRE(std::get<1>(s3.get_c_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s3.get_d_radius() == 100.);
+        REQUIRE(s3.get_n_par_ct() == 5u);
     }
 
     // Error modes.
@@ -178,6 +186,9 @@ TEST_CASE("basic")
 
     REQUIRE_THROWS_MATCHES(sim({}, .5, kw::d_radius = -1), std::invalid_argument,
                            Message("The domain radius must be finite and non-negative, but it is -1 instead"));
+
+    REQUIRE_THROWS_MATCHES(sim({}, .5, kw::n_par_ct = 0), std::invalid_argument,
+                           Message("The number of collisional timesteps to be processed in parallel cannot be zero"));
 }
 
 TEST_CASE("remove particles")
@@ -352,4 +363,23 @@ TEST_CASE("set new state pars")
                                Message("The input array of parameter values must have shape (1, 2), "
                                        "but instead its flattened size is 1"));
     }
+}
+
+TEST_CASE("ct api")
+{
+    using Catch::Matchers::Message;
+
+    sim s;
+
+    s.set_ct(.1);
+    s.set_n_par_ct(2);
+
+    REQUIRE(s.get_ct() == .1);
+    REQUIRE(s.get_n_par_ct() == 2u);
+
+    REQUIRE_THROWS_MATCHES(s.set_ct(-1.), std::invalid_argument,
+                           Message("The collisional timestep must be finite and positive, but it is -1 instead"));
+    REQUIRE_THROWS_AS(s.set_ct(std::numeric_limits<double>::quiet_NaN()), std::invalid_argument);
+    REQUIRE_THROWS_MATCHES(s.set_n_par_ct(0), std::invalid_argument,
+                           Message("The number of collisional timesteps to be processed in parallel cannot be zero"));
 }

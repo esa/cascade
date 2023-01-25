@@ -81,8 +81,9 @@ const std::set<std::string> allowed_vars_alph(allowed_vars.begin(), allowed_vars
 
 } // namespace detail
 
-// Helper to compute the begin and end of a chunk within
-// a superstep for a given collisional timestep.
+// Helper to compute the begin and end time coordinates for a chunk within
+// a superstep for a given collisional timestep. As usual, the time coordinates
+// are referred to the beginning of the superstep.
 std::array<double, 2> sim::sim_data::get_chunk_begin_end(unsigned chunk_idx, double ct) const
 {
     assert(nchunks > 0u);
@@ -110,8 +111,8 @@ sim::sim(ptag_t, std::vector<double> state, double ct)
 
 sim::sim(const sim &other)
     : m_state(std::make_shared<std::vector<double>>(*other.m_state)),
-      m_pars(std::make_shared<std::vector<double>>(*other.m_pars)), m_ct(other.m_ct), m_int_info(other.m_int_info),
-      m_c_radius(other.m_c_radius), m_d_radius(other.m_d_radius), m_npars(other.m_npars)
+      m_pars(std::make_shared<std::vector<double>>(*other.m_pars)), m_ct(other.m_ct), m_n_par_ct(other.m_n_par_ct),
+      m_int_info(other.m_int_info), m_c_radius(other.m_c_radius), m_d_radius(other.m_d_radius), m_npars(other.m_npars)
 {
     // For m_data, we will be copying only:
     // - the integrator templates,
@@ -171,6 +172,30 @@ double sim::get_ct() const
     return m_ct;
 }
 
+void sim::set_ct(double ct)
+{
+    if (!std::isfinite(ct) || ct <= 0) {
+        throw std::invalid_argument(
+            fmt::format("The collisional timestep must be finite and positive, but it is {} instead", ct));
+    }
+
+    m_ct = ct;
+}
+
+std::uint32_t sim::get_n_par_ct() const
+{
+    return m_n_par_ct;
+}
+
+void sim::set_n_par_ct(std::uint32_t n_par_ct)
+{
+    if (n_par_ct == 0u) {
+        throw std::invalid_argument("The number of collisional timesteps to be processed in parallel cannot be zero");
+    }
+
+    m_n_par_ct = n_par_ct;
+}
+
 std::uint32_t sim::get_npars() const
 {
     return m_npars;
@@ -193,16 +218,6 @@ bool sim::get_high_accuracy() const
     assert(m_data->s_ta.get_high_accuracy() == m_data->b_ta.get_high_accuracy());
 
     return m_data->s_ta.get_high_accuracy();
-}
-
-void sim::set_ct(double ct)
-{
-    if (!std::isfinite(ct) || ct <= 0) {
-        throw std::invalid_argument(
-            fmt::format("The collisional timestep must be finite and positive, but it is {} instead", ct));
-    }
-
-    m_ct = ct;
 }
 
 // A helper that validates (and possibly modifies in-place) the input
@@ -321,7 +336,8 @@ void sim::set_new_state_pars(std::vector<double> new_state, std::vector<double> 
 
 void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>> dyn, std::vector<double> pars,
                         // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-                        std::variant<double, std::vector<double>> c_radius, double d_radius, double tol, bool ha)
+                        std::variant<double, std::vector<double>> c_radius, double d_radius, double tol, bool ha,
+                        std::uint32_t n_par_ct)
 {
     namespace hy = heyoka;
 
@@ -347,6 +363,9 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
         throw std::invalid_argument(
             fmt::format("The collisional timestep must be finite and positive, but it is {} instead", m_ct));
     }
+
+    // Set the number of parallel collisional timesteps.
+    set_n_par_ct(n_par_ct);
 
     if (dyn.empty()) {
         // Default is Keplerian dynamics with unitary mu.

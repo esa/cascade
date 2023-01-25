@@ -534,7 +534,7 @@ void sim::narrow_phase_parallel()
                             ss_diff_ptr[0] -= (p_rad_i + p_rad_j) * (p_rad_i + p_rad_j);
 
                             // Run the fast exclusion check.
-                            std::uint32_t fex_check_res, back_flag = 0;
+                            std::uint32_t fex_check_res = 0, back_flag = 0;
                             fex_check(ss_diff_ptr, &rf_int, &back_flag, &fex_check_res);
                             if (!fex_check_res) {
                                 // Fast exclusion check failed, we need to run the real root isolation algorithm.

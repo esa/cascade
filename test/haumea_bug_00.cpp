@@ -14,6 +14,7 @@
 #include <vector>
 
 #include <boost/math/constants/constants.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 
 #include <heyoka/math/cos.hpp>
 #include <heyoka/math/pow.hpp>
@@ -118,11 +119,12 @@ TEST_CASE("haumea bug 00")
         state.push_back(radius);
     }
 
-    sim s(state, ct, kw::dyn = dynamics, kw::c_radius = std::vector<double>{ra, rb, rc}, kw::d_radius = a_s * 10);
+    sim s(state, ct, kw::dyn = dynamics, kw::c_radius = std::vector<double>{ra, rb, rc}, kw::d_radius = a_s * 10,
+          kw::n_par_ct = boost::numeric_cast<std::uint32_t>(dt / ct));
 
     s.set_time(13401085490.242563);
 
-    auto oc = s.step(dt);
+    auto oc = s.step();
 
     // NOTE: we just want to check that the step finished without error and without hanging.
     REQUIRE(oc != outcome::err_nf_state);
