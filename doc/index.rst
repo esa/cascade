@@ -23,16 +23,17 @@ Notable features include:
 cascade is released under the MPL-2.0 license. The authors are Francesco Biscani and Dario Izzo (European Space Agency).
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
    install.rst
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Utilities:
 
    utilities/leo_population
+   utilities/simple_atmosphere
 
 
 
