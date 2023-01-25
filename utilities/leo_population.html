@@ -41,6 +41,7 @@
     <script src="../_static/sphinx-book-theme.7d483ff0a819d6edff12ce0b1ead3928.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="A simple atmosphere" href="simple_atmosphere.html" />
     <link rel="prev" title="Installation" href="../install.html" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -99,6 +100,11 @@
  <li class="toctree-l1 current active">
   <a class="current reference internal" href="#">
    The current LEO population
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="simple_atmosphere.html">
+   A simple atmosphere
   </a>
  </li>
 </ul>
@@ -206,8 +212,8 @@
         <nav id="bd-toc-nav">
             <ul class="nav section-nav flex-column">
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#creating-the-info-on-the-tracked-population">
-   Creating the info on the tracked population
+  <a class="reference internal nav-link" href="#extracting-the-data-on-the-currently-tracked-population">
+   Extracting the data on the currently tracked population
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
@@ -229,10 +235,10 @@
                 
   <section class="tex2jax_ignore mathjax_ignore" id="the-current-leo-population">
 <h1>The current LEO population<a class="headerlink" href="#the-current-leo-population" title="Permalink to this heading">¶</a></h1>
-<p>The US government provides GP or general perturbations orbital data produced from the <a class="reference external" href="https://en.wikipedia.org/wiki/United_States_Space_Surveillance_Network">US Space Surveillance Network (SSN)</a>. These are in the form of Brouwer mean elements to be used in the SGP4 or <a class="reference external" href="https://en.wikipedia.org/wiki/Simplified_perturbations_models">Simplified General Perturbations 4 orbit propagator</a>.</p>
-<p>Together with the Brouwer mean elements, information on the orbiting object <a class="reference external" href="https://en.wikipedia.org/wiki/BSTAR">BSTAR</a> cefficient is made available, hence on the drag force acting upon it, as well as some (limited) information on the object radar cross section (RCS).</p>
-<p>Using this information, we can compute plausible initial conditions of all tracked objects and instantiate simulations in cascade representative of the current knowledge on all tracked satellites. Such simulations could be used as a starting point to study possible evolutions of the currently tracked population.</p>
-<p>Lets see how this can be achieved with Python code. We start with the necessary imports:</p>
+<p>The US government provides GP or general perturbations orbital data for all Earth orbiing satellites as produced from the <a class="reference external" href="https://en.wikipedia.org/wiki/United_States_Space_Surveillance_Network">US Space Surveillance Network (SSN)</a>. These are in the form of Brouwer mean elements to be used in the SGP4 or <a class="reference external" href="https://en.wikipedia.org/wiki/Simplified_perturbations_models">Simplified General Perturbations 4 orbit propagator</a>.</p>
+<p>Together with the Brouwer mean elements, information on the objects <a class="reference external" href="https://en.wikipedia.org/wiki/BSTAR">BSTAR</a> cefficient is made available and hence on the drag force acting upon it. Some (limited) information on the objects radar cross section (RCS) is also available.</p>
+<p>Using this data, plausible initial conditions of all the tracked objects can be computed and used to simulte the possible evolutions of the currently known population. In the following, we will see how this can be achieved with Python code.</p>
+<p>Start with the necessary imports:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pykep</span> <span class="k">as</span> <span class="nn">pk</span>
@@ -250,16 +256,16 @@
 </div>
 </div>
 </div>
-<section id="creating-the-info-on-the-tracked-population">
-<h2>Creating the info on the tracked population<a class="headerlink" href="#creating-the-info-on-the-tracked-population" title="Permalink to this heading">¶</a></h2>
-<p>We will here make combined use of two files that are available through the internet and assembled from data of the the USSPACECOM managed SSN.</p>
+<section id="extracting-the-data-on-the-currently-tracked-population">
+<h2>Extracting the data on the currently tracked population<a class="headerlink" href="#extracting-the-data-on-the-currently-tracked-population" title="Permalink to this heading">¶</a></h2>
+<p>We will here make combined use of two files that are distributed by the USSPACECOM. Most of the data contained in the files is derived from observations of the <a class="reference external" href="https://en.wikipedia.org/wiki/United_States_Space_Surveillance_Network">United States Space Surveillance Network</a>.</p>
 <p>The files are named:</p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://celestrak.com/satcat/search.php">satcat.txt</a> downloaded from <a class="reference external" href="https://celestrak.com">celestrack</a></p></li>
-<li><p>[satcat.json](from https://www.space-track.org/basicspacedata/query/class/gp/decay_date/null-val/epoch/%3Enow-30/orderby/norad_cat_id/format/json) downloaded from <a class="reference external" href="https://celestrak.com">space-track</a></p></li>
+<li><p><a class="reference external" href="https://celestrak.com/satcat/search.php">satcat.txt</a> downloaded from <a class="reference external" href="https://celestrak.com">celestrack</a> on January 2022</p></li>
+<li><p><a class="reference external" href="https://www.space-track.org/basicspacedata/query/class/gp/decay_date/null-val/epoch/%3Enow-30/orderby/norad_cat_id/format/json">satcat.json</a> downloaded from <a class="reference external" href="https://celestrak.com">space-track</a> on January 2022</p></li>
 </ul>
-<p>The reason to use both, is that at the time of writing, they contain slightly complementary information. While both datasets contain the tracked objects Brouwer mean elements and their BSTAR, the information on the radar cross section (RCS) is only given for some satellites in the “old” satcat.txt. For those objects that do not have such an information, the json file reports, at least, a generic “SMALL”, “MEDIUM”, “LARGE” category that can be used to assign to the object a dimension (useful in simulations where detected collision result in break-ups based on the impact energy).</p>
-<p>Note that the remaining code is written to work with the two files as downloaded in February 2022. We have obtained permission from the SSA Partnership and Coalition Engagement (SPACE) Office (US) to share these, now old, files via the cascade code. To obtain the latest versions you may need a user in the space-track website.</p>
+<p>The reason to use both is that, at the time of writing, they contain complementary information. While both contain the tracked objects’ Brouwer mean elements and their <a class="reference external" href="https://en.wikipedia.org/wiki/BSTAR">BSTAR</a>, the information on the radar cross section (RCS) is only given for some satellites in the “old” satcat.txt. For those objects that do not have such an information, the json file reports, at least, a generic “SMALL”, “MEDIUM”, “LARGE” category that can be used to assign to the object a dimension (useful in simulations where detected collisions result in break-ups based on the impact energy).</p>
+<p>Note that the remaining code is written to work with the two files as downloaded in February 2022. We have obtained permission from the SSA Partnership and Coalition Engagement (SPACE) Office (US) to share these, now old, files via the cascade code so that you do not have to download them yorself. In case you do wat to play with the latest versions, you will need a user in the <a class="reference external" href="https://celestrak.com">space-track</a> website.</p>
 <p>Lets start importing the files:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -268,20 +274,20 @@
 <span class="c1"># Import the json catalogue</span>
 <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;data/satcat.json&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
     <span class="n">satcat</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Satellites number in json: &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">satcat</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Satellites number in txt: &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">satcat_old</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Satellites number in satcat (json): &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">satcat</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Satellites number in satcat_old (txt): &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">satcat_old</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Satellites number in json:  23947
-Satellites number in txt:  51407
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Satellites number in satcat (json):  23947
+Satellites number in satcat_old (txt):  51407
 </pre></div>
 </div>
 </div>
 </div>
 <p>A different number of objects in the two datsets is expected as the txt (stacat_old) contains also all past decayed objects, while the json file (satcat) contains only the orbiting ones (at the time of download).</p>
-<p>We then add to the dictionary read from the json file and for each entry, i.e. for each satellite an estimate of the object radius in meters.</p>
+<p>We then add to the corresponding dictionary an estimate of each object radius in meters.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We add to the JSON entries their estimated radius (key: RADIUS)</span>
@@ -300,16 +306,18 @@ Satellites number in txt:  51407
             <span class="n">radius</span> <span class="o">=</span> <span class="mf">2.</span>
     <span class="nb">object</span><span class="p">[</span><span class="s2">&quot;RADIUS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">radius</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of objects with radius estimated from satcat_old: &quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of objects with radius estimated from satcat: &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">satcat</span><span class="p">)</span> <span class="o">-</span> <span class="n">count</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of objects with radius estimated from satcat_old:  15941
+Number of objects with radius estimated from satcat:  8006
 </pre></div>
 </div>
 </div>
 </div>
-<p>In order to maintain a correspondence between the satcat and the various propagated particles we use and keep updated the following array:</p>
+<p>In order to maintain a correspondence between the satcat and the various propagated particles we use, and keep updated, the following array:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">to_satcat_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">satcat</span><span class="p">))</span>
@@ -323,9 +331,9 @@ Satellites number in txt:  51407
 </div>
 </div>
 </div>
-<p>so that, if r[j] will contain the position of an object, satcat(to_satcat_index[j]) will be the corresponding satcat entry. This is made necessary as objects will be removed for several reasons from the simulation (decayed, exploded, etc..)</p>
+<p>so that, if <code class="docutils literal notranslate"><span class="pre">r[j]</span></code> contains the position of an object, <code class="docutils literal notranslate"><span class="pre">satcat(to_satcat_index[j])</span></code> will be the corresponding satcat entry. This book keeping is made necessary as objects will be removed for several reasons from the simulation (decayed, exploded, etc..)</p>
 <p>We are now ready to compute the various object positions at a choosen starting epoch. We will use here the reference epoch 2022-Mar-01 since our files where downloaded at the beginning of 2022. We also use the vectorized version of the SGP4 propagator, hence
-building first a SatrecArray object (see <a class="reference external" href="https://pypi.org/project/sgp4/">sgp4 module documentation</a>) and focus on objects in LEO with a semi-major axis &lt; 10000 KM</p>
+building first a SatrecArray object (see <a class="reference external" href="https://pypi.org/project/sgp4/">sgp4 module documentation</a>).</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We call the SGP4 propagator to a common initial epoch</span>
@@ -366,7 +374,7 @@ Number of satellites in the simulation:  23868
 </div>
 </div>
 </div>
-<p>And then we filter with the semimajor axis at jd to remove objects that are not LEO as well as check the sanity of values of all remaining objects as sgp4 may return nan, infs or unphysical numbers when queried at a date well past the satellite decay.</p>
+<p>And then we filter the objects using httheir the semimajor axis computed at the epoch <code class="docutils literal notranslate"><span class="pre">jd</span></code>. This will remove objects that are not LEO as well as those that have been wrongly propgagated by sgp4 well past their decay epoch.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We remove other decayed objects computing the orbital elements at jd and filtering again</span>
@@ -398,7 +406,7 @@ Number of satellites in the simulation:  19674
 </div>
 </div>
 </div>
-<p>Finally we detect and remove objects that are co-orbiting, like payloads attached to the ISS and similar.</p>
+<p>Finally we detect and remove objects that are co-orbiting, like payloads attached to the International Space Station and similar.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># First we find all unique elements in r</span>
@@ -434,7 +442,7 @@ DRAGON ENDURANCE 		with RCS:  2.0
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We find all indexes of entries that are not unique and (but we keep the biggest)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We find all indexes of objects that are not unique (but we keep the biggest)</span>
 <span class="n">to_delete</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">not_unique</span> <span class="ow">in</span> <span class="n">not_unique_lists</span><span class="p">:</span>
     <span class="n">to_delete</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">not_unique</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">idx</span><span class="p">:</span> <span class="n">satcat</span><span class="p">[</span><span class="n">to_satcat_index</span><span class="p">[</span><span class="n">idx</span><span class="p">]][</span><span class="s2">&quot;RADIUS&quot;</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">1</span><span class="p">:])</span>
@@ -520,6 +528,7 @@ First we must compute their orbital elements</p>
         <div class='prev-next-bottom'>
             
     <a class='left-prev' id="prev-link" href="../install.html" title="previous page">Installation</a>
+    <a class='right-next' id="next-link" href="simple_atmosphere.html" title="next page">A simple atmosphere</a>
 
         </div>
         

@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>A simple model for the density &#8212; cascade 0.1 documentation</title>
+    <title>A simple atmosphere &#8212; cascade 0.1 documentation</title>
     
   <link rel="stylesheet" href="../_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
 
@@ -43,6 +43,7 @@
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="The current LEO population" href="leo_population.html" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en" />
@@ -96,10 +97,15 @@
   Utilities:
  </span>
 </p>
-<ul class="nav sidenav_l1">
+<ul class="current nav sidenav_l1">
  <li class="toctree-l1">
   <a class="reference internal" href="leo_population.html">
    The current LEO population
+  </a>
+ </li>
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   A simple atmosphere
   </a>
  </li>
 </ul>
@@ -200,31 +206,6 @@
         <!-- Table of contents -->
         <div class="d-none d-md-block col-md-2 bd-toc show">
             
-        <div class="tocsection onthispage pt-5 pb-3">
-            <i class="fas fa-list"></i>
-            Contents
-        </div>
-        <nav id="bd-toc-nav">
-            <ul class="nav section-nav flex-column">
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#we-obtain-atmospheric-data-from-the-nrlmsise00-model">
-   We obtain atmospheric data from the nrlmsise00 model
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#we-try-and-fit-the-data-with-some-predefined-shape">
-   We try and fit the data with some predefined shape
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#we-plot-the-data-and-the-fit">
-   We plot the data and the fit
-  </a>
- </li>
-</ul>
-
-        </nav>
-        
         </div>
     </div>
 </div>
@@ -233,93 +214,81 @@
         
               <div>
                 
-  <div class="cell docutils container">
+  <section class="tex2jax_ignore mathjax_ignore" id="a-simple-atmosphere">
+<h1>A simple atmosphere<a class="headerlink" href="#a-simple-atmosphere" title="Permalink to this heading">¶</a></h1>
+<p>One of the most relevant source of uncertainty in the propagation of satellite orbits is the atmospheric drag.
+The drag acceleration a satellite is subject to, depends mainly on the atmospheric density which is very uncertain.</p>
+<p>Empirical atmospheric model  models such as the <a class="reference external" href="https://en.wikipedia.org/wiki/NRLMSISE-00">NRLMSISE00</a> provide a precise description of the past
+values of atmospheric density and are used a standard in drag reentry calculations.</p>
+<p>In order to predict the evolution of orbital environments, it is important to capture the re-entry / decay dynamics of satellites, but it is also very difficult to predict with much precision the Earth atmosphere density evolution over the course of the simulations.</p>
+<p>In the following code we show some python code using the NRLMSISE00 atmospheric model to derive a simple and differentiable profile to be used in such simulations. Note that the differentiability is a prerequisite in the description of the dynamics for cascade and hence NRLMSISE00 cannot be used/queried directly.</p>
+<p>Let us start with some imports:</p>
+<div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pykep</span> <span class="k">as</span> <span class="nn">pk</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Core imports</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">pickle</span> <span class="k">as</span> <span class="nn">pkl</span>
-<span class="kn">import</span> <span class="nn">requests</span>
 <span class="kn">import</span> <span class="nn">pygmo</span> <span class="k">as</span> <span class="nn">pg</span>
 
+<span class="c1"># NRLMSISE00 atmospheric model</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">nrlmsise00.dataset</span> <span class="kn">import</span> <span class="n">msise_4d</span>
+
+<span class="c1"># Plotting</span>
 <span class="kn">from</span> <span class="nn">mpl_toolkits.mplot3d</span> <span class="kn">import</span> <span class="n">Axes3D</span>
 <span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
 <span class="o">%</span><span class="k">matplotlib</span> inline
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">FutureWarning</span><span class="p">)</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">UserWarning</span><span class="p">)</span>  
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/home/dario/.local/lib/python3.10/site-packages/nrlmsise00/dataset/__init__.py:27: UserWarning: The xarray 4d interface is experimental.
+  warn(&quot;The xarray 4d interface is experimental.&quot;, UserWarning)
 </pre></div>
 </div>
 </div>
 </div>
+<p>We first use and plot the atmospheric density profile at the equator (latitude is 0) for some longitude 42 and up to 1000km.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cascade</span> <span class="k">as</span> <span class="nn">csc</span>
-<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
-<span class="kn">from</span> <span class="nn">tqdm.notebook</span> <span class="kn">import</span> <span class="n">tqdm</span>
-<span class="kn">import</span> <span class="nn">heyoka</span> <span class="k">as</span> <span class="nn">hy</span>
-</pre></div>
-</div>
-</div>
-</div>
-<section class="tex2jax_ignore mathjax_ignore" id="a-simple-model-for-the-density">
-<h1>A simple model for the density<a class="headerlink" href="#a-simple-model-for-the-density" title="Permalink to this heading">¶</a></h1>
-<section id="we-obtain-atmospheric-data-from-the-nrlmsise00-model">
-<h2>We obtain atmospheric data from the nrlmsise00 model<a class="headerlink" href="#we-obtain-atmospheric-data-from-the-nrlmsise00-model" title="Permalink to this heading">¶</a></h2>
-<p>An account is needed at https://amentum.com.au/atmosphere and an API-Key allowing a limited amounts of queries</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># This will contain the density in kg/m3</span>
-<span class="n">density</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="c1"># This is the grid on the altitude</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># This is the grid on the altitude</span>
 <span class="n">altitude</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">78</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="n">lat</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">lon</span> <span class="o">=</span> <span class="mi">42</span>
+<span class="n">ds</span> <span class="o">=</span> <span class="n">msise_4d</span><span class="p">(</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2021</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">altitude</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">)</span>
+<span class="n">density_nrl</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s2">&quot;rho&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">100</span><span class="p">,)</span> <span class="o">*</span> <span class="mi">1000</span> <span class="c1"># now in km/m^2</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">altitude</span><span class="p">,</span> <span class="n">density_nrl</span><span class="p">,</span> <span class="s1">&#39;k&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Atmospheric density on 02/01/2021 [lat=&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; and lon=&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">lon</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;]&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Altitude [km]&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Density [kg/m^]&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-</div>
-<p>… uncomment and run this cell to retreive the data again, else use the pickled file</p>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#url = &quot;https://atmosphere.amentum.io/nrlmsise00&quot;</span>
-
-<span class="c1">#headers = {&quot;API-Key&quot; : &quot;Pmd5s5e36Ny0zpPGhxvDWRtgrmB2rR6K&quot;}</span>
-<span class="c1">#for alt in altitude:</span>
-<span class="c1">#    params = {</span>
-<span class="c1">#        &#39;year&#39; : 2021,</span>
-<span class="c1">#        &#39;month&#39; : 2,</span>
-<span class="c1">#        &#39;day&#39; : 1,</span>
-<span class="c1">#        &#39;geodetic_latitude&#39; : 0,</span>
-<span class="c1">#        &#39;geodetic_longitude&#39; : 42,</span>
-<span class="c1">#        &#39;altitude&#39; : alt, # km</span>
-<span class="c1">#        &#39;utc&#39; : 2, # hours</span>
-<span class="c1">#    }</span>
-<span class="c1">#    # handle exceptions</span>
-<span class="c1">#    response = requests.get(url, params=params, headers=headers)</span>
-<span class="c1">#    json_payload = response.json()</span>
-<span class="c1">#    density.append(json_payload[&#39;total_mass_density&#39;][&#39;value&#39;])</span>
-
-<span class="c1">#with open(&#39;data/atmosphere.pk&#39;, &#39;wb&#39;) as file:</span>
-<span class="c1">#    pkl.dump((altitude, density), file)</span>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Text(0, 0.5, &#39;Density [kg/m^]&#39;)
 </pre></div>
 </div>
+<img alt="../_images/4ad11a5e9dbc8bb9a4b8062e52a6f908c9e597d2ec3c98cb76f8e215136c7e52.png" src="../_images/4ad11a5e9dbc8bb9a4b8062e52a6f908c9e597d2ec3c98cb76f8e215136c7e52.png" />
 </div>
 </div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;data/atmosphere.pk&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
-    <span class="n">altitude</span><span class="p">,</span> <span class="n">density</span> <span class="o">=</span> <span class="n">pkl</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</section>
-<section id="we-try-and-fit-the-data-with-some-predefined-shape">
-<h2>We try and fit the data with some predefined shape<a class="headerlink" href="#we-try-and-fit-the-data-with-some-predefined-shape" title="Permalink to this heading">¶</a></h2>
-<p>It is important that the limit for h that goes to infinity of the density goes to zero. The chosen shape must guarantee this property. We here use:</p>
+<p>We are now going to assume that the atmospheric density will not vary with longitude nor with latitude and that it has the following shape:</p>
 <div class="math notranslate nohighlight">
 \[
 \rho(h) = \sum_i\alpha_i\exp(-\beta_i(h-\gamma_i))
 \]</div>
+<p>where <span class="math notranslate nohighlight">\(\alpha_i, \beta_i\)</span> and <span class="math notranslate nohighlight">\(\gamma_i\)</span> are various constant to be determined as to fit well the data from the NRLMSISE00 model shown in the plot above. Note that the form
+of the function choosen as a limit of zero as h goes to infinity, a desirable behaviour for the use in a numerical simulation which cannot guarantee the objects ware in a specific shell.</p>
+<p>We will make use of <a class="reference external" href="https://esa.github.io/pygmo2/">pygmo</a> to solve the problem of finding the values of <span class="math notranslate nohighlight">\(\alpha_i, \beta_i\)</span> and <span class="math notranslate nohighlight">\(\gamma_i\)</span> fitting to the numerical data. The User Defined Problem (UDP) in pygmo is then coded:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">my_udp</span><span class="p">:</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">fitting_NRLMSISE00</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;THis UDP will find a fit for X,Y data to the shape a_i*exp(-b_i*(h-g_i)), i=1..n</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="n">X</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span>
@@ -344,562 +313,54 @@
 </div>
 </div>
 </div>
+<p>We then instantiate the pygmo problem using NRLMSISE00 data as target and use 4 terms in the expression, hence 12 constants.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">udp</span> <span class="o">=</span> <span class="n">my_udp</span><span class="p">(</span><span class="n">altitude</span><span class="p">,</span> <span class="n">density</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">udp</span> <span class="o">=</span> <span class="n">fitting_NRLMSISE00</span><span class="p">(</span><span class="n">altitude</span><span class="p">,</span> <span class="n">density_nrl</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 <span class="n">prob</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">problem</span><span class="p">(</span><span class="n">udp</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
+<p>As algorithm we make use od the self-adaptive version of differential evolution, and use a random initial population.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">uda</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">sade</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="n">memory</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">algo</span> <span class="o">=</span> <span class="n">pg</span><span class="o">.</span><span class="n">algorithm</span><span class="p">(</span><span class="n">uda</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-<div class="cell docutils container">
-<div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pop</span>  <span class="o">=</span><span class="n">pg</span><span class="o">.</span><span class="n">population</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="n">pop</span>  <span class="o">=</span><span class="n">pg</span><span class="o">.</span><span class="n">population</span><span class="p">(</span><span class="n">prob</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3576922/3502744231.py:15: RuntimeWarning: overflow encountered in exp
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2562404/264072196.py:17: RuntimeWarning: overflow encountered in exp
   retval += alpha*np.exp(-(x-gamma)*beta)
 </pre></div>
 </div>
 </div>
 </div>
+<p>We now evolve the population …</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">500</span><span class="p">):</span>
     <span class="n">pop</span> <span class="o">=</span> <span class="n">algo</span><span class="o">.</span><span class="n">evolve</span><span class="p">(</span><span class="n">pop</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">pop</span><span class="o">.</span><span class="n">champion_f</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_3576922/3502744231.py:15: RuntimeWarning: overflow encountered in exp
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_2562404/264072196.py:17: RuntimeWarning: overflow encountered in exp
   retval += alpha*np.exp(-(x-gamma)*beta)
-/tmp/ipykernel_3576922/3502744231.py:11: RuntimeWarning: divide by zero encountered in log10
+/tmp/ipykernel_2562404/264072196.py:13: RuntimeWarning: divide by zero encountered in log10
   return [np.mean(np.abs(np.log10(self.Y)-np.log10(Y_pred)))]
 </pre></div>
 </div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>5.000578643324542
-3.026808000514021
-2.4888110377559025
-2.3741149857341592
-2.312471379267102
-2.2576780689300335
-2.0151634575017283
-2.0084685558333772
-1.5234155262675437
-1.3571149607583286
-1.0855638472547917
-0.8467652617569728
-0.7011640993233682
-0.5934220922537995
-0.5363040572810933
-0.5078961266510804
-0.4920599286034672
-0.48799479536958273
-0.479819505196312
-0.4716551608588495
-0.46825567427994175
-0.4484020342723868
-0.445002529220869
-0.4377128856788668
-0.427695253821798
-0.4229629427606548
-0.4200896953749397
-0.4167008624915533
-0.41361431353847544
-0.4091325606249492
-0.40309691405076675
-0.3980713123493298
-0.3912029354224048
-0.3851995593468093
-0.3788508992534813
-0.37098361940892416
-0.36163285492529007
-0.3561494602323464
-0.35368312363426146
-0.33929542194608464
-0.33364284014919504
-0.3273158916656956
-0.3135478041939112
-0.3027096069851567
-0.2835032997383042
-0.27669080196643236
-0.2713205888237881
-0.2628590563356096
-0.2598657268055497
-0.2550407640760979
-0.2540268590371742
-0.24907796851812145
-0.23959344882534878
-0.23542166501748768
-0.23288154786562096
-0.22394633525698684
-0.22007610547669385
-0.21060876115310465
-0.20443083545469265
-0.19961557424758344
-0.1940756870715757
-0.18651570742293846
-0.1781016678830613
-0.17369337142826374
-0.16698619406646173
-0.15910149674434648
-0.15403364035119416
-0.14231691494683466
-0.1395002407554455
-0.13170647530527865
-0.12324990458467226
-0.1169945714917992
-0.10960988588670306
-0.10644681964187655
-0.10273929343267044
-0.10273929343267044
-0.10273921077719367
-0.09569923646596111
-0.09156711673733456
-0.09054846927156188
-0.09039879820452842
-0.09039879820452842
-0.0878004038254625
-0.08752095929289397
-0.08241040954391866
-0.08218034438515787
-0.08088739464892686
-0.07663325219674079
-0.07470603455588634
-0.07279300242426047
-0.07220101532924912
-0.0713367984490804
-0.07095171129746897
-0.0703295143798569
-0.06906259025990472
-0.06597661269811318
-0.06483987753487981
-0.06470492758421352
-0.06389135099128224
-0.06327347705869955
-0.06301510443269336
-0.0622108180640035
-0.06156054380647122
-0.059915027795085854
-0.05968036437365327
-0.05924887238946277
-0.05907321990401259
-0.05881136787309061
-0.05875917339826256
-0.058732871143027755
-0.05872052747452336
-0.058709197730248734
-0.058709097905236235
-0.058702553036291086
-0.05870104977127192
-0.058691466841453724
-0.05869059647827932
-0.05868644283707711
-0.05868415002462084
-0.05868300613620628
-0.05867944608823571
-0.05867891662290886
-0.058677703517599766
-0.058671307114957244
-0.05866864369385569
-0.058668374882563164
-0.058668374778486125
-0.05866701177078011
-0.0586665561609856
-0.058663610768035925
-0.05866212871312979
-0.05866212867385527
-0.05866207750613922
-0.05866142486875221
-0.05866142486875221
-0.05866053690354258
-0.0586589386661164
-0.05865696730789123
-0.05865696730649865
-0.05865535101479122
-0.05865393321911934
-0.05865393321911934
-0.05865350888918775
-0.058652849077985285
-0.058652849077985285
-0.058652800136009375
-0.058651379721646905
-0.05865094543613008
-0.05864985904593143
-0.058649859038742536
-0.058649583459958084
-0.05864875771847456
-0.05864875771843256
-0.05864838156887919
-0.05864666878944143
-0.05864666878944143
-0.05864666878944143
-0.058644611306578234
-0.05864461130440735
-0.0586444820761525
-0.058643661635015464
-0.058643453688196706
-0.05864338348547432
-0.05864280823726556
-0.05864218915377721
-0.05864128413021084
-0.05862422490000797
-0.0574803998845354
-0.05724386433482603
-0.05680018295286984
-0.05665319581473068
-0.055941904113954166
-0.05589392498939354
-0.055179323872021
-0.05497894924505599
-0.05436619807613646
-0.05264784067341612
-0.0524748080396169
-0.052360250644621055
-0.05159743519239462
-0.05058877763562947
-0.05058800831702628
-0.05035916889183357
-0.050231491941899124
-0.049995200893906494
-0.049517948744033286
-0.047351070521415656
-0.04713214475522915
-0.04687439174775425
-0.046404757523906444
-0.04584436900968516
-0.04576869111071847
-0.04447393771780149
-0.04254979269326746
-0.04175180061225008
-0.04066118368592922
-0.039569957391937985
-0.03771002904231824
-0.035035479829954815
-0.03326565059259057
-0.03019763774657662
-0.028231656943684166
-0.027971907804859367
-0.027635497613244207
-0.02609629843384177
-0.026064155692279743
-0.025395030573214513
-0.025232232498192345
-0.025102533258203302
-0.024382188721835226
-0.022860985466878727
-0.02097931975492627
-0.020299067881177458
-0.019011719016095333
-0.018746802137251297
-0.017396830053945152
-0.017009976425025684
-0.017002557939223263
-0.016787579636978956
-0.016706351432038885
-0.016493265311654737
-0.016387404819675204
-0.01573781403197213
-0.015336488002839443
-0.015063306051548358
-0.014918958536443885
-0.014849704688076955
-0.014699767901876513
-0.014640773670458946
-0.014610665032930105
-0.014578601029922452
-0.014521910016482549
-0.0143297258694309
-0.014205242717723205
-0.014138558934870992
-0.014055728536150678
-0.013835197883715615
-0.0137139283754364
-0.01364279396675939
-0.013572606381602697
-0.013462189532158995
-0.013371623946791047
-0.013370868318555934
-0.013331717072994432
-0.013290775730079973
-0.01326718850160387
-0.013179647050852505
-0.013154076132504508
-0.013102914616253401
-0.013074860533430899
-0.012954243194404764
-0.012873372920293278
-0.012850418758729347
-0.01277105517889769
-0.012707442643899327
-0.012655120207127321
-0.012616762227043523
-0.012599101378908522
-0.01259299729166396
-0.012588890105825987
-0.01258577805361547
-0.01257871155758254
-0.012575610148529757
-0.012572432689884776
-0.012566735821092382
-0.012549295319679245
-0.012524355958152355
-0.01249004048503096
-0.012449934035581754
-0.012443987538412795
-0.012437354180827578
-0.012414698424235598
-0.012411719018807145
-0.012401350643362213
-0.012383839195623256
-0.012381112754200157
-0.012359693838732717
-0.012348994714147974
-0.01233517340236208
-0.012326393056010874
-0.012325767048746163
-0.012323807642349686
-0.012320942722633808
-0.012318723449328734
-0.01231781931972275
-0.012311857400181925
-0.012305015664255797
-0.012299505573035684
-0.012295613793504022
-0.012295084424239891
-0.012294211214588123
-0.012294211214588123
-0.01229368229552369
-0.012293644254650031
-0.012293294115909585
-0.012293186961553513
-0.012293186961553513
-0.012293186606085608
-0.012293186606085608
-0.012293186606085608
-0.012293186606085608
-0.012293186606085608
-0.012293186606085608
-0.012293186606085608
-0.012293186606085608
-0.012293177702191231
-0.012293161044504872
-0.012293161044504872
-0.012293161044504872
-0.012293157424806944
-0.012293155368922823
-0.012293155368922823
-0.012293155368922823
-0.012293147982021564
-0.012293147982021564
-0.012293147982021564
-0.012293147982021564
-0.012293147982021564
-0.012293147982021564
-0.012293088416335064
-0.012293088416335064
-0.012293088416335064
-0.012293088416335064
-0.012293088416335064
-0.012293088416335064
-0.012293088416335064
-0.012293088416335064
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293078896235788
-0.012293071314443065
-0.012293071314443065
-0.012293071314443065
-0.012293071314443065
-0.012293071314443065
-0.012293071314443065
-0.012293071314443065
-0.012293071314443065
-0.012293071314443065
-0.012293071314443065
-0.012293071314443065
-0.012293071314443065
-0.012293071314443065
-0.012293071314443065
-0.012293071314443065
-0.012293071314443065
-0.012293071314443065
-0.012293067948687
-0.012293067948687
-0.012293067948687
-0.012293067230421872
-0.012293067230421872
-0.012293067230421872
-0.012293067230421872
-0.012293065250805242
-0.012293065250805242
-0.012293065250805242
-0.012293065250805242
-0.012293065250805242
-0.012293065250805242
-0.012293065250805242
-0.012293065250805242
-0.012293065064350097
-0.012293065064350097
-0.012293065064350097
-0.012293065064350097
-0.012293065064350097
-0.012293065064350097
-0.012293065064350097
-0.012293065064350097
-0.012293065064350097
-0.012293065064350097
-0.012293065064350097
-0.012293054890810486
-0.012293054890810486
-0.012293054890810486
-0.012293054890810486
-0.012293054890810486
-0.012293054890810486
-0.012293054890810486
-0.012293054890810486
-0.012293054815777306
-0.012293054815777306
-0.012293054815777306
-0.012293053805091185
-0.012293053805091185
-0.012293053805091185
-0.01229305270020193
-0.01229305270020193
-0.012293046694111407
-0.012293046694111407
-0.012293046694111407
-0.012293046694111407
-0.012293046694111407
-0.012293046694111407
-0.012293046694111407
-0.012293046694111407
-0.012293046694111407
-0.012293046694111407
-0.012293046694111407
-0.012293045729810697
-0.012293045729810697
-0.012293044977439554
-0.012293044977439554
-0.012293044977439554
-0.012293044977439554
-0.012293044977439554
-0.012293044977439554
-0.012293044977439554
-0.012293044977439554
-0.012293044977439554
-0.012293044977439554
-0.012293044977439554
-0.012293044350276689
-0.012293039029654817
-0.012293039029654817
-0.012293039029654817
-0.012293039029654817
-0.012293038375444487
-0.012293038375444487
-0.012293038375444487
-0.012293038375444487
-0.012293035745615377
-0.012293035745615377
-0.012293035745615377
-0.012293035745615377
-0.012293035745615377
-0.012293035745615377
-0.012293035745615377
-0.012293035745615377
-0.012293035745615377
-0.012293035745615377
-0.012293035745615377
-0.012293032524686378
-0.012293032524686378
-0.012293032524686378
-0.012293032524686378
-0.012293029298193146
-0.012293029298193146
-0.012293029298193146
-0.012293029298193146
-0.012293029298193146
-0.012293029298193146
-0.012293029298193146
-0.012293029298193146
-0.012293029298193146
-0.012293029298193146
-0.012293029298193146
-0.012293029298193146
-0.012293029298193146
-0.012293029001891291
-0.012293029001891291
-0.012293029001891291
-0.012293025642992178
-0.012293025642992178
-0.012293025642992178
-0.012293025642992178
-0.012293025642992178
-0.012293025642992178
-0.012293025642992178
-0.012293025305335945
-0.012293025305335945
-0.012293025305335945
-0.012293025305335945
-0.012293025305335945
-0.012293025305335945
-0.012293025305335945
-0.012293022270074427
-0.012293022270074427
-0.012293022270074427
-0.012293022270074427
-0.012293022270074427
-0.012293022270074427
-0.012293022270074427
-0.012293022270074427
-</pre></div>
 </div>
 </div>
-</div>
-</section>
-<section id="we-plot-the-data-and-the-fit">
-<h2>We plot the data and the fit<a class="headerlink" href="#we-plot-the-data-and-the-fit" title="Permalink to this heading">¶</a></h2>
+<p>… and plot the result</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">compute_density</span><span class="p">(</span><span class="n">h_in_km</span><span class="p">,</span> <span class="n">best_x</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    returns the atmosheric density in kg.m^3</span>
+<span class="sd">    returns the atmosheric density in kg.m^3 from the fitted parameters</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">p1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">best_x</span><span class="p">[:</span><span class="mi">4</span><span class="p">])</span>
     <span class="n">p2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">best_x</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="mi">8</span><span class="p">])</span>
@@ -915,20 +376,23 @@
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
-<span class="n">altitudes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">78</span><span class="p">,</span> <span class="mi">1500</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">altitudes</span><span class="p">,</span> <span class="n">compute_density</span><span class="p">(</span><span class="n">altitudes</span><span class="p">,</span> <span class="n">pop</span><span class="o">.</span><span class="n">champion_x</span><span class="p">),</span> <span class="n">label</span> <span class="o">=</span><span class="s1">&#39;analytical fit&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">altitude</span><span class="p">,</span> <span class="n">density</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">altitude</span><span class="p">,</span> <span class="n">compute_density</span><span class="p">(</span><span class="n">altitude</span><span class="p">,</span> <span class="n">pop</span><span class="o">.</span><span class="n">champion_x</span><span class="p">),</span> <span class="n">label</span> <span class="o">=</span><span class="s1">&#39;differentiable fit&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">altitude</span><span class="p">,</span> <span class="n">density_nrl</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Atmospheric density fit&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Altitude [km]&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Density [kg/m^]&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;matplotlib.legend.Legend at 0x7f5718864040&gt;
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Text(0, 0.5, &#39;Density [kg/m^]&#39;)
 </pre></div>
 </div>
-<img alt="../_images/c16b4f253b008a9cc334b779d296bd6a9c01b192dbec86e28f424fa23adcae03.png" src="../_images/c16b4f253b008a9cc334b779d296bd6a9c01b192dbec86e28f424fa23adcae03.png" />
+<img alt="../_images/6118a9c4a8c3e79a3a16f44171db2e77b3fde7f3b36d66a4c241a58b1a0cb678.png" src="../_images/6118a9c4a8c3e79a3a16f44171db2e77b3fde7f3b36d66a4c241a58b1a0cb678.png" />
 </div>
 </div>
+<p>One may, occasionally, need to repeat the evolution as the fit may be not satisfactory. In the case plotted above we can be satisfied, and hence save the results in a pickled file.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;data/best_fit_density.pk&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
@@ -938,7 +402,6 @@
 </div>
 </div>
 </section>
-</section>
 
 
               </div>
@@ -946,6 +409,7 @@
         
         <div class='prev-next-bottom'>
             
+    <a class='left-prev' id="prev-link" href="leo_population.html" title="previous page">The current LEO population</a>
 
         </div>
         
