@@ -58,6 +58,9 @@ namespace
 {
 
 // Generic branchless sign function.
+// It will return:
+// - 0 if val is 0,
+// - +-1 if val is greater/less than zero.
 template <typename T>
 int sgn(T val)
 {
@@ -194,9 +197,11 @@ std::tuple<T, int> bracketed_root_find(const T *poly, std::uint32_t order, T lb,
 template <typename T, typename Isol, typename Wlist, typename FexCheck, typename Rtscc, typename Pt1, typename Pidx,
           typename Logger, typename CollVec, typename DT, typename PWrap, typename RIsoCache>
 void run_poly_root_finding(const T *poly, std::uint32_t order, T rf_int, Isol &isol, Wlist &wlist, FexCheck *fex_check,
-                           Rtscc *rtscc, Pt1 *pt1, Pidx pi, Pidx pj, Logger *logger, int, CollVec &coll_vec,
+                           Rtscc *rtscc, Pt1 *pt1, Pidx pi, Pidx pj, Logger *logger, int direction, CollVec &coll_vec,
                            const DT &lb_rf, PWrap &tmp, PWrap &tmp1, PWrap &tmp2, RIsoCache &r_iso_cache)
 {
+    assert(direction == 0 || direction == 1 || direction == -1);
+
     // Run the fast exclusion check.
     std::uint32_t fex_check_res = 0, back_flag = 0;
     fex_check(poly, &rf_int, &back_flag, &fex_check_res);
@@ -218,7 +223,7 @@ void run_poly_root_finding(const T *poly, std::uint32_t order, T rf_int, Isol &i
     // to the [0, rf_int) range.
     auto add_root = [&](double root) {
         // NOTE: we do one last check on the root in order to
-        // avoid non-finite event times.
+        // avoid non-finite times.
         if (!std::isfinite(root)) {
             // LCOV_EXCL_START
             logger->warn("Polynomial root finding produced a non-finite root of {} - "
@@ -228,26 +233,34 @@ void run_poly_root_finding(const T *poly, std::uint32_t order, T rf_int, Isol &i
             // LCOV_EXCL_STOP
         }
 
-        // Evaluate the derivative and its absolute value.
-        const auto der = poly_eval_1(poly, root, order);
+        // Check the direction, if needed.
+        bool accept_root = true;
+        if (direction != 0) {
+            // Evaluate the derivative and its absolute value.
+            const auto der = poly_eval_1(poly, root, order);
 
-        // Check it before proceeding.
-        if (!std::isfinite(der)) {
-            // LCOV_EXCL_START
-            logger->warn("Polynomial root finding produced the root {} with "
-                         "nonfinite derivative {} - "
-                         "skipping the collision between particles {} and {}",
-                         root, der, pi, pj);
-            return;
-            // LCOV_EXCL_STOP
+            // Check it before proceeding.
+            if (!std::isfinite(der)) {
+                // LCOV_EXCL_START
+                logger->warn("Polynomial root finding produced the root {} with "
+                             "nonfinite derivative {} - "
+                             "skipping the collision between particles {} and {}",
+                             root, der, pi, pj);
+                return;
+                // LCOV_EXCL_STOP
+            }
+
+            // Compute sign of the derivative.
+            const auto d_sgn = sgn(der);
+
+            // Accept the root only if the sign of the derivative
+            // matches the direction.
+            if (d_sgn != direction) {
+                accept_root = false;
+            }
         }
 
-        // Compute sign of the derivative.
-        const auto d_sgn = sgn(der);
-
-        // Record the collision only if the derivative
-        // is negative.
-        if (d_sgn < 0) {
+        if (accept_root) {
             // Compute the time coordinate of the collision with respect
             // to the beginning of the superstep.
             const auto tcoll = static_cast<double>(lb_rf + root);
