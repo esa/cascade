@@ -172,7 +172,7 @@ std::tuple<T, int> bracketed_root_find(const T *poly, std::uint32_t order, T lb,
     if (errno > 0) {
         // Some error condition arose during root finding,
         // return zero and errno.
-        return std::tuple{T(0), errno};
+        return std::tuple{static_cast<T>(0), errno};
     }
 
     if (max_iter < iter_limit) {
