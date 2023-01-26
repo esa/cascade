@@ -362,7 +362,9 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
         // Run the polynomial evaluations using interval arithmetic.
         // NOTE: jit for performance? If so, we can do all 4 coordinates
         // in a single JIT compiled function. Possibly also the update
-        // with the particle radius?
+        // with the particle radius? Note also that cfunc requires
+        // input data stored in contiguous order, thus we would need
+        // a 7-arguments cfunc which ignores arguments 3,4,5.
         auto horner_eval = [order, h_int = detail::ival(h_int_lb, h_int_ub)](const double *ptr) {
             auto acc = detail::ival(ptr[order]);
             for (auto o = 1u; o <= order; ++o) {
