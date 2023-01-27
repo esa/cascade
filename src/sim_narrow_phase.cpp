@@ -72,7 +72,9 @@ int sgn(T val)
 template <typename InputIt, typename T>
 auto poly_eval(InputIt a, T x, std::uint32_t n)
 {
-    auto ret = a[n];
+    using retval_t = decltype(a[0] * x);
+
+    retval_t ret(a[n]);
 
     for (std::uint32_t i = 1; i <= n; ++i) {
         ret = a[n - i] + ret * x;
@@ -262,7 +264,7 @@ void run_poly_root_finding(const T *poly, std::uint32_t order, T rf_int, Isol &i
 
         if (accept_root) {
             // Compute the time coordinate of the collision with respect
-            // to the beginning of the superstep.
+            // to the lb_rf offset.
             const auto tcoll = static_cast<double>(lb_rf + root);
 
             if (!std::isfinite(tcoll)) {
@@ -281,10 +283,7 @@ void run_poly_root_finding(const T *poly, std::uint32_t order, T rf_int, Isol &i
 
     // Rescale ss_diff so that the range [0, rf_int)
     // becomes [0, 1), and write the resulting polynomial into tmp.
-    // NOTE: at the first iteration (i.e., for the first
-    // substep of the first pair
-    // of particles which requires real root isolation),
-    // tmp has been constructed correctly outside the loop.
+    // NOTE: we assume a valid tmp has been passed to this function.
     // Below, tmp will first be moved into wlist (thus rendering
     // it invalid) but it will immediately be revived at the
     // first iteration of the do/while loop. Thus, when we get
@@ -379,8 +378,7 @@ void run_poly_root_finding(const T *poly, std::uint32_t order, T rf_int, Isol &i
     } while (!wlist.empty());
 
     // Don't do root finding if the loop failed,
-    // or if the list of isolating intervals is empty. Just
-    // move to the next substep.
+    // or if the list of isolating intervals is empty.
     if (!isol.empty() && !loop_failed) {
         // Reconstruct a version of the original polynomial
         // in which the range [0, rf_int) is rescaled to [0, 1). We need
