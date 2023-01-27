@@ -1,6 +1,8 @@
 cascade
 =========
 
+[![Code Coverage](https://img.shields.io/codecov/c/github/esa/cascade.svg?style=for-the-badge)](https://codecov.io/github/esa/cascade?branch=main)
+
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
