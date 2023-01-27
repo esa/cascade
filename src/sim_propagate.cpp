@@ -246,6 +246,15 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
     // Fetch the particle radius.
     const auto p_radius = sv(pidx, 6);
 
+    // Check it.
+    if (!std::isfinite(p_radius) || p_radius < 0) {
+        throw std::invalid_argument(
+            fmt::format("An invalid particle size of {} was detected for the particle at index {}", p_radius, pidx));
+    }
+
+    // Compute the conjunction radius.
+    const auto conj_radius = m_conj_thresh / 2;
+
     // Cache a few quantities.
     const auto order = m_data->s_ta.get_order();
     const auto &s_data = m_data->s_data;
@@ -341,10 +350,12 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
 
         std::array xyzr_int{horner_eval(tc_ptr_x), horner_eval(tc_ptr_y), horner_eval(tc_ptr_z), horner_eval(tc_ptr_r)};
 
-        // Adjust the intervals accounting for the particle radius.
+        // Adjust the intervals accounting for the particle radius and/or conjunction tracking.
         for (auto &val : xyzr_int) {
-            val.lower -= p_radius;
-            val.upper += p_radius;
+            // NOTE: std::max() here is safe, as both p_radius and conj_radius have
+            // been sanity checked.
+            val.lower -= std::max(p_radius, conj_radius);
+            val.upper += std::max(p_radius, conj_radius);
         }
 
         // A couple of helpers to cast lower/upper bounds from double to float. After
@@ -540,6 +551,9 @@ outcome sim::step()
     // The time coordinate at the beginning of
     // the superstep.
     const auto init_time = m_data->time;
+
+    // Cache the original size of m_det_conj.
+    const auto orig_m_det_conj_size = m_det_conj.size();
 
     // Prepare the s_data buffers with the correct sizes.
 
@@ -1226,7 +1240,10 @@ outcome sim::step()
         // - update the time coordinate,
         // - copy in final_state, which was filled
         //   in by dense_propagate(),
-        // - set up the interrupt info.
+        // - set up the interrupt info,
+        // - if we are tracking conjunctions,
+        //   we need to get rid of the conjunctions
+        //   that happen after the interrupt time.
 
         assert(interrupt_time);
 
@@ -1260,6 +1277,28 @@ outcome sim::step()
                 assert(oc == outcome::reentry);
                 assert(ste_it != m_data->ste_vec.end());
                 m_int_info.emplace(std::get<0>(*ste_it));
+        }
+
+        if (m_conj_thresh != 0) {
+            // Identify the first conjunction added during this superstep
+            // happening after the current time.
+
+            // Horrid preliminary overflow checking.
+            using it_diff_t = decltype(m_det_conj.begin() - m_det_conj.begin());
+            using it_udiff_t = std::make_unsigned_t<it_diff_t>;
+            if (m_det_conj.size() > static_cast<it_udiff_t>(std::numeric_limits<it_diff_t>::max())) {
+                // LCOV_EXCL_START
+                throw std::overflow_error(
+                    "Overflow condition detected in the size of the vector of detected conjunctions");
+                // LCOV_EXCL_STOP
+            }
+
+            auto conj_it = std::upper_bound(
+                m_det_conj.begin() + static_cast<it_diff_t>(orig_m_det_conj_size), m_det_conj.end(), m_data->time,
+                [](const auto &tgt_tm, const auto &tup) { return tgt_tm < dfloat(std::get<2>(tup)); });
+
+            // Erase the conjunctions happening after the current time.
+            m_det_conj.erase(conj_it, m_det_conj.end());
         }
     }
 

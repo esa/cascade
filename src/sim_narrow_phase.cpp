@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <stdexcept>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -24,6 +25,8 @@
 #include <boost/numeric/conversion/cast.hpp>
 #include <boost/safe_numerics/safe_integer.hpp>
 
+#include <fmt/core.h>
+
 #include <oneapi/tbb/blocked_range.h>
 #include <oneapi/tbb/parallel_for.h>
 
@@ -32,6 +35,8 @@
 #include <cascade/detail/logging_impl.hpp>
 #include <cascade/detail/sim_data.hpp>
 #include <cascade/sim.hpp>
+
+#include "detail/ival.hpp"
 
 #if defined(__clang__) || defined(__GNUC__)
 
@@ -229,7 +234,7 @@ void run_poly_root_finding(const T *poly, std::uint32_t order, T rf_int, Isol &i
         if (!std::isfinite(root)) {
             // LCOV_EXCL_START
             logger->warn("Polynomial root finding produced a non-finite root of {} - "
-                         "skipping the collision between particles {} and {}",
+                         "skipping the collision/conjunction between particles {} and {}",
                          root, pi, pj);
             return;
             // LCOV_EXCL_STOP
@@ -246,7 +251,7 @@ void run_poly_root_finding(const T *poly, std::uint32_t order, T rf_int, Isol &i
                 // LCOV_EXCL_START
                 logger->warn("Polynomial root finding produced the root {} with "
                              "nonfinite derivative {} - "
-                             "skipping the collision between particles {} and {}",
+                             "skipping the collision/conjunction between particles {} and {}",
                              root, der, pi, pj);
                 return;
                 // LCOV_EXCL_STOP
@@ -269,8 +274,8 @@ void run_poly_root_finding(const T *poly, std::uint32_t order, T rf_int, Isol &i
 
             if (!std::isfinite(tcoll)) {
                 // LCOV_EXCL_START
-                logger->warn("Polynomial root finding produced a non-finite collision time of {} - "
-                             "skipping the collision between particles {} and {}",
+                logger->warn("Polynomial root finding produced a non-finite collision/conjunction time of {} - "
+                             "skipping the collision/conjunction between particles {} and {}",
                              tcoll, pi, pj);
                 return;
                 // LCOV_EXCL_STOP
@@ -364,9 +369,8 @@ void run_poly_root_finding(const T *poly, std::uint32_t order, T rf_int, Isol &i
         // cases. The second check is that we cannot possibly find more isolating
         // intervals than the degree of the polynomial.
         if (wlist.size() > 250u || isol.size() > order) {
-            logger->warn("The polynomial root isolation algorithm failed during collision "
-                         "detection: "
-                         "the working list size is {} and the number of isolating intervals is {}",
+            logger->warn("The polynomial root isolation algorithm failed during collision/conjunction "
+                         "detection: the working list size is {} and the number of isolating intervals is {}",
                          wlist.size(), isol.size());
 
             loop_failed = true;
@@ -402,10 +406,10 @@ void run_poly_root_finding(const T *poly, std::uint32_t order, T rf_int, Isol &i
                 // Root finding encountered some issue. Ignore the
                 // root and log the issue.
                 if (cflag == -1) {
-                    logger->warn("Polynomial root finding during collision detection failed "
+                    logger->warn("Polynomial root finding during collision/conjunction detection failed "
                                  "due to too many iterations");
                 } else {
-                    logger->warn("Polynomial root finding during collision detection "
+                    logger->warn("Polynomial root finding during collision/conjunction detection "
                                  "returned a nonzero errno with code '{}'",
                                  cflag);
                 }
@@ -505,9 +509,26 @@ void sim::narrow_phase_parallel()
     const auto fex_check = m_data->fex_check;
     const auto rtscc = m_data->rtscc;
     const auto pt1 = m_data->pt1;
+    const auto conj_thresh2 = m_conj_thresh * m_conj_thresh;
+
+    if (!std::isfinite(conj_thresh2)) {
+        // LCOV_EXCL_START
+        throw std::invalid_argument(
+            fmt::format("A conjunction threshold of {} is too large and results in an overflow error", m_conj_thresh));
+        // LCOV_EXCL_STOP
+    }
+
+    const auto with_conj = (m_conj_thresh != 0);
+
+    // The time coordinate at the beginning of
+    // the superstep.
+    const auto init_time = m_data->time;
 
     // Reset the collision vector.
     m_data->coll_vec.clear();
+
+    // Reset the conjunction vector.
+    m_data->conj_vec.clear();
 
     // Fetch a view on the state vector in order to
     // access the particles' sizes.
@@ -566,11 +587,16 @@ void sim::narrow_phase_parallel()
                 }
 
                 // Cache a few quantities.
-                auto &[xi_temp, yi_temp, zi_temp, xj_temp, yj_temp, zj_temp, ss_diff] = pcaches->dist2;
+                auto &[xi_temp, yi_temp, zi_temp, xj_temp, yj_temp, zj_temp, ss_diff, ss_diff_der] = pcaches->dist2;
                 auto &diff_input = pcaches->diff_input;
                 auto &wlist = pcaches->wlist;
                 auto &isol = pcaches->isol;
                 auto &r_iso_cache = pcaches->r_iso_cache;
+                auto &tmp_conj_vec = pcaches->tmp_conj_vec;
+                auto &local_conj_vec = pcaches->local_conj_vec;
+
+                // Prepare the local conjunction vector.
+                local_conj_vec.clear();
 
                 // NOTE: bracket further so that the pwrap objects
                 // are destroyed *before* pcaches is moved into np_cache.
@@ -745,14 +771,101 @@ void sim::narrow_phase_parallel()
                             auto *ss_diff_ptr = ss_diff.data();
                             pssdiff3_cfunc(ss_diff_ptr, diff_input.data(), nullptr);
 
+                            // Remember the original constant term of the polynomial.
+                            const auto orig_const_cf = ss_diff_ptr[0];
+
+                            // Step 1: detect physical collision.
                             // Modify the constant term of the polynomial to account for
                             // particle sizes.
                             ss_diff_ptr[0] -= (p_rad_i + p_rad_j) * (p_rad_i + p_rad_j);
 
-                            // Run the polynomial root finding.
+                            // Run polynomial root finding.
                             detail::run_poly_root_finding(ss_diff_ptr, order, rf_int, isol, wlist, fex_check, rtscc,
                                                           pt1, pi, pj, logger, -1, m_data->coll_vec, lb_rf, tmp, tmp1,
                                                           tmp2, r_iso_cache);
+
+                            // Step 2: do conjunction tracking, if requested.
+                            if (with_conj) {
+                                // Restore the original constant term of the polynomial.
+                                ss_diff_ptr[0] = orig_const_cf;
+
+                                // Evaluate the dist2 polynomial in the [0, rf_int) interval.
+                                const auto dist2_ieval = detail::poly_eval(ss_diff_ptr, detail::ival(0, rf_int), order);
+
+                                if (!std::isfinite(dist2_ieval.lower) || !std::isfinite(dist2_ieval.upper)) {
+                                    // LCOV_EXCL_START
+                                    logger->warn("Non-finite value(s) detected during conjunction tracking for "
+                                                 "particles {} and {} - the conjunction will not be tracked",
+                                                 pi, pj);
+
+                                    break;
+                                    // LCOV_EXCL_STOP
+                                }
+
+                                if (dist2_ieval.lower < conj_thresh2) {
+                                    // The mutual distance between the particles might end up being
+                                    // less than the conjunction threshold during the current time interval.
+                                    // This means that a conjunction *may* happen.
+
+                                    // Compute the time derivative of the dist2 poly.
+                                    auto *ss_diff_der_ptr = ss_diff_der.data();
+                                    for (std::uint32_t i = 0; i < order; ++i) {
+                                        ss_diff_der_ptr[i] = (i + 1u) * ss_diff_ptr[i + 1u];
+                                    }
+                                    // NOTE: the highest-order term needs to be set to zero manually.
+                                    ss_diff_der_ptr[order] = 0;
+
+                                    // Prepare tmp_conj_vec.
+                                    tmp_conj_vec.clear();
+
+                                    // Run polynomial root finding to detect conjunctions.
+                                    detail::run_poly_root_finding(
+                                        ss_diff_der_ptr, order, rf_int, isol, wlist, fex_check, rtscc, pt1, pi, pj,
+                                        logger,
+                                        // NOTE: positive direction to detect only distance minima.
+                                        1, tmp_conj_vec,
+                                        // NOTE: invoke with lb_rf = 0 so that we get the
+                                        // conjunction time wrt the current time interval,
+                                        // rather than wrt the beginning of the superstep.
+                                        dfloat(0.), tmp, tmp1, tmp2, r_iso_cache);
+
+                                    // For each detected conjunction, we need to:
+                                    // - verify that indeed the conjunction happens below
+                                    //   the threshold,
+                                    // - compute the conjunction distance and absolute
+                                    //   time coordinate.
+                                    for (const auto &[_1, _2, conj_tm] : tmp_conj_vec) {
+                                        assert(_1 == pi);
+                                        assert(_2 == pj);
+
+                                        // Compute the conjunction distance square.
+                                        const auto conj_dist2 = detail::poly_eval(ss_diff_ptr, conj_tm, order);
+
+                                        if (!std::isfinite(conj_dist2) || conj_dist2 < 0.) {
+                                            // LCOV_EXCL_START
+                                            logger->warn(
+                                                "An invalid conjunction distance square of {} was computed for the "
+                                                "particles at indices {} and {}, the conjunction will be ignored",
+                                                conj_dist2, pi, pj);
+                                            continue;
+                                            // LCOV_EXCL_STOP
+                                        }
+
+                                        if (conj_dist2 < conj_thresh2) {
+                                            local_conj_vec.emplace_back(
+                                                pi, pj,
+                                                // NOTE: we want to store here the absolute
+                                                // time coordinate of the conjunction. conj_tm
+                                                // is a time coordinate relative to the root
+                                                // finding interval, so we need to first refer it
+                                                // to the beginning of the superstep, and then,
+                                                // finally to the absolute time coordinate.
+                                                static_cast<double>(init_time + (lb_rf + conj_tm)),
+                                                std::sqrt(conj_dist2));
+                                        }
+                                    }
+                                }
+                            }
 
                             // Update the substep iterators.
                             if (*it_i < *it_j) {
@@ -775,11 +888,30 @@ void sim::narrow_phase_parallel()
                     }
                 }
 
+                // Merge the local conjunction vector into the global one.
+                if (with_conj) {
+                    m_data->conj_vec.grow_by(local_conj_vec.begin(), local_conj_vec.end());
+                }
+
                 // Put the polynomials back into the caches.
                 np_cache.push(std::move(pcaches));
             });
         }
     });
+
+    if (with_conj) {
+        // Store the original size of m_det_conj.
+        const auto orig_m_det_conj_size = m_det_conj.size();
+
+        // Append the conjunctions detected during this superstep.
+        m_det_conj.insert(m_det_conj.end(), m_data->conj_vec.begin(), m_data->conj_vec.end());
+
+        // Sort the added conjunctions according to the conjunction time.
+        std::sort(m_det_conj.data() + orig_m_det_conj_size, m_det_conj.data() + m_det_conj.size(),
+                  [](const auto &t1, const auto &t2) { return std::get<2>(t1) < std::get<2>(t2); });
+
+        logger->trace("Total number of detected conjunctions: ", m_det_conj.size() - orig_m_det_conj_size);
+    }
 
     logger->trace("Narrow phase collision detection time: {}s", sw);
     logger->trace("Total number of collisions detected: {}", m_data->coll_vec.size());

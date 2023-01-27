@@ -59,6 +59,7 @@ IGOR_MAKE_NAMED_ARGUMENT(d_radius);
 IGOR_MAKE_NAMED_ARGUMENT(tol);
 IGOR_MAKE_NAMED_ARGUMENT(high_accuracy);
 IGOR_MAKE_NAMED_ARGUMENT(n_par_ct);
+IGOR_MAKE_NAMED_ARGUMENT(conj_thresh);
 
 } // namespace kw
 
@@ -107,11 +108,18 @@ private:
     double m_d_radius = 0;
     // Number of params in the dynamics.
     std::uint32_t m_npars = 0;
+    // Conjunction threshold
+    double m_conj_thresh = 0;
+    // List of detected conjunctions. Each tuple contains:
+    // - the indices of the two particles,
+    // - the absolute time coordinate of the conjunction,
+    // - the conjunction distance.
+    std::vector<std::tuple<size_type, size_type, double, double>> m_det_conj;
     // The internal implementation-detail data (buffers, caches, etc.).
     std::unique_ptr<sim_data> m_data;
 
     void finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>>, std::vector<double>,
-                       std::variant<double, std::vector<double>>, double, double, bool, std::uint32_t);
+                       std::variant<double, std::vector<double>>, double, double, bool, std::uint32_t, double);
     CASCADE_DLL_LOCAL void add_jit_functions();
     CASCADE_DLL_LOCAL void morton_encode_sort_parallel();
     CASCADE_DLL_LOCAL void construct_bvh_trees_parallel();
@@ -266,7 +274,20 @@ public:
             }
         }
 
-        finalise_ctor(std::move(dyn), std::move(pars), std::move(c_radius), d_radius, tol, ha, n_par_ct);
+        // Conjunction threshold (defaults to zero).
+        double conj_thresh = 0;
+        if constexpr (p.has(kw::conj_thresh)) {
+            if constexpr (std::convertible_to<decltype(p(kw::conj_thresh)), double>) {
+                conj_thresh = static_cast<double>(std::forward<decltype(p(kw::conj_thresh))>(p(kw::conj_thresh)));
+            } else {
+                // LCOV_EXCL_START
+                static_assert(detail::always_false_v<KwArgs...>,
+                              "The 'conj_thresh' keyword argument is of the wrong type.");
+                // LCOV_EXCL_STOP
+            }
+        }
+
+        finalise_ctor(std::move(dyn), std::move(pars), std::move(c_radius), d_radius, tol, ha, n_par_ct, conj_thresh);
     }
     sim(const sim &);
     sim(sim &&) noexcept;
@@ -331,6 +352,12 @@ public:
     {
         return m_d_radius;
     }
+
+    [[nodiscard]] double get_conj_thresh() const
+    {
+        return m_conj_thresh;
+    }
+    void set_conj_thresh(double);
 
     void set_new_state_pars(std::vector<double>, std::vector<double> = {});
     void remove_particles(std::vector<size_type>);

@@ -112,7 +112,8 @@ sim::sim(ptag_t, std::vector<double> state, double ct)
 sim::sim(const sim &other)
     : m_state(std::make_shared<std::vector<double>>(*other.m_state)),
       m_pars(std::make_shared<std::vector<double>>(*other.m_pars)), m_ct(other.m_ct), m_n_par_ct(other.m_n_par_ct),
-      m_int_info(other.m_int_info), m_c_radius(other.m_c_radius), m_d_radius(other.m_d_radius), m_npars(other.m_npars)
+      m_int_info(other.m_int_info), m_c_radius(other.m_c_radius), m_d_radius(other.m_d_radius), m_npars(other.m_npars),
+      m_conj_thresh(other.m_conj_thresh), m_det_conj(other.m_det_conj)
 {
     // For m_data, we will be copying only:
     // - the integrator templates,
@@ -194,6 +195,16 @@ void sim::set_n_par_ct(std::uint32_t n_par_ct)
     }
 
     m_n_par_ct = n_par_ct;
+}
+
+void sim::set_conj_thresh(double conj_thresh)
+{
+    if (!std::isfinite(conj_thresh) || conj_thresh < 0) {
+        throw std::invalid_argument(fmt::format(
+            "The conjunction threshold value {} is invalid: it must be finite and non-negative", conj_thresh));
+    }
+
+    m_conj_thresh = conj_thresh;
 }
 
 std::uint32_t sim::get_npars() const
@@ -337,7 +348,8 @@ void sim::set_new_state_pars(std::vector<double> new_state, std::vector<double> 
 void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>> dyn, std::vector<double> pars,
                         // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
                         std::variant<double, std::vector<double>> c_radius, double d_radius, double tol, bool ha,
-                        std::uint32_t n_par_ct)
+                        // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+                        std::uint32_t n_par_ct, double conj_thresh)
 {
     namespace hy = heyoka;
 
@@ -366,6 +378,9 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
 
     // Set the number of parallel collisional timesteps.
     set_n_par_ct(n_par_ct);
+
+    // Set the conjunction threshold.
+    set_conj_thresh(conj_thresh);
 
     if (dyn.empty()) {
         // Default is Keplerian dynamics with unitary mu.
