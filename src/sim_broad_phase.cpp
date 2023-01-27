@@ -150,7 +150,7 @@ void sim::broad_phase_parallel()
                                 // NOTE: in case of a multi-particle leaf,
                                 // the node's AABB is the composition of the AABBs
                                 // of all particles in the node, and thus, in general,
-                                // it is not strictly true tha pidx will overlap with
+                                // it is not strictly true that pidx will overlap with
                                 // *all* particles in the node. In other words, we will
                                 // be detecting AABB overlaps which are not actually there.
                                 // This is ok, as they will be filtered out in the

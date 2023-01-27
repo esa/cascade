@@ -39,7 +39,7 @@ many new idioms introduced in C++20. The library is regularly tested on
 a continuous integration pipeline which currently includes:
 
 * GCC 12 on Linux,
-* Clang 11 on OSX,
+* Clang 14 on OSX,
 * MSVC 2019 on Windows.
 
 Its a good idea to check the scripts used to build cascade on these architectures, you can find the ones for OSX and linux in
