@@ -910,7 +910,7 @@ void sim::narrow_phase_parallel()
         std::sort(m_det_conj.data() + orig_m_det_conj_size, m_det_conj.data() + m_det_conj.size(),
                   [](const auto &t1, const auto &t2) { return std::get<2>(t1) < std::get<2>(t2); });
 
-        logger->trace("Total number of detected conjunctions: ", m_det_conj.size() - orig_m_det_conj_size);
+        logger->trace("Total number of detected conjunctions: {}", m_det_conj.size() - orig_m_det_conj_size);
     }
 
     logger->trace("Narrow phase collision detection time: {}s", sw);
