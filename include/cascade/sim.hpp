@@ -358,6 +358,10 @@ public:
         return m_conj_thresh;
     }
     void set_conj_thresh(double);
+    [[nodiscard]] const auto &get_conjunctions() const
+    {
+        return m_det_conj;
+    }
 
     void set_new_state_pars(std::vector<double>, std::vector<double> = {});
     void remove_particles(std::vector<size_type>);

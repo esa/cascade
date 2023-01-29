@@ -862,6 +862,9 @@ void sim::narrow_phase_parallel()
                                                 // finally to the absolute time coordinate.
                                                 static_cast<double>(init_time + (lb_rf + conj_tm)),
                                                 std::sqrt(conj_dist2));
+                                        } else {
+                                            SPDLOG_LOGGER_DEBUG(logger, "Conjunction ignored because the conjunction "
+                                                                        "distance is less than the threshold");
                                         }
                                     }
                                 }
