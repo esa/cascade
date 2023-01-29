@@ -107,10 +107,12 @@ void sim::construct_bvh_trees_parallel()
     // in the Morton codes vector.
     constexpr auto overflow_err_msg = "Overflow detected during the construction of a BVH tree";
 
+    // LCOV_EXCL_START
     if (m_data->srt_mcodes.size()
         > static_cast<std::make_unsigned_t<std::ptrdiff_t>>(std::numeric_limits<std::ptrdiff_t>::max())) {
         throw std::overflow_error(overflow_err_msg);
     }
+    // LCOV_EXCL_STOP
 
     // Views for accessing the sorted lb/ub data.
     using b_size_t = decltype(m_data->lbs.size());
@@ -165,9 +167,11 @@ void sim::construct_bvh_trees_parallel()
 
                 // Number of nodes at the next level, inited
                 // with the maximum possible value.
+                // LCOV_EXCL_START
                 if (cur_n_nodes > std::numeric_limits<std::uint32_t>::max() / 2u) {
                     throw std::overflow_error(overflow_err_msg);
                 }
+                // LCOV_EXCL_STOP
                 auto nn_next_level = cur_n_nodes * 2u;
 
                 // Prepare the temp buffers.
@@ -295,9 +299,11 @@ void sim::construct_bvh_trees_parallel()
                 // new nodes at the end of the tree containing indeterminate
                 // values. The properties of these new nodes will be set up
                 // in step 4.
+                // LCOV_EXCL_START
                 if (nn_next_level > std::numeric_limits<decltype(cur_tree_size)>::max() - cur_tree_size) {
                     throw std::overflow_error(overflow_err_msg);
                 }
+                // LCOV_EXCL_STOP
                 tree.resize(cur_tree_size + nn_next_level);
 
                 // Step 3: prefix sum over the number of children for each
