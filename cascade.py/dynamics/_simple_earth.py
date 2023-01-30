@@ -14,6 +14,8 @@ def _compute_atmospheric_density(h):
     Input is the altitude in m. 
     """
     import numpy as np
+    import heyoka as hy
+
     # This array is produced by fitting 
     best_x = np.array([1.01709935e-06, 7.86443375e-01, 7.50341883e-09, 8.63934252e-14,
        4.63822910e-02, 1.86080048e-01, 2.48667176e-02, 4.81080852e-03,
