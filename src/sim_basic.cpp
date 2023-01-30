@@ -105,7 +105,8 @@ std::array<double, 2> sim::sim_data::get_chunk_begin_end(unsigned chunk_idx, dou
 sim::sim() : sim(std::vector<double>{}, 1) {}
 
 sim::sim(ptag_t, std::vector<double> state, double ct)
-    : m_state(std::make_shared<std::vector<double>>(std::move(state))), m_ct(ct)
+    : m_state(std::make_shared<std::vector<double>>(std::move(state))), m_ct(ct),
+      m_det_conj(std::make_shared<std::vector<conjunction>>())
 {
 }
 
@@ -113,7 +114,7 @@ sim::sim(const sim &other)
     : m_state(std::make_shared<std::vector<double>>(*other.m_state)),
       m_pars(std::make_shared<std::vector<double>>(*other.m_pars)), m_ct(other.m_ct), m_n_par_ct(other.m_n_par_ct),
       m_int_info(other.m_int_info), m_c_radius(other.m_c_radius), m_d_radius(other.m_d_radius), m_npars(other.m_npars),
-      m_conj_thresh(other.m_conj_thresh), m_det_conj(other.m_det_conj)
+      m_conj_thresh(other.m_conj_thresh), m_det_conj(std::make_shared<std::vector<conjunction>>(*other.m_det_conj))
 {
     // For m_data, we will be copying only:
     // - the integrator templates,

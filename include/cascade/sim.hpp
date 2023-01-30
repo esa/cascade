@@ -78,6 +78,19 @@ class CASCADE_DLL_PUBLIC sim
 public:
     using size_type = std::vector<double>::size_type;
 
+    // Struct representing detected conjunctions.
+    struct conjunction {
+        // Indices of the two particles.
+        size_type i = 0;
+        size_type j = 0;
+
+        // Absolute time coordinate.
+        double tm = 0;
+
+        // Conjunction distance.
+        double dist = 0;
+    };
+
 private:
     struct sim_data;
 
@@ -110,11 +123,10 @@ private:
     std::uint32_t m_npars = 0;
     // Conjunction threshold
     double m_conj_thresh = 0;
-    // List of detected conjunctions. Each tuple contains:
-    // - the indices of the two particles,
-    // - the absolute time coordinate of the conjunction,
-    // - the conjunction distance.
-    std::vector<std::tuple<size_type, size_type, double, double>> m_det_conj;
+    // List of detected conjunctions.
+    // NOTE: wrap into shared_ptr for the same
+    // reasons explained above for m_state.
+    std::shared_ptr<std::vector<conjunction>> m_det_conj;
     // The internal implementation-detail data (buffers, caches, etc.).
     std::unique_ptr<sim_data> m_data;
 
@@ -144,6 +156,7 @@ private:
     CASCADE_DLL_LOCAL void init_batch_ta(T &, size_type, size_type) const;
     template <typename T>
     CASCADE_DLL_LOCAL void compute_particle_aabb(unsigned, const T &, const T &, size_type);
+    CASCADE_DLL_LOCAL std::vector<conjunction>::iterator append_conj_data(void *) noexcept;
 
     // Private delegating constructor machinery. This is used
     // in the generic constructor to move the initialisation of
@@ -360,7 +373,7 @@ public:
     void set_conj_thresh(double);
     [[nodiscard]] const auto &get_conjunctions() const
     {
-        return m_det_conj;
+        return *m_det_conj;
     }
 
     void set_new_state_pars(std::vector<double>, std::vector<double> = {});

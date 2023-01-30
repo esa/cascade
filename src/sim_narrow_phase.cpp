@@ -14,6 +14,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <numeric>
+#include <optional>
 #include <stdexcept>
 #include <tuple>
 #include <utility>
@@ -527,9 +529,6 @@ void sim::narrow_phase_parallel()
     // Reset the collision vector.
     m_data->coll_vec.clear();
 
-    // Reset the conjunction vector.
-    m_data->conj_vec.clear();
-
     // Fetch a view on the state vector in order to
     // access the particles' sizes.
     stdex::mdspan sv(std::as_const(m_state)->data(),
@@ -549,6 +548,11 @@ void sim::narrow_phase_parallel()
                 np_cache_ptr = std::make_unique<typename decltype(m_data->np_caches)::value_type::element_type>();
             }
             auto &np_cache = *np_cache_ptr;
+
+            // Fetch a reference to the detected conjunctions vector
+            // for the current chunk and clear it out.
+            auto &cl_conj_vec = m_data->conj_vecs[chunk_idx];
+            cl_conj_vec.clear();
 
             // The time coordinate, relative to init_time, of
             // the chunk's begin/end.
@@ -891,9 +895,9 @@ void sim::narrow_phase_parallel()
                     }
                 }
 
-                // Merge the local conjunction vector into the global one.
+                // Atomically merge the local conjunction vector into the chunk-specific one.
                 if (with_conj) {
-                    m_data->conj_vec.grow_by(local_conj_vec.begin(), local_conj_vec.end());
+                    cl_conj_vec.grow_by(local_conj_vec.begin(), local_conj_vec.end());
                 }
 
                 // Put the polynomials back into the caches.
@@ -902,22 +906,47 @@ void sim::narrow_phase_parallel()
         }
     });
 
+    // NOTE: this is used only for logging purposes.
+    std::optional<decltype(m_det_conj->size())> n_det_conjs;
+
     if (with_conj) {
-        // Store the original size of m_det_conj.
-        const auto orig_m_det_conj_size = m_det_conj.size();
+        // If conjunction detection is active, we want to prepare
+        // the global conjunction vector for the new detected conjunctions
+        // which are currently stored in m_data->conj_vecs. The objective
+        // is to avoid reallocating in the step() function, where
+        // we need the noexcept guarantee.
 
-        // Append the conjunctions detected during this superstep.
-        m_det_conj.insert(m_det_conj.end(), m_data->conj_vec.begin(), m_data->conj_vec.end());
+        // We begin by determining how many conjunctions were detected.
+        // NOTE: perhaps determining n_new_conj can be done in parallel
+        // earlier. We just need to take care of avoiding overflow somehow.
+        using safe_size_t = boost::safe_numerics::safe<decltype(m_det_conj->size())>;
+        const auto n_new_conj = std::accumulate(m_data->conj_vecs.begin(), m_data->conj_vecs.end(), safe_size_t(0),
+                                                [](const auto &acc, const auto &cur) { return acc + cur.size(); });
 
-        // Sort the added conjunctions according to the conjunction time.
-        std::sort(m_det_conj.data() + orig_m_det_conj_size, m_det_conj.data() + m_det_conj.size(),
-                  [](const auto &t1, const auto &t2) { return std::get<2>(t1) < std::get<2>(t2); });
+        // Do we have enough storage in m_det_conj to store the new conjunctions?
+        if (m_det_conj->size() + n_new_conj > m_det_conj->capacity()) {
+            // m_det_conj cannot store the new conjunctions without reallocating.
+            // We thus prepare a new vector with twice the needed capacity.
+            std::vector<conjunction> new_det_conj;
+            new_det_conj.reserve(2u * (m_det_conj->size() + n_new_conj));
 
-        logger->trace("Total number of detected conjunctions: {}", m_det_conj.size() - orig_m_det_conj_size);
+            // Copy over the existing conjunctions.
+            new_det_conj.insert(new_det_conj.end(), m_det_conj->begin(), m_det_conj->end());
+
+            // Assign the new conjunction vector.
+            m_det_conj = std::make_shared<std::vector<conjunction>>(std::move(new_det_conj));
+        }
+
+        // Set the logging variable.
+        n_det_conjs.emplace(n_new_conj);
     }
 
     logger->trace("Narrow phase collision detection time: {}s", sw);
     logger->trace("Total number of collisions detected: {}", m_data->coll_vec.size());
+
+    if (n_det_conjs) {
+        logger->trace("Total number of conjunctions detected: {}", *n_det_conjs);
+    }
 }
 
 } // namespace cascade

@@ -8,7 +8,6 @@
 
 #include <cmath>
 #include <initializer_list>
-#include <tuple>
 #include <unordered_map>
 
 #include <boost/math/constants/constants.hpp>
@@ -49,17 +48,15 @@ TEST_CASE("polar conj")
     auto sv = xt::adapt(s.get_state().data(), {2, 7});
     auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
 
-    const auto &conj = s.get_conjunctions();
-
-    while (conj.empty()) {
+    while (s.get_conjunctions().empty()) {
         REQUIRE(s.step() == outcome::success);
     }
 
-    REQUIRE(conj.size() == 1u);
-    REQUIRE(std::get<0>(conj[0]) == 0u);
-    REQUIRE(std::get<1>(conj[0]) == 1u);
-    REQUIRE(std::abs(std::get<2>(conj[0]) - boost::math::constants::pi<double>() / 2) < 1e-4);
-    REQUIRE(std::get<3>(conj[0]) < psize * 100);
+    REQUIRE(s.get_conjunctions().size() == 1u);
+    REQUIRE(s.get_conjunctions()[0].i == 0u);
+    REQUIRE(s.get_conjunctions()[0].j == 1u);
+    REQUIRE(std::abs(s.get_conjunctions()[0].tm - boost::math::constants::pi<double>() / 2) < 1e-4);
+    REQUIRE(s.get_conjunctions()[0].dist < psize * 100);
 
     // Run a corresponding heyoka integration with event detection
     // and compare.
@@ -88,13 +85,13 @@ TEST_CASE("polar conj")
     const auto oc = std::get<0>(ta.propagate_until(100));
 
     REQUIRE(oc == hy::taylor_outcome{-1});
-    REQUIRE(std::abs(ta.get_time() - std::get<2>(conj[0])) < 1e-15);
+    REQUIRE(std::abs(ta.get_time() - s.get_conjunctions()[0].tm) < 1e-15);
 
     const auto &st = ta.get_state();
 
     REQUIRE(std::abs(std::sqrt((st[0] - st[6]) * (st[0] - st[6]) + (st[1] - st[7]) * (st[1] - st[7])
                                + (st[2] - st[8]) * (st[2] - st[8]))
-                     - std::get<3>(conj[0]))
+                     - s.get_conjunctions()[0].dist)
             < 1e-9);
 }
 
@@ -115,11 +112,9 @@ TEST_CASE("polar conj near miss")
     auto sv = xt::adapt(s.get_state().data(), {2, 7});
     auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
 
-    const auto &conj = s.get_conjunctions();
-
     while (true) {
         REQUIRE(s.step() == outcome::success);
-        REQUIRE(conj.empty());
+        REQUIRE(s.get_conjunctions().empty());
         if (s.get_time() > 3.14) {
             break;
         }
@@ -143,17 +138,15 @@ TEST_CASE("polar conj barely")
     auto sv = xt::adapt(s.get_state().data(), {2, 7});
     auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
 
-    const auto &conj = s.get_conjunctions();
-
-    while (conj.empty()) {
+    while (s.get_conjunctions().empty()) {
         REQUIRE(s.step() == outcome::success);
     }
 
-    REQUIRE(conj.size() == 1u);
-    REQUIRE(std::get<0>(conj[0]) == 0u);
-    REQUIRE(std::get<1>(conj[0]) == 1u);
-    REQUIRE(std::abs(std::get<2>(conj[0]) - boost::math::constants::pi<double>() / 2) < 1e-4);
-    REQUIRE(std::get<3>(conj[0]) < psize * 100);
+    REQUIRE(s.get_conjunctions().size() == 1u);
+    REQUIRE(s.get_conjunctions()[0].i == 0u);
+    REQUIRE(s.get_conjunctions()[0].j == 1u);
+    REQUIRE(std::abs(s.get_conjunctions()[0].tm - boost::math::constants::pi<double>() / 2) < 1e-4);
+    REQUIRE(s.get_conjunctions()[0].dist < psize * 100);
 
     // Run a corresponding heyoka integration with event detection
     // and compare.
@@ -182,12 +175,12 @@ TEST_CASE("polar conj barely")
     const auto oc = std::get<0>(ta.propagate_until(100));
 
     REQUIRE(oc == hy::taylor_outcome{-1});
-    REQUIRE(std::abs(ta.get_time() - std::get<2>(conj[0])) < 1e-15);
+    REQUIRE(std::abs(ta.get_time() - s.get_conjunctions()[0].tm) < 1e-15);
 
     const auto &st = ta.get_state();
 
     REQUIRE(std::abs(std::sqrt((st[0] - st[6]) * (st[0] - st[6]) + (st[1] - st[7]) * (st[1] - st[7])
                                + (st[2] - st[8]) * (st[2] - st[8]))
-                     - std::get<3>(conj[0]))
+                     - s.get_conjunctions()[0].dist)
             < 1e-9);
 }

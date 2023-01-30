@@ -281,9 +281,9 @@ struct sim::sim_data {
         //   to the time interval in which root finding is performed,
         //   i.e., **NOT** relative to the beginning of the superstep).
         std::vector<std::tuple<size_type, size_type, double>> tmp_conj_vec;
-        // The vector into which detected conjunctions are accumulated
-        // before being written into the global conjunction vector.
-        std::vector<std::tuple<size_type, size_type, double, double>> local_conj_vec;
+        // Local list of detected conjunctions (same role as the bp
+        // member in bp_data).
+        std::vector<conjunction> local_conj_vec;
     };
     // NOTE: indirect through a unique_ptr, because for some reason a std::vector of
     // concurrent_queue requires copy ctability of np_data, which is not available due to
@@ -295,11 +295,8 @@ struct sim::sim_data {
     // We can later consider solutions with better concurrency
     // if needed (e.g., chunk-local concurrent queues of collision vectors).
     oneapi::tbb::concurrent_vector<std::tuple<size_type, size_type, double>> coll_vec;
-    // The global vector of conjunctions.
-    // NOTE: same idea as the collision vector.
-    // NOTE: this vector will contain the conjunctions detected within a timestep,
-    // and it is reset at the beginning of each invocation of narrow_phase_parallel().
-    oneapi::tbb::concurrent_vector<std::tuple<size_type, size_type, double, double>> conj_vec;
+    // Chunk-local vectors of detected conjunctions.
+    std::vector<oneapi::tbb::concurrent_vector<conjunction>> conj_vecs;
 
     // Structures to record terminal events and nf_error conditions.
     // NOTE: these cannot be chunk-local because they are written to
