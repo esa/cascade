@@ -857,15 +857,22 @@ void sim::narrow_phase_parallel()
 
                                         if (conj_dist2 < conj_thresh2) {
                                             local_conj_vec.emplace_back(
-                                                pi, pj,
-                                                // NOTE: we want to store here the absolute
-                                                // time coordinate of the conjunction. conj_tm
-                                                // is a time coordinate relative to the root
-                                                // finding interval, so we need to first refer it
-                                                // to the beginning of the superstep, and then,
-                                                // finally to the absolute time coordinate.
-                                                static_cast<double>(init_time + (lb_rf + conj_tm)),
-                                                std::sqrt(conj_dist2));
+#if defined(__clang__)
+                                                conjunction {
+#endif
+                                                    pi, pj,
+                                                        // NOTE: we want to store here the absolute
+                                                        // time coordinate of the conjunction. conj_tm
+                                                        // is a time coordinate relative to the root
+                                                        // finding interval, so we need to first refer it
+                                                        // to the beginning of the superstep, and then,
+                                                        // finally to the absolute time coordinate.
+                                                        static_cast<double>(init_time + (lb_rf + conj_tm)),
+                                                        std::sqrt(conj_dist2)
+#if defined(__clang__)
+                                                }
+#endif
+                                            );
                                         } else {
                                             SPDLOG_LOGGER_DEBUG(logger, "Conjunction ignored because the conjunction "
                                                                         "distance is less than the threshold");
