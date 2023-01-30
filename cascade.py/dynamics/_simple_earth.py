@@ -16,6 +16,7 @@ def _compute_atmospheric_density(h):
     Returns the heyoka expression for the atmosheric density in kg.m^3. 
     Input is the altitude in m. 
     """
+    # This array is produced by fitting 
     best_x = np.array([1.01709935e-06, 7.86443375e-01, 7.50341883e-09, 8.63934252e-14,
        4.63822910e-02, 1.86080048e-01, 2.48667176e-02, 4.81080852e-03,
        5.01594516e+00, 2.28429809e+01, 4.27957829e+00, 1.56291673e-01])
@@ -51,9 +52,9 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
         drag (bool, optional): Activates the drag effect (atmosphere modelled via a fitted isotropic NRLMSISE00). Defaults to True.
 
     Returns:
-        _type_: The dynamics in SI units. Can be used to instantiate a :class:`~cascade.sim`.
+        list of tuples (:class:`heyoka.expression`,:class:`heyoka.expression`): The dynamics in SI units. Can be used to instantiate a :class:`~cascade.sim`.
     """
-
+    from cascade.dynamics import kepler
     #constants
     GMe = 3.986004407799724e+5 # [km^3/sec^2]
     GMo = 1.32712440018e+11 #[km^3/sec^2]
@@ -79,7 +80,7 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
 
     # Create Keplerian dynamics in SI units.
     GMe_SI = GMe * 1E9
-    dyn = dynamics.kepler(mu = GMe_SI)
+    dyn = kepler(mu = GMe_SI)
 
     # Define the radius squared
     magr2 = hy.sum_sq([x, y, z])
@@ -132,12 +133,12 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
         Xo = ro*hy.cos(lambda_o)
         Yo = ro*hy.sin(lambda_o)*np.cos(epsilon)
         Zo = ro*hy.sin(lambda_o)*np.sin(epsilon)
+        magRo2 = Xo**2 + Yo**2 + Zo**2
+        magRRo2 = (x - Xo)**2 + (y - Yo)**2 + (z - Zo)**2
 
     if sun:
         #We add Sun's gravity
         GMo_SI = GMo * 1E9
-        magRo2 = Xo**2 + Yo**2 + Zo**2
-        magRRo2 = (x - Xo)**2 + (y - Yo)**2 + (z - Zo)**2
         fSunX = -GMo_SI*( (x - Xo)/(magRRo2**(3./2)) + Xo/(magRo2**(3./2)) )
         fSunY = -GMo_SI*( (y - Yo)/(magRRo2**(3./2)) + Yo/(magRo2**(3./2)) )
         fSunZ = -GMo_SI*( (z - Zo)/(magRRo2**(3./2)) + Zo/(magRo2**(3./2)) )
@@ -181,10 +182,10 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
         #We add Moon's gravity 
         GMm_SI = GMm * 1E9
         magRm2 = Xm**2 + Ym**2 + Zm**2
-        magRRm2 = (X - Xm)**2 + (Y - Ym)**2 + (Z - Zm)**2
-        fMoonX = -GMm_SI*( (X - Xm)/(magRRm2**(3./2)) + Xm/(magRm2**(3./2)) )
-        fMoonY = -GMm_SI*( (Y - Ym)/(magRRm2**(3./2)) + Ym/(magRm2**(3./2)) )
-        fMoonZ = -GMm_SI*( (Z - Zm)/(magRRm2**(3./2)) + Zm/(magRm2**(3./2)) )
+        magRRm2 = (x - Xm)**2 + (y - Ym)**2 + (z - Zm)**2
+        fMoonX = -GMm_SI*( (x - Xm)/(magRRm2**(3./2)) + Xm/(magRm2**(3./2)) )
+        fMoonY = -GMm_SI*( (y - Ym)/(magRRm2**(3./2)) + Ym/(magRm2**(3./2)) )
+        fMoonZ = -GMm_SI*( (z - Zm)/(magRRm2**(3./2)) + Zm/(magRm2**(3./2)) )
 
         dyn[3] = (dyn[3][0], dyn[3][1] + fMoonX)
         dyn[4] = (dyn[4][0], dyn[4][1] + fMoonY)
@@ -215,12 +216,12 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
         if drag:
             srp_par_idx=1
         SRPterm = hy.par[srp_par_idx]*PSRP_SI*(alpha_o_SI**2)/(magRRo2**(3./2))
-        fSRPX = SRPterm*(X - Xo)
-        fSRPY = SRPterm*(Y - Yo)
-        fSRPZ = SRPterm*(Z - Zo)    
+        fSRPX = SRPterm*(x - Xo)
+        fSRPY = SRPterm*(y - Yo)
+        fSRPZ = SRPterm*(z - Zo)    
         dyn[3] = (dyn[3][0], dyn[3][1] + fSRPX)
         dyn[4] = (dyn[4][0], dyn[4][1] + fSRPY)
         dyn[5] = (dyn[5][0], dyn[5][1] + fSRPZ)
 
-    return 3
+    return dyn
 
