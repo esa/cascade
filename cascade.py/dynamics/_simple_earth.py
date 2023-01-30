@@ -6,9 +6,6 @@
 # Public License v. 2.0. If a copy of the MPL was not distributed
 # with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import heyoka as hy
-import numpy as np
-
 # This little helper returns the heyoka expression for the density using
 # an exponential fit
 def _compute_atmospheric_density(h):
@@ -61,6 +58,9 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
         list of tuples (:class:`heyoka.expression`,:class:`heyoka.expression`): The dynamics in SI units. Can be used to instantiate a :class:`~cascade.sim`.
     """
     from cascade.dynamics import kepler
+    import heyoka as hy
+    import numpy as np
+    
     #constants
     GMe = 3.986004407799724e+5 # [km^3/sec^2]
     GMo = 1.32712440018e+11 #[km^3/sec^2]
