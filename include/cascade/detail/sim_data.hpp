@@ -293,9 +293,7 @@ struct sim::sim_data {
     // NOTE: use a concurrent vector for the time being,
     // in the assumption that collisions are infrequent.
     // We can later consider solutions with better concurrency
-    // if needed (e.g., chunk local concurrent queues of collision vectors,
-    // or perhaps an intermediate approach like for conj_vec in which np_data
-    // also contains a local collision vector).
+    // if needed (e.g., chunk local concurrent queues of collision vectors).
     oneapi::tbb::concurrent_vector<std::tuple<size_type, size_type, double>> coll_vec;
     // The global vector of conjunctions.
     // NOTE: same idea as the collision vector.
