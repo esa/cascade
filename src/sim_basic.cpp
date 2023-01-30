@@ -739,6 +739,11 @@ void sim::verify_state_vector(const std::vector<double> &st) const
         });
 }
 
+void sim::reset_conjunctions()
+{
+    m_det_conj = std::make_shared<std::vector<conjunction>>();
+}
+
 std::ostream &operator<<(std::ostream &os, const sim &s)
 {
     os << "Total number of particles: " << s.get_nparts() << '\n';

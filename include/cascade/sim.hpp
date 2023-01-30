@@ -375,6 +375,7 @@ public:
     {
         return *m_det_conj;
     }
+    void reset_conjunctions();
 
     void set_new_state_pars(std::vector<double>, std::vector<double> = {});
     void remove_particles(std::vector<size_type>);
