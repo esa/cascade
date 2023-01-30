@@ -1295,7 +1295,7 @@ outcome sim::step()
                 = std::upper_bound(new_it, m_det_conj->end(),
                                    // NOTE: use only the first component of the time, which is
                                    // what the users see.
-                                   m_data->time.hi, [](const auto &tgt_tm, const auto &c) { return tgt_tm < c.tm; });
+                                   m_data->time.hi, [](const auto &tgt_tm, const auto &c) { return tgt_tm < c.time; });
 
             // Erase the conjunctions happening after the current time.
             m_det_conj->erase(conj_it, m_det_conj->end());
@@ -1657,7 +1657,8 @@ std::vector<sim::conjunction>::iterator sim::append_conj_data(void *logger_) noe
 
     // Sort the added elements in chronological order.
     // NOTE: this can be parallelised: worth it?
-    std::sort(retval, m_det_conj->end(), [](const conjunction &c1, const conjunction &c2) { return c1.tm < c2.tm; });
+    std::sort(retval, m_det_conj->end(),
+              [](const conjunction &c1, const conjunction &c2) { return c1.time < c2.time; });
 
     logger->trace("Runtime for append_conj_data(): {}s", sw);
 

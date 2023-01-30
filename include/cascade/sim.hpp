@@ -85,7 +85,7 @@ public:
         size_type j = 0;
 
         // Absolute time coordinate.
-        double tm = 0;
+        double time = 0;
 
         // Conjunction distance.
         double dist = 0;

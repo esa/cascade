@@ -55,7 +55,7 @@ TEST_CASE("polar conj")
     REQUIRE(s.get_conjunctions().size() == 1u);
     REQUIRE(s.get_conjunctions()[0].i == 0u);
     REQUIRE(s.get_conjunctions()[0].j == 1u);
-    REQUIRE(std::abs(s.get_conjunctions()[0].tm - boost::math::constants::pi<double>() / 2) < 1e-4);
+    REQUIRE(std::abs(s.get_conjunctions()[0].time - boost::math::constants::pi<double>() / 2) < 1e-4);
     REQUIRE(s.get_conjunctions()[0].dist < psize * 100);
 
     // Run a corresponding heyoka integration with event detection
@@ -85,7 +85,7 @@ TEST_CASE("polar conj")
     const auto oc = std::get<0>(ta.propagate_until(100));
 
     REQUIRE(oc == hy::taylor_outcome{-1});
-    REQUIRE(std::abs(ta.get_time() - s.get_conjunctions()[0].tm) < 1e-15);
+    REQUIRE(std::abs(ta.get_time() - s.get_conjunctions()[0].time) < 1e-15);
 
     const auto &st = ta.get_state();
 
@@ -145,7 +145,7 @@ TEST_CASE("polar conj barely")
     REQUIRE(s.get_conjunctions().size() == 1u);
     REQUIRE(s.get_conjunctions()[0].i == 0u);
     REQUIRE(s.get_conjunctions()[0].j == 1u);
-    REQUIRE(std::abs(s.get_conjunctions()[0].tm - boost::math::constants::pi<double>() / 2) < 1e-4);
+    REQUIRE(std::abs(s.get_conjunctions()[0].time - boost::math::constants::pi<double>() / 2) < 1e-4);
     REQUIRE(s.get_conjunctions()[0].dist < psize * 100);
 
     // Run a corresponding heyoka integration with event detection
@@ -175,7 +175,7 @@ TEST_CASE("polar conj barely")
     const auto oc = std::get<0>(ta.propagate_until(100));
 
     REQUIRE(oc == hy::taylor_outcome{-1});
-    REQUIRE(std::abs(ta.get_time() - s.get_conjunctions()[0].tm) < 1e-15);
+    REQUIRE(std::abs(ta.get_time() - s.get_conjunctions()[0].time) < 1e-15);
 
     const auto &st = ta.get_state();
 
