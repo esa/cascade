@@ -30,7 +30,7 @@ def _compute_atmospheric_density(h):
 
 def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=True):
     """Returns heyoka expressions to be used as dynamics in :class:`~cascade.sim` and corresponding
-    to a simplified Earth environment. 
+    to the Earth orbital environment as perturbed by selectable terms.
 
     The equations are taken from those used during the Kelvins competition 
     (`Space Debris: the Origin <https://kelvins.esa.int/space-debris-the-origin/>`_) adding a drag term.
@@ -43,13 +43,19 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
        Celletti, Alessandra, et al. "Dynamical models and the onset of chaos in space debris."
        International Journal of Non-Linear Mechanics 90 (2017): 147-163. (`arxiv <https://arxiv.org/pdf/1612.08849.pdf>`_)
 
+    .. note::
+       If *drag* is active, the BSTAR coefficient (SI units) of the object must be passed as a first
+       simulation parameter in :class:`~cascade.sim`, if *SRP* is active, the object area (SI units) must be also passed as a 
+       simulation parameter (after BSTAR if present).
+
+
     Args:
-        J2 (bool, optional): Activates the Earth J2 spherical harmonic. Defaults to True.
-        C22S22 (bool, optional): Activates the Earth C22 and S22 spherical harmonics. Defaults to True.
-        sun (bool, optional): Activates the effect of the Sun gravity. Defaults to False.
-        moon (bool, optional): Activates the effect of the Moon gravity. Defaults to False.
-        SRP (bool, optional): Activates the effect of the solar radiation pressure. Defaults to False.
-        drag (bool, optional): Activates the drag effect (atmosphere modelled via a fitted isotropic NRLMSISE00). Defaults to True.
+        J2 (bool, optional): adds the Earth J2 spherical harmonic (C20 Stokes' coefficient). Defaults to True.
+        C22S22 (bool, optional): adds the Earth C22 and S22 Stokes' coefficients. Defaults to True.
+        sun (bool, optional): adds the Sun gravity. Defaults to False.
+        moon (bool, optional): adds the Moon gravity. Defaults to False.
+        SRP (bool, optional): adds the solar radiation pressure. Defaults to False.
+        drag (bool, optional): adds the drag acceleration (atmosphere is modelled via a fitted isotropic NRLMSISE00). Defaults to True.
 
     Returns:
         list of tuples (:class:`heyoka.expression`,:class:`heyoka.expression`): The dynamics in SI units. Can be used to instantiate a :class:`~cascade.sim`.
