@@ -13,6 +13,7 @@ def _compute_atmospheric_density(h):
     Returns the heyoka expression for the atmosheric density in kg.m^3. 
     Input is the altitude in m. 
     """
+    import numpy as np
     # This array is produced by fitting 
     best_x = np.array([1.01709935e-06, 7.86443375e-01, 7.50341883e-09, 8.63934252e-14,
        4.63822910e-02, 1.86080048e-01, 2.48667176e-02, 4.81080852e-03,
@@ -60,7 +61,7 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
     from cascade.dynamics import kepler
     import heyoka as hy
     import numpy as np
-    
+
     #constants
     GMe = 3.986004407799724e+5 # [km^3/sec^2]
     GMo = 1.32712440018e+11 #[km^3/sec^2]
