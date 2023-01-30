@@ -31,7 +31,7 @@ ctest -j4 -VV
 # Upload coverage data.
 curl -Os https://uploader.codecov.io/latest/linux/codecov
 chmod +x codecov
-./codecov -x $deps_dir/bin/gcov
+./codecov -g --gx $deps_dir/bin/gcov
 
 set +e
 set +x
