@@ -212,7 +212,7 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
     srp_par_idx = 0
     if SRP:
         PSRP_SI = PSRP / 1000. #[kg/(m*sec^2)]
-        alpha_o_SI = alpha_o * 1000.
+        alpha_o_SI = alpha_o * 1000. #[m]
         if drag:
             srp_par_idx=1
         SRPterm = hy.par[srp_par_idx]*PSRP_SI*(alpha_o_SI**2)/(magRRo2**(3./2))
