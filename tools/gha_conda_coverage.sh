@@ -16,6 +16,7 @@ export PATH="$HOME/mambaforge/bin:$PATH"
 bash mambaforge.sh -b -p $HOME/mambaforge
 mamba env create -f cascade_devel.yml -q -p $deps_dir
 source activate $deps_dir
+mamba install lcov -y
 
 export CXXFLAGS="$CXXFLAGS --coverage"
 
@@ -27,6 +28,9 @@ cmake -G "Ninja" ../ -DCMAKE_INSTALL_PREFIX=$deps_dir -DCMAKE_PREFIX_PATH=$deps_
 cmake --build . -- -v
 
 ctest -j4 -VV
+
+# Create lcov report
+lcov --capture --directory . --output-file coverage.info
 
 # Upload coverage data.
 curl -Os https://uploader.codecov.io/latest/linux/codecov
