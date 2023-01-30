@@ -17,7 +17,10 @@ from ._version import __version__
 # expressions.
 import heyoka as _hy
 
-# We import the sub-modules into the root namespace.
+# We import core into the root namespace.
 from .core import *
 
-del _hy
+# We import the sub-modules.
+import cascade.dynamics 
+
+del _hy 

@@ -67,9 +67,8 @@ PYBIND11_MODULE(core, m)
         .value("exit", outcome::exit)
         .value("err_nf_state", outcome::err_nf_state);
 
-    // Dynamics submodule.
-    auto dynamics_module = m.def_submodule("dynamics");
-    dynamics_module.def("kepler", &dynamics::kepler, "mu"_a = 1.);
+    // Dynamics "submodule" symbols.
+    m.def("_kepler", &dynamics::kepler, "mu"_a = 1.);
 
     // sim class.
     py::class_<sim>(m, "sim", py::dynamic_attr{})
