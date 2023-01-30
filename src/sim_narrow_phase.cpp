@@ -705,7 +705,7 @@ void sim::narrow_phase_parallel()
                             if (!std::isfinite(delta_i) || !std::isfinite(delta_j) || !std::isfinite(rf_int)
                                 || delta_i < 0 || delta_j < 0 || rf_int < 0) {
                                 // Bail out in case of errors.
-                                logger->warn("During the narrow-phase collision detection of particles {} and {}, "
+                                logger->warn("During the narrow phase collision detection of particles {} and {}, "
                                              "an invalid time interval for polynomial root finding was generated - the "
                                              "collision will be skipped",
                                              pi, pj);
