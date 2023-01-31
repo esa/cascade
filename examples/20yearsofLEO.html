@@ -1,0 +1,658 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>20 years of LEO &#8212; cascade 0.1 documentation</title>
+    
+  <link rel="stylesheet" href="../_static/css/index.f658d18f9b420779cfdf24aa0a7e2d77.css">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-book-theme.c441f2ba0852f4cabcb80105e3a46ae6.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.d3f166471bb80abb5163.js">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/sphinx-book-theme.7d483ff0a819d6edff12ce0b1ead3928.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="The current LEO population" href="../utilities/leo_population.html" />
+    <link rel="prev" title="Installation" href="../install.html" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
+
+
+
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<div class="col-12 col-md-3 bd-sidebar site-navigation show" id="site-navigation">
+    
+        <div class="navbar-brand-box">
+<a class="navbar-brand text-wrap" href="../index.html">
+  
+  <img src="../_static/logo.png" class="logo" alt="logo">
+  
+  
+  <h1 class="site-logo" id="site-title">cascade 0.1 documentation</h1>
+  
+</a>
+</div><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
+<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+    <ul class="nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="../index.html">
+   Cascade
+  </a>
+ </li>
+</ul>
+<p class="caption collapsible-parent" role="heading">
+ <span class="caption-text">
+  Contents:
+ </span>
+</p>
+<ul class="nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="../install.html">
+   Installation
+  </a>
+ </li>
+</ul>
+<p class="caption collapsible-parent" role="heading">
+ <span class="caption-text">
+  Examples:
+ </span>
+</p>
+<ul class="current nav sidenav_l1">
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   20 years of LEO
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="#building-the-dynamical-system-to-integrate">
+   Building the dynamical system to integrate
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="#we-setup-the-simulation">
+   We setup the simulation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="#we-run-the-simulation">
+   We run the simulation
+  </a>
+ </li>
+</ul>
+<p class="caption collapsible-parent" role="heading">
+ <span class="caption-text">
+  Utilities:
+ </span>
+</p>
+<ul class="nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="../utilities/leo_population.html">
+   The current LEO population
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../utilities/simple_atmosphere.html">
+   A differentiable atmosphere
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../utilities/cubes.html">
+   The
+   <em>
+    Cube
+   </em>
+   approach
+  </a>
+ </li>
+</ul>
+
+</nav> <!-- To handle the deprecated key -->
+
+<div class="navbar_extra_footer">
+  Theme by the <a href="https://ebp.jupyterbook.org">Executable Book Project</a>
+</div>
+
+</div>
+
+
+          
+
+
+          
+<main class="col py-md-3 pl-md-4 bd-content overflow-auto" role="main">
+    
+    <div class="topbar container-xl fixed-top">
+    <div class="topbar-contents row">
+        <div class="col-12 col-md-3 bd-topbar-whitespace site-navigation show"></div>
+        <div class="col pl-md-4 topbar-main">
+            
+            <button id="navbar-toggler" class="navbar-toggler ml-0" type="button" data-toggle="collapse"
+                data-toggle="tooltip" data-placement="bottom" data-target=".site-navigation" aria-controls="navbar-menu"
+                aria-expanded="true" aria-label="Toggle navigation" aria-controls="site-navigation"
+                title="Toggle navigation" data-toggle="tooltip" data-placement="left">
+                <i class="fas fa-bars"></i>
+                <i class="fas fa-arrow-left"></i>
+                <i class="fas fa-arrow-up"></i>
+            </button>
+            
+            
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn" aria-label="Download this page"><i
+            class="fas fa-download"></i></button>
+
+    <div class="dropdown-buttons">
+        <!-- ipynb file if we had a myst markdown file -->
+        
+        <!-- Download raw file -->
+        <a class="dropdown-buttons" href="../_sources/examples/20yearsofLEO.ipynb.txt"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Download source file" data-toggle="tooltip"
+                data-placement="left">.ipynb</button></a>
+        <!-- Download PDF via print -->
+        <button type="button" id="download-print" class="btn btn-secondary topbarbtn" title="Print to PDF"
+            onClick="window.print()" data-toggle="tooltip" data-placement="left">.pdf</button>
+    </div>
+</div>
+
+            <!-- Source interaction buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Connect with source repository"><i class="fab fa-github"></i></button>
+    <div class="dropdown-buttons sourcebuttons">
+        <a class="repository-button"
+            href="https://github.com/bluescarni/heyoka.py"><button type="button" class="btn btn-secondary topbarbtn"
+                data-toggle="tooltip" data-placement="left" title="Source repository"><i
+                    class="fab fa-github"></i>repository</button></a>
+        <a class="issues-button"
+            href="https://github.com/bluescarni/heyoka.py/issues/new?title=Issue%20on%20page%20%2Fexamples/20yearsofLEO.html&body=Your%20issue%20content%20here."><button
+                type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip" data-placement="left"
+                title="Open an issue"><i class="fas fa-lightbulb"></i>open issue</button></a>
+        
+    </div>
+</div>
+
+
+            <!-- Full screen (wrap in <a> to have style consistency -->
+            <a class="full-screen-button"><button type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip"
+                    data-placement="bottom" onclick="toggleFullScreen()" aria-label="Fullscreen mode"
+                    title="Fullscreen mode"><i
+                        class="fas fa-expand"></i></button></a>
+
+            <!-- Launch buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Launch interactive content"><i class="fas fa-rocket"></i></button>
+    <div class="dropdown-buttons">
+        
+        <a class="binder-button" href="https://mybinder.org/v2/gh/bluescarni/heyoka.py/main?urlpath=lab/tree/doc/examples/20yearsofLEO.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Launch Binder" data-toggle="tooltip"
+                data-placement="left"><img class="binder-button-logo"
+                    src="../_static/images/logo_binder.svg"
+                    alt="Interact on binder">Binder</button></a>
+        
+        
+        
+        
+    </div>
+</div>
+
+        </div>
+
+        <!-- Table of contents -->
+        <div class="d-none d-md-block col-md-2 bd-toc show">
+            
+        <div class="tocsection onthispage pt-5 pb-3">
+            <i class="fas fa-list"></i>
+            Contents
+        </div>
+        <nav id="bd-toc-nav">
+            <ul class="nav section-nav flex-column">
+ <li class="toc-h1 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#">
+   20 years of LEO
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h2 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#loading-the-initial-leo-population">
+     Loading the initial LEO population
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h1 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#building-the-dynamical-system-to-integrate">
+   Building the dynamical system to integrate
+  </a>
+ </li>
+ <li class="toc-h1 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#we-setup-the-simulation">
+   We setup the simulation
+  </a>
+ </li>
+ <li class="toc-h1 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#we-run-the-simulation">
+   We run the simulation
+  </a>
+ </li>
+</ul>
+
+        </nav>
+        
+        </div>
+    </div>
+</div>
+    <div id="main-content" class="row">
+        <div class="col-12 col-md-9 pl-md-3 pr-md-0">
+        
+              <div>
+                
+  <section class="tex2jax_ignore mathjax_ignore" id="years-of-leo">
+<h1>20 years of LEO<a class="headerlink" href="#years-of-leo" title="Permalink to this heading">¶</a></h1>
+<p>In this example we will consider the tracked population of objects orbiting in Low Earth Orbit and evolve it for twenty years while counting collisions and removing decayed objects.
+We start, as always, with some imports:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># core imports</span>
+<span class="kn">import</span> <span class="nn">pykep</span> <span class="k">as</span> <span class="nn">pk</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pickle</span> <span class="k">as</span> <span class="nn">pkl</span>
+<span class="kn">import</span> <span class="nn">cascade</span> <span class="k">as</span> <span class="nn">csc</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+</pre></div>
+</div>
+</div>
+</div>
+<section id="loading-the-initial-leo-population">
+<h2>Loading the initial LEO population<a class="headerlink" href="#loading-the-initial-leo-population" title="Permalink to this heading">¶</a></h2>
+<p>To define the initial LEO population from the objects tracked by the <a class="reference external" href="https://en.wikipedia.org/wiki/United_States_Space_Surveillance_Network">US Space Surveillance Network (SSN)</a>.
+The necessary steps to prepare the initial state are described by the code described in <a class="reference internal" href="../utilities/leo_population.html"><span class="doc std std-doc">The current LEO population</span></a></p>
+<p>The file needed is:</p>
+<ul class="simple">
+<li><p><strong>leo_population.pk</strong> - created by <a class="reference internal" href="../utilities/leo_population.html"><span class="doc std std-doc">The current LEO population</span></a> notebook.</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># r is in km and v in km/s</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;data/leo_population.pk&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+    <span class="n">r_ic</span><span class="p">,</span><span class="n">v_ic</span><span class="p">,</span><span class="n">to_satcat_index</span><span class="p">,</span><span class="n">satcat</span> <span class="o">=</span> <span class="n">pkl</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<ul class="simple">
+<li><p><strong>r_ic</strong>: contains the initial position of all satellites to be simulated (in km)</p></li>
+<li><p><strong>v_ic</strong>: contains the initial velocity of all satellites to be simulated (in km/sec)</p></li>
+<li><p><strong>to_satcat_index</strong>: contains the indexes in the satcat of the corresponding r_ic,v_ic entry</p></li>
+<li><p><strong>satcat</strong>: the database created of all tracked objects</p></li>
+</ul>
+<p>The object described by the entry <code class="docutils literal notranslate"><span class="pre">satcat[to_satcat_index[j]]</span></code> has initial position <code class="docutils literal notranslate"><span class="pre">r_ic[j]</span></code> and initial velocity <code class="docutils literal notranslate"><span class="pre">v_ic[j]</span></code>. Let us inspect one entry</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Dictionary entry: &quot;</span><span class="p">,</span> <span class="n">satcat</span><span class="p">[</span><span class="n">to_satcat_index</span><span class="p">[</span><span class="mi">3685</span><span class="p">]])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Position (km): &quot;</span><span class="p">,</span> <span class="n">r_ic</span><span class="p">[</span><span class="mi">3685</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Velocity (km/s): &quot;</span><span class="p">,</span> <span class="n">v_ic</span><span class="p">[</span><span class="mi">3685</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Dictionary entry:  {&#39;CCSDS_OMM_VERS&#39;: &#39;2.0&#39;, &#39;COMMENT&#39;: &#39;GENERATED VIA SPACE-TRACK.ORG API&#39;, &#39;CREATION_DATE&#39;: &#39;2022-02-03T04:23:25&#39;, &#39;ORIGINATOR&#39;: &#39;18 SPCS&#39;, &#39;OBJECT_NAME&#39;: &#39;SL-14 DEB&#39;, &#39;OBJECT_ID&#39;: &#39;1978-100F&#39;, &#39;CENTER_NAME&#39;: &#39;EARTH&#39;, &#39;REF_FRAME&#39;: &#39;TEME&#39;, &#39;TIME_SYSTEM&#39;: &#39;UTC&#39;, &#39;MEAN_ELEMENT_THEORY&#39;: &#39;SGP4&#39;, &#39;EPOCH&#39;: &#39;2022-02-02T22:42:05.237280&#39;, &#39;MEAN_MOTION&#39;: &#39;12.56769207&#39;, &#39;ECCENTRICITY&#39;: &#39;0.00286110&#39;, &#39;INCLINATION&#39;: &#39;82.3526&#39;, &#39;RA_OF_ASC_NODE&#39;: &#39;268.9057&#39;, &#39;ARG_OF_PERICENTER&#39;: &#39;297.9015&#39;, &#39;MEAN_ANOMALY&#39;: &#39;75.7071&#39;, &#39;EPHEMERIS_TYPE&#39;: &#39;0&#39;, &#39;CLASSIFICATION_TYPE&#39;: &#39;U&#39;, &#39;NORAD_CAT_ID&#39;: &#39;19133&#39;, &#39;ELEMENT_SET_NO&#39;: &#39;999&#39;, &#39;REV_AT_EPOCH&#39;: &#39;93528&#39;, &#39;BSTAR&#39;: &#39;0.02113600000000&#39;, &#39;MEAN_MOTION_DOT&#39;: &#39;0.00003527&#39;, &#39;MEAN_MOTION_DDOT&#39;: &#39;0.0000000000000&#39;, &#39;SEMIMAJOR_AXIS&#39;: &#39;7814.445&#39;, &#39;PERIOD&#39;: &#39;114.580&#39;, &#39;APOAPSIS&#39;: &#39;1458.668&#39;, &#39;PERIAPSIS&#39;: &#39;1413.952&#39;, &#39;OBJECT_TYPE&#39;: &#39;DEBRIS&#39;, &#39;RCS_SIZE&#39;: &#39;MEDIUM&#39;, &#39;COUNTRY_CODE&#39;: &#39;CIS&#39;, &#39;LAUNCH_DATE&#39;: &#39;1978-10-26&#39;, &#39;SITE&#39;: &#39;PKMTR&#39;, &#39;DECAY_DATE&#39;: None, &#39;FILE&#39;: &#39;3290513&#39;, &#39;GP_ID&#39;: &#39;195174860&#39;, &#39;TLE_LINE0&#39;: &#39;0 SL-14 DEB&#39;, &#39;TLE_LINE1&#39;: &#39;1 19133U 78100F   22033.94589395  .00003527  00000-0  21136-1 0  9996&#39;, &#39;TLE_LINE2&#39;: &#39;2 19133  82.3526 268.9057 0028611 297.9015  75.7071 12.56769207935282&#39;, &#39;RADIUS&#39;: 0.2631205051777122}
+Position (km):  [2129.88342848 3695.71335128 6552.37467945]
+Velocity (km/s):  [ 1.38399824  5.88779107 -3.78530589]
+</pre></div>
+</div>
+</div>
+</div>
+<p>on top of all the info distributed from the <a class="reference external" href="https://en.wikipedia.org/wiki/United_States_Space_Surveillance_Network">US Space Surveillance Network (SSN)</a> we have added to the satcat (see <a class="reference internal" href="../utilities/leo_population.html"><span class="doc std std-doc">The current LEO population</span></a> notebook)an estimate of the object radius which we will need to define the various collisional radii. As we will be using a dynamics that also models the atmospheric drag via the BSTAR coefficient, we create the array to be used as parameter when instantiating a :class:<code class="docutils literal notranslate"><span class="pre">~cascade.sim</span></code>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Array containing the BSTAR coefficient in the SI units used</span>
+<span class="n">BSTARS</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">RADIUS</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">to_satcat_index</span><span class="p">:</span>
+    <span class="n">BSTARS</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">satcat</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s2">&quot;BSTAR&quot;</span><span class="p">]))</span>
+    <span class="n">RADIUS</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">satcat</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s2">&quot;RADIUS&quot;</span><span class="p">]))</span>
+<span class="c1"># We transform the BSTAR in SI units</span>
+<span class="n">BSTARS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">BSTARS</span><span class="p">)</span> <span class="o">/</span> <span class="n">pk</span><span class="o">.</span><span class="n">EARTH_RADIUS</span>
+<span class="n">RADIUS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">RADIUS</span><span class="p">)</span>
+<span class="c1"># .. and remove negative BSTARS (this can happen for objects that where performing orbital manouvres during the tle definition) setting the value to zero in those occasions.</span>
+<span class="n">BSTARS</span><span class="p">[</span><span class="n">BSTARS</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+<span class="c1"># We also transform r_ic and v_ic in SI</span>
+<span class="n">r_ic</span> <span class="o">=</span> <span class="n">r_ic</span><span class="o">*</span><span class="mi">1000</span>
+<span class="n">v_ic</span> <span class="o">=</span> <span class="n">v_ic</span><span class="o">*</span><span class="mi">1000</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="building-the-dynamical-system-to-integrate">
+<h1>Building the dynamical system to integrate<a class="headerlink" href="#building-the-dynamical-system-to-integrate" title="Permalink to this heading">¶</a></h1>
+<p>The dynamics in the LEO environment is dominated by drag and gravitational effects. The effect of the Moon gravity, Sun gravity and solar radiation pressure are not considered, even if they would not add much complexity in this simulation. We make use of :class:<code class="docutils literal notranslate"><span class="pre">~cascade.dynamics.simple_earth</span></code> defining the analytical expressions for such a dynamics.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dyn</span> <span class="o">=</span>  <span class="n">csc</span><span class="o">.</span><span class="n">dynamics</span><span class="o">.</span><span class="n">simple_earth</span><span class="p">(</span><span class="n">J2</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">C22S22</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">sun</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">moon</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">SRP</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">drag</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>and we inspect it visually to check that all is defined as expected (the analytical expression are long and complex, but this will not be an issue for heyoka).</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dyn</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[(x, vx),
+ (y, vy),
+ (z, vz),
+ (vx,
+  ((((((-398600440779972.44 * x) * pow((x**2 + y**2 + z**2), -1.5000000000000000)) + (((-1.7555131752869966e+19 / (2.0000000000000000 * sqrt((x**2 + y**2 + z**2)))) * x) * ((3.0000000000000000 / (x**2 + y**2 + z**2)**2) - ((15.000000000000000 * z**2) / ((x**2 + y**2 + z**2)**2 * (x**2 + y**2 + z**2)))))) + ((((((7.6591108648176013e+17 / (2.0000000000000000 * pow((x**2 + y**2 + z**2), 3.5000000000000000))) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * (((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2 - ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2)) + ((1.5318221729635203e+17 / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) - (((((7.6591108648176013e+17 / (2.0000000000000000 * pow((x**2 + y**2 + z**2), 3.5000000000000000))) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * (((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2 - ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2)) - ((1.5318221729635203e+17 / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) + (((((-(-4.3966387893411789e+17 / pow((x**2 + y**2 + z**2), 3.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) + ((-87932775786823584. / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) - ((((-(-4.3966387893411789e+17 / pow((x**2 + y**2 + z**2), 3.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2) + ((-87932775786823584. / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) + (-(((((((1.0170993499999999e-06 * exp((-4.6382291000000000e-05 * (-6383152.2451599995 + sqrt((x**2 + y**2 + z**2)))))) + (0.78644337499999994 * exp((-0.00018608004800000001 * (-6400979.2808999997 + sqrt((x**2 + y**2 + z**2))))))) + (7.5034188300000001e-09 * exp((-2.4866717600000000e-05 * (-6382415.8782899994 + sqrt((x**2 + y**2 + z**2))))))) + (8.6393425200000000e-14 * exp((-4.8108085200000002e-06 * (-6378292.5916729998 + sqrt((x**2 + y**2 + z**2))))))) / 2.4615341004863758e-08) * p0) * sqrt((vx**2 + vy**2 + vz**2))) * vx))),
+ (vy,
+  ((((((-398600440779972.44 * y) * pow((x**2 + y**2 + z**2), -1.5000000000000000)) + (((-1.7555131752869966e+19 / (2.0000000000000000 * sqrt((x**2 + y**2 + z**2)))) * y) * ((3.0000000000000000 / (x**2 + y**2 + z**2)**2) - ((15.000000000000000 * z**2) / ((x**2 + y**2 + z**2)**2 * (x**2 + y**2 + z**2)))))) + ((((((7.6591108648176013e+17 / (2.0000000000000000 * pow((x**2 + y**2 + z**2), 3.5000000000000000))) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * (((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2 - ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2)) + ((1.5318221729635203e+17 / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (((((7.6591108648176013e+17 / (2.0000000000000000 * pow((x**2 + y**2 + z**2), 3.5000000000000000))) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * (((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2 - ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2)) - ((1.5318221729635203e+17 / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) + (((((-(-4.3966387893411789e+17 / pow((x**2 + y**2 + z**2), 3.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) + ((-87932775786823584. / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + ((((-(-4.3966387893411789e+17 / pow((x**2 + y**2 + z**2), 3.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2) + ((-87932775786823584. / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) + (-(((((((1.0170993499999999e-06 * exp((-4.6382291000000000e-05 * (-6383152.2451599995 + sqrt((x**2 + y**2 + z**2)))))) + (0.78644337499999994 * exp((-0.00018608004800000001 * (-6400979.2808999997 + sqrt((x**2 + y**2 + z**2))))))) + (7.5034188300000001e-09 * exp((-2.4866717600000000e-05 * (-6382415.8782899994 + sqrt((x**2 + y**2 + z**2))))))) + (8.6393425200000000e-14 * exp((-4.8108085200000002e-06 * (-6378292.5916729998 + sqrt((x**2 + y**2 + z**2))))))) / 2.4615341004863758e-08) * p0) * sqrt((vx**2 + vy**2 + vz**2))) * vy))),
+ (vz,
+  ((((((-398600440779972.44 * z) * pow((x**2 + y**2 + z**2), -1.5000000000000000)) + (((-1.7555131752869966e+19 / (2.0000000000000000 * sqrt((x**2 + y**2 + z**2)))) * z) * ((3.0000000000000000 * (3.0000000000000000 / (x**2 + y**2 + z**2)**2)) - ((15.000000000000000 * z**2) / ((x**2 + y**2 + z**2)**2 * (x**2 + y**2 + z**2)))))) + (((7.6591108648176013e+17 / (2.0000000000000000 * pow((x**2 + y**2 + z**2), 3.5000000000000000))) * z) * (((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2 - ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2))) + (((-(-4.3966387893411789e+17 / pow((x**2 + y**2 + z**2), 3.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * z)) + (-(((((((1.0170993499999999e-06 * exp((-4.6382291000000000e-05 * (-6383152.2451599995 + sqrt((x**2 + y**2 + z**2)))))) + (0.78644337499999994 * exp((-0.00018608004800000001 * (-6400979.2808999997 + sqrt((x**2 + y**2 + z**2))))))) + (7.5034188300000001e-09 * exp((-2.4866717600000000e-05 * (-6382415.8782899994 + sqrt((x**2 + y**2 + z**2))))))) + (8.6393425200000000e-14 * exp((-4.8108085200000002e-06 * (-6378292.5916729998 + sqrt((x**2 + y**2 + z**2))))))) / 2.4615341004863758e-08) * p0) * sqrt((vx**2 + vy**2 + vz**2))) * vz)))]
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="we-setup-the-simulation">
+<h1>We setup the simulation<a class="headerlink" href="#we-setup-the-simulation" title="Permalink to this heading">¶</a></h1>
+<p>the global cascade logger is here informed of the level of information we want to be reported to screen during the simulation. We also set the number of threads to be used to 16, clearly this number depends on the resources available on the node used.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">csc</span><span class="o">.</span><span class="n">set_logger_level_info</span><span class="p">()</span>
+<span class="n">csc</span><span class="o">.</span><span class="n">set_nthreads</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We now define the radius that will be used to check for decayed objects. We will assume that once the position of some object is below 150km altitude, the object can be considered as decayed.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">reentry_radius</span> <span class="o">=</span> <span class="n">pk</span><span class="o">.</span><span class="n">EARTH_RADIUS</span><span class="o">+</span><span class="mf">150000.</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Detecting the particles</span>
+<span class="n">inside_the_radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">r_ic</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">reentry_radius</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Removing &quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">inside_the_radius</span><span class="p">),</span> <span class="s2">&quot; orbiting objects:&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">inside_the_radius</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">satcat</span><span class="p">[</span><span class="n">to_satcat_index</span><span class="p">[</span><span class="n">idx</span><span class="p">]][</span><span class="s2">&quot;OBJECT_NAME&quot;</span><span class="p">],</span> <span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">satcat</span><span class="p">[</span><span class="n">to_satcat_index</span><span class="p">[</span><span class="n">idx</span><span class="p">]][</span><span class="s2">&quot;OBJECT_ID&quot;</span><span class="p">])</span>
+
+<span class="c1"># Deleting the particles</span>
+<span class="n">r_ic</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">r_ic</span><span class="p">,</span> <span class="n">inside_the_radius</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">BSTARS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">BSTARS</span><span class="p">,</span> <span class="n">inside_the_radius</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">v_ic</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">v_ic</span><span class="p">,</span> <span class="n">inside_the_radius</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">to_satcat_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">to_satcat_index</span><span class="p">,</span> <span class="n">inside_the_radius</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">RADIUS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">RADIUS</span><span class="p">,</span> <span class="n">inside_the_radius</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Removing  22  orbiting objects:
+LEMUR 2 ROCKETJONAH - 2017-071E
+ISARA - 2017-071P
+FREGAT DEB - 2011-037EM
+STARLINK-1684 - 2020-070H
+COSMOS 1408 DEB - 1982-092Z
+COSMOS 1408 DEB - 1982-092AK
+COSMOS 1408 DEB - 1982-092ES
+COSMOS 1408 DEB - 1982-092FK
+COSMOS 1408 DEB - 1982-092FY
+COSMOS 1408 DEB - 1982-092GU
+COSMOS 1408 DEB - 1982-092NA
+COSMOS 1408 DEB - 1982-092PV
+COSMOS 1408 DEB - 1982-092PW
+COSMOS 1408 DEB - 1982-092RM
+COSMOS 1408 DEB - 1982-092ACG
+COSMOS 1408 DEB - 1982-092AQC
+COSMOS 1408 DEB - 1982-092ARK
+COSMOS 1408 DEB - 1982-092AXA
+COSMOS 1408 DEB - 1982-092AXD
+COSMOS 1408 DEB - 1982-092BDB
+COSMOS 1408 DEB - 1982-092BFU
+COSMOS 1408 DEB - 1982-092BKD
+</pre></div>
+</div>
+</div>
+</div>
+<p>We can now instantiate the cascade simulation. This will trigger the JIT compilation of the numerical integrators with the selected dynamics with event detection and thus take a few seconds.
+Note that this is to be paid only once and as far as the dynamics is kept the same simulations can be made reusing the same simulation object.</p>
+<p>As a collisional timestep, a parameter that can be tuned to get the best efficiency, we use the arbitrary value of the ISS orbital period divided by 25.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Prepare the data in the shape expected by the simulation object.</span>
+<span class="n">ic_state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">r_ic</span><span class="p">,</span> <span class="n">v_ic</span><span class="p">,</span> <span class="n">RADIUS</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">r_ic</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">))])</span>
+<span class="n">BSTARS</span> <span class="o">=</span> <span class="n">BSTARS</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">r_ic</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span>
+<span class="c1"># The collisional timestep is set to 1/25 of the ISS orbital period</span>
+<span class="n">collisional_step</span> <span class="o">=</span> <span class="mi">90</span><span class="o">*</span><span class="mi">60</span> <span class="o">/</span> <span class="mi">25</span>
+<span class="n">sim</span> <span class="o">=</span> <span class="n">csc</span><span class="o">.</span><span class="n">sim</span><span class="p">(</span><span class="n">ic_state</span><span class="p">,</span> <span class="n">collisional_step</span><span class="p">,</span> <span class="n">dyn</span><span class="o">=</span><span class="n">dyn</span><span class="p">,</span> <span class="n">pars</span><span class="o">=</span><span class="n">BSTARS</span><span class="p">,</span> <span class="n">reentry_radius</span><span class="o">=</span><span class="n">reentry_radius</span><span class="p">,</span> <span class="n">n_par_ct</span> <span class="o">=</span> <span class="mi">30</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="we-run-the-simulation">
+<h1>We run the simulation<a class="headerlink" href="#we-run-the-simulation" title="Permalink to this heading">¶</a></h1>
+<p>The following block will start a simulation where the method <em>step</em> of a :class:<code class="docutils literal notranslate"><span class="pre">~cascade.sim</span></code> is called up to when the simulation time reaches a maximum allocated.
+All collision events and orbital decays are logged on files and on screen.</p>
+<p>The simulation can take up to days to end if we are set to simulate 20 years and on a few CPUs only. In this notebook we thus set it to end after 30 days, and will report the extrapolated time of execution for 20 years.
+As a consequence mostly reentry events are triggered. You can let it run for longer and collision events will also appear.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">time</span>
+<span class="n">final_t</span> <span class="o">=</span> <span class="mi">30</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">DAY2SEC</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting the simulation:&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="n">current_year</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">while</span> <span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">&lt;</span> <span class="n">final_t</span><span class="p">:</span>
+    <span class="n">years_elapsed</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">SEC2DAY</span> <span class="o">//</span> <span class="mf">365.25</span>
+
+    <span class="k">if</span> <span class="n">years_elapsed</span> <span class="o">==</span> <span class="n">current_year</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;out/year_&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">current_year</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;.pk&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+            <span class="n">pkl</span><span class="o">.</span><span class="n">dump</span><span class="p">((</span><span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="n">sim</span><span class="o">.</span><span class="n">pars</span><span class="p">,</span> <span class="n">to_satcat_index</span><span class="p">),</span> <span class="n">file</span><span class="p">)</span>
+        <span class="n">current_year</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="n">oc</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">oc</span> <span class="o">==</span> <span class="n">csc</span><span class="o">.</span><span class="n">outcome</span><span class="o">.</span><span class="n">collision</span><span class="p">:</span>
+        <span class="n">pi</span><span class="p">,</span> <span class="n">pj</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">interrupt_info</span>
+        <span class="c1"># We log the event to file</span>
+        <span class="n">satcat_idx1</span> <span class="o">=</span> <span class="n">to_satcat_index</span><span class="p">[</span><span class="n">pi</span><span class="p">]</span>
+        <span class="n">satcat_idx2</span> <span class="o">=</span> <span class="n">to_satcat_index</span><span class="p">[</span><span class="n">pj</span><span class="p">]</span>
+        <span class="n">days_elapsed</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">SEC2DAY</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;out/collision_log.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file_object</span><span class="p">:</span>
+            <span class="n">file_object</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">days_elapsed</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">satcat_idx1</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">satcat_idx2</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">pi</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">pj</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># We log the event to screen</span>
+        <span class="n">o1</span><span class="p">,</span> <span class="n">o2</span> <span class="o">=</span> <span class="n">satcat</span><span class="p">[</span><span class="n">satcat_idx1</span><span class="p">][</span><span class="s2">&quot;OBJECT_TYPE&quot;</span><span class="p">],</span> <span class="n">satcat</span><span class="p">[</span><span class="n">satcat_idx2</span><span class="p">][</span><span class="s2">&quot;OBJECT_TYPE&quot;</span><span class="p">]</span>
+        <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span> <span class="o">=</span> <span class="n">satcat</span><span class="p">[</span><span class="n">satcat_idx1</span><span class="p">][</span><span class="s2">&quot;RCS_SIZE&quot;</span><span class="p">],</span> <span class="n">satcat</span><span class="p">[</span><span class="n">satcat_idx2</span><span class="p">][</span><span class="s2">&quot;RCS_SIZE&quot;</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Collision detected, </span><span class="si">{</span><span class="n">o1</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">s1</span><span class="si">}</span><span class="s2">) and </span><span class="si">{</span><span class="n">o2</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">s2</span><span class="si">}</span><span class="s2">) after </span><span class="si">{</span><span class="n">days_elapsed</span><span class="si">}</span><span class="s2"> days</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># We remove the objects and restart the simulation</span>
+        <span class="n">sim</span><span class="o">.</span><span class="n">remove_particles</span><span class="p">([</span><span class="n">pi</span><span class="p">,</span><span class="n">pj</span><span class="p">])</span>
+        <span class="n">to_satcat_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">to_satcat_index</span><span class="p">,</span> <span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="n">pi</span><span class="p">,</span><span class="n">pj</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>        
+        <span class="n">to_satcat_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">to_satcat_index</span><span class="p">,</span> <span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="n">pi</span><span class="p">,</span><span class="n">pj</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+
+    <span class="k">elif</span> <span class="n">oc</span> <span class="o">==</span> <span class="n">csc</span><span class="o">.</span><span class="n">outcome</span><span class="o">.</span><span class="n">reentry</span><span class="p">:</span>
+        <span class="n">pi</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">interrupt_info</span>
+        <span class="c1"># We log the event to file</span>
+        <span class="n">satcat_idx</span> <span class="o">=</span> <span class="n">to_satcat_index</span><span class="p">[</span><span class="n">pi</span><span class="p">]</span>
+        <span class="n">days_elapsed</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">SEC2DAY</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;out/decay_log.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file_object</span><span class="p">:</span>
+            <span class="n">file_object</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">days_elapsed</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">satcat_idx</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># We log the event to screen</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">satcat</span><span class="p">[</span><span class="n">satcat_idx</span><span class="p">][</span><span class="s2">&quot;OBJECT_NAME&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span>
+        <span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="o">+</span> <span class="n">satcat</span><span class="p">[</span><span class="n">satcat_idx</span><span class="p">][</span><span class="s2">&quot;OBJECT_ID&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span><span class="p">,</span> <span class="n">days_elapsed</span><span class="p">,</span> <span class="s2">&quot;REMOVED&quot;</span><span class="p">)</span>
+        <span class="c1"># We remove the re-entered object and restart the simulation</span>
+        <span class="n">sim</span><span class="o">.</span><span class="n">remove_particles</span><span class="p">([</span><span class="n">pi</span><span class="p">])</span>
+        <span class="n">to_satcat_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">to_satcat_index</span><span class="p">,</span> <span class="p">[</span><span class="n">pi</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>    
+<span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">elapsed</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Elapsed [s]: &quot;</span><span class="p">,</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Time projected to 20 years is &quot;</span><span class="p">,</span> <span class="n">elapsed</span> <span class="o">/</span> <span class="mi">30</span> <span class="o">*</span> <span class="mi">20</span> <span class="o">*</span><span class="mf">365.25</span> <span class="o">/</span> <span class="mi">60</span> <span class="o">/</span> <span class="mi">60</span><span class="p">,</span> <span class="s2">&quot; hours&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Starting the simulation:
+COSMOS 1408 DEB, 1982-092FH,  0.0011340601727223452 REMOVED
+COSMOS 1408 DEB, 1982-092GM,  0.004104128502777978 REMOVED
+SL-4 R/B, 2006-061B,  0.005720066519105361 REMOVED
+FREGAT DEB, 2011-037ET,  0.00730725373713235 REMOVED
+CZ-3B R/B, 2021-010B,  0.018195437495537422 REMOVED
+COSMOS 1408 DEB, 1982-092UM,  0.026522936514473208 REMOVED
+COSMOS 1408 DEB, 1982-092AEC,  0.028751478490793174 REMOVED
+COSMOS 1408 DEB, 1982-092AHN,  0.05382193033468462 REMOVED
+CZ-3B R/B, 2021-003B,  0.061109115323666155 REMOVED
+FREGAT DEB, 2011-037LV,  0.07330302827907705 REMOVED
+FREGAT DEB, 2011-037NV,  0.07449452724975524 REMOVED
+STARLINK-1919, 2020-074AG,  0.2142516031022719 REMOVED
+COSMOS 1408 DEB, 1982-092KJ,  0.5662938890378839 REMOVED
+COSMOS 2251 DEB, 1993-036AEZ,  0.6238039100945278 REMOVED
+COSMOS 1408 DEB, 1982-092ANG,  0.7531321743658845 REMOVED
+FALCON 9 DEB, 2020-055BR,  0.9420367945206399 REMOVED
+COSMOS 1408 DEB, 1982-092GN,  1.008246169630039 REMOVED
+COSMOS 1408 DEB, 1982-092TY,  1.0425599079990473 REMOVED
+COSMOS 1408 DEB, 1982-092SQ,  1.0720537058921977 REMOVED
+COSMOS 2241, 1993-022A,  1.6112104439376482 REMOVED
+CZ-2D DEB, 2017-077D,  1.6243326864745287 REMOVED
+COSMOS 1408 DEB, 1982-092BBR,  1.8406286003954586 REMOVED
+COSMOS 1408 DEB, 1982-092APD,  1.9207567080081032 REMOVED
+COSMOS 1408 DEB, 1982-092AQN,  2.323993858440506 REMOVED
+COSMOS 1408 DEB, 1982-092BCU,  2.5696359225310954 REMOVED
+COSMOS 1408 DEB, 1982-092AWP,  2.672832891709416 REMOVED
+STARLINK-1064, 2019-074BJ,  2.9005896261186233 REMOVED
+COSMOS 2251 DEB, 1993-036BGH,  3.0364635167384044 REMOVED
+COSMOS 1408 DEB, 1982-092ACC,  3.71129335948165 REMOVED
+COSMOS 1408 DEB, 1982-092HV,  3.727092013779681 REMOVED
+FENGYUN 1C DEB, 1999-025CVY,  4.318001830705077 REMOVED
+COSMOS 1408 DEB, 1982-092QH,  5.240540225701083 REMOVED
+COSMOS 1408 DEB, 1982-092MN,  5.555927183146009 REMOVED
+COSMOS 1408 DEB, 1982-092KV,  5.731769635356648 REMOVED
+COSMOS 1408 DEB, 1982-092PQ,  6.015140014435219 REMOVED
+COSMOS 1408 DEB, 1982-092BHF,  6.27486601381062 REMOVED
+COSMOS 1408 DEB, 1982-092AWZ,  6.290924935718586 REMOVED
+COSMOS 1408 DEB, 1982-092AYM,  6.81499287930922 REMOVED
+COSMOS 1408 DEB, 1982-092AWJ,  7.308427052693511 REMOVED
+COSMOS 1408 DEB, 1982-092PG,  7.397451390234956 REMOVED
+FREGAT DEB, 2011-037BC,  7.8765716605911775 REMOVED
+COSMOS 1408 DEB, 1982-092ACJ,  8.855366703577669 REMOVED
+COSMOS 1408 DEB, 1982-092NE,  9.149533323777966 REMOVED
+IRIDIUM 33 DEB, 1997-051DC,  9.310838016061565 REMOVED
+COSMOS 1408 DEB, 1982-092YV,  9.574387059957244 REMOVED
+COSMOS 1408 DEB, 1982-092SZ,  9.774361772729716 REMOVED
+COSMOS 1408 DEB, 1982-092KE,  11.310753322335822 REMOVED
+COSMOS 1408 DEB, 1982-092AP,  11.429939170343635 REMOVED
+COSMOS 1408 DEB, 1982-092AJN,  12.546476527746691 REMOVED
+COSMOS 1408 DEB, 1982-092AKT,  13.11550601706388 REMOVED
+QUETZAL-1, 1998-067RL,  13.647193283524606 REMOVED
+FREGAT DEB, 2011-037L,  15.168027690240649 REMOVED
+STARLINK-1859, 2020-088AA,  15.378380569731808 REMOVED
+COSMOS 1408 DEB, 1982-092ASR,  15.488187261651209 REMOVED
+COSMOS 1408 DEB, 1982-092BAJ,  15.790589986097318 REMOVED
+STARLINK-2306, 2021-024M,  17.866511338935595 REMOVED
+COSMOS 1408 DEB, 1982-092ALC,  17.933014217612698 REMOVED
+COSMOS 1408 DEB, 1982-092AZH,  18.704542466188467 REMOVED
+COSMOS 1408 DEB, 1982-092AER,  18.806819401666313 REMOVED
+COSMOS 1408 DEB, 1982-092AMJ,  20.216621873438317 REMOVED
+COSMOS 1408 DEB, 1982-092MS,  20.774824068261207 REMOVED
+COSMOS 1408 DEB, 1982-092BEY,  21.525051787764557 REMOVED
+COSMOS 1408 DEB, 1982-092ASS,  23.49900473136754 REMOVED
+COSMOS 1408 DEB, 1982-092BBQ,  24.007952028293676 REMOVED
+COSMOS 1408 DEB, 1982-092BFP,  24.101413639544695 REMOVED
+COSMOS 1408 DEB, 1982-092BHE,  28.152084406173298 REMOVED
+COSMOS 1408 DEB, 1982-092AFD,  28.478181021140173 REMOVED
+COSMOS 1408 DEB, 1982-092PK,  29.269725667791615 REMOVED
+COSMOS 1408 DEB, 1982-092AJS,  29.531879411145646 REMOVED
+Elapsed [s]:  140.304270029068
+Time projected to 20 years is  9.490024931132792  hours
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+
+
+              </div>
+              
+        
+        <div class='prev-next-bottom'>
+            
+    <a class='left-prev' id="prev-link" href="../install.html" title="previous page">Installation</a>
+    <a class='right-next' id="next-link" href="../utilities/leo_population.html" title="next page">The current LEO population</a>
+
+        </div>
+        
+        </div>
+    </div>
+    <footer class="footer mt-5 mt-md-0">
+    <div class="container">
+      <p>
+        
+          By Francesco Biscani and Dario Izzo<br/>
+        
+            &copy; Copyright 2023, Francesco Biscani and Dario Izzo.<br/>
+      </p>
+    </div>
+  </footer>
+</main>
+
+
+      </div>
+    </div>
+
+    
+  <script src="../_static/js/index.d3f166471bb80abb5163.js"></script>
+
+
+    
+  </body>
+</html>

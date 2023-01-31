@@ -30,6 +30,12 @@ cascade is released under the MPL-2.0 license. The authors are Francesco Biscani
 
 .. toctree::
    :maxdepth: 1
+   :caption: Examples:
+
+   examples/20yearsofLEO
+
+.. toctree::
+   :maxdepth: 1
    :caption: Utilities:
 
    utilities/leo_population
