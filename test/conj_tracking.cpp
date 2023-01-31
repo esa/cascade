@@ -43,61 +43,63 @@ TEST_CASE("polar conj")
         = kep_to_cart<double>({1., .000005, boost::math::constants::pi<double>() / 2 + 1e-6, 0, 1.23, 0}, 1);
     const auto [x2, v2] = kep_to_cart<double>({1., .000005, boost::math::constants::pi<double>() / 2, 0, 4.56, 0}, 1);
 
-    sim s({x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize}, 0.23,
-          kw::conj_thresh = psize * 100);
+    for (auto n_par_ct : {1u, 3u}) {
+        sim s({x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize}, 0.23,
+              kw::conj_thresh = psize * 100, kw::n_par_ct = n_par_ct);
 
-    auto sv = xt::adapt(s.get_state().data(), {2, 7});
-    auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
+        auto sv = xt::adapt(s.get_state().data(), {2, 7});
+        auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
 
-    while (s.get_conjunctions().empty()) {
-        REQUIRE(s.step() == outcome::success);
+        while (s.get_conjunctions().empty()) {
+            REQUIRE(s.step() == outcome::success);
+        }
+
+        REQUIRE(s.get_conjunctions().size() == 1u);
+        REQUIRE(s.get_conjunctions()[0].i == 0u);
+        REQUIRE(s.get_conjunctions()[0].j == 1u);
+        REQUIRE(std::abs(s.get_conjunctions()[0].time - boost::math::constants::pi<double>() / 2) < 1e-4);
+        REQUIRE(s.get_conjunctions()[0].dist < psize * 100);
+
+        // Run a corresponding heyoka integration with event detection
+        // and compare.
+        auto dyn = dynamics::kepler();
+        auto subs_dict = std::unordered_map<std::string, hy::expression>{
+            {"x", "x0"_var}, {"y", "y0"_var}, {"z", "z0"_var}, {"vx", "vx0"_var}, {"vy", "vy0"_var}, {"vz", "vz0"_var}};
+        for (auto &[lhs, rhs] : dyn) {
+            lhs = hy::subs(lhs, subs_dict);
+            rhs = hy::subs(rhs, subs_dict);
+        }
+
+        subs_dict = std::unordered_map<std::string, hy::expression>{
+            {"x", "x1"_var}, {"y", "y1"_var}, {"z", "z1"_var}, {"vx", "vx1"_var}, {"vy", "vy1"_var}, {"vz", "vz1"_var}};
+        for (const auto &[lhs, rhs] : dynamics::kepler()) {
+            dyn.emplace_back(hy::subs(lhs, subs_dict), hy::subs(rhs, subs_dict));
+        }
+
+        auto ev_eq = ("x1"_var - "x0"_var) * ("vx1"_var - "vx0"_var) + ("y1"_var - "y0"_var) * ("vy1"_var - "vy0"_var)
+                     + ("z1"_var - "z0"_var) * ("vz1"_var - "vz0"_var);
+
+        auto ta = hy::taylor_adaptive<double>{
+            dyn,
+            {x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], x2[0], x2[1], x2[2], v2[0], v2[1], v2[2]},
+            hy::kw::t_events = {hy::t_event<double>{ev_eq}}};
+
+        const auto oc = std::get<0>(ta.propagate_until(100));
+
+        REQUIRE(oc == hy::taylor_outcome{-1});
+        REQUIRE(std::abs(ta.get_time() - s.get_conjunctions()[0].time) < 1e-15);
+
+        const auto &st = ta.get_state();
+
+        REQUIRE(std::abs(std::sqrt((st[0] - st[6]) * (st[0] - st[6]) + (st[1] - st[7]) * (st[1] - st[7])
+                                   + (st[2] - st[8]) * (st[2] - st[8]))
+                         - s.get_conjunctions()[0].dist)
+                < 1e-9);
+
+        // Test also reset_conjunctions().
+        s.reset_conjunctions();
+        REQUIRE(s.get_conjunctions().empty());
     }
-
-    REQUIRE(s.get_conjunctions().size() == 1u);
-    REQUIRE(s.get_conjunctions()[0].i == 0u);
-    REQUIRE(s.get_conjunctions()[0].j == 1u);
-    REQUIRE(std::abs(s.get_conjunctions()[0].time - boost::math::constants::pi<double>() / 2) < 1e-4);
-    REQUIRE(s.get_conjunctions()[0].dist < psize * 100);
-
-    // Run a corresponding heyoka integration with event detection
-    // and compare.
-    auto dyn = dynamics::kepler();
-    auto subs_dict = std::unordered_map<std::string, hy::expression>{
-        {"x", "x0"_var}, {"y", "y0"_var}, {"z", "z0"_var}, {"vx", "vx0"_var}, {"vy", "vy0"_var}, {"vz", "vz0"_var}};
-    for (auto &[lhs, rhs] : dyn) {
-        lhs = hy::subs(lhs, subs_dict);
-        rhs = hy::subs(rhs, subs_dict);
-    }
-
-    subs_dict = std::unordered_map<std::string, hy::expression>{
-        {"x", "x1"_var}, {"y", "y1"_var}, {"z", "z1"_var}, {"vx", "vx1"_var}, {"vy", "vy1"_var}, {"vz", "vz1"_var}};
-    for (const auto &[lhs, rhs] : dynamics::kepler()) {
-        dyn.emplace_back(hy::subs(lhs, subs_dict), hy::subs(rhs, subs_dict));
-    }
-
-    auto ev_eq = ("x1"_var - "x0"_var) * ("vx1"_var - "vx0"_var) + ("y1"_var - "y0"_var) * ("vy1"_var - "vy0"_var)
-                 + ("z1"_var - "z0"_var) * ("vz1"_var - "vz0"_var);
-
-    auto ta = hy::taylor_adaptive<double>{
-        dyn,
-        {x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], x2[0], x2[1], x2[2], v2[0], v2[1], v2[2]},
-        hy::kw::t_events = {hy::t_event<double>{ev_eq}}};
-
-    const auto oc = std::get<0>(ta.propagate_until(100));
-
-    REQUIRE(oc == hy::taylor_outcome{-1});
-    REQUIRE(std::abs(ta.get_time() - s.get_conjunctions()[0].time) < 1e-15);
-
-    const auto &st = ta.get_state();
-
-    REQUIRE(std::abs(std::sqrt((st[0] - st[6]) * (st[0] - st[6]) + (st[1] - st[7]) * (st[1] - st[7])
-                               + (st[2] - st[8]) * (st[2] - st[8]))
-                     - s.get_conjunctions()[0].dist)
-            < 1e-9);
-
-    // Test also reset_conjunctions().
-    s.reset_conjunctions();
-    REQUIRE(s.get_conjunctions().empty());
 }
 
 // Like above, but the IC are set such that the conjunction happens barely outside the limit
@@ -111,17 +113,19 @@ TEST_CASE("polar conj near miss")
         = kep_to_cart<double>({1., .000005, boost::math::constants::pi<double>() / 2 + 1.5775e-6, 0, 1.23, 0}, 1);
     const auto [x2, v2] = kep_to_cart<double>({1., .000005, boost::math::constants::pi<double>() / 2, 0, 4.56, 0}, 1);
 
-    sim s({x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize}, 0.23,
-          kw::conj_thresh = psize * 100);
+    for (auto n_par_ct : {1u, 3u}) {
+        sim s({x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize}, 0.23,
+              kw::conj_thresh = psize * 100, kw::n_par_ct = n_par_ct);
 
-    auto sv = xt::adapt(s.get_state().data(), {2, 7});
-    auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
+        auto sv = xt::adapt(s.get_state().data(), {2, 7});
+        auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
 
-    while (true) {
-        REQUIRE(s.step() == outcome::success);
-        REQUIRE(s.get_conjunctions().empty());
-        if (s.get_time() > 3.14) {
-            break;
+        while (true) {
+            REQUIRE(s.step() == outcome::success);
+            REQUIRE(s.get_conjunctions().empty());
+            if (s.get_time() > 3.14) {
+                break;
+            }
         }
     }
 }
@@ -137,57 +141,59 @@ TEST_CASE("polar conj barely")
         = kep_to_cart<double>({1., .000005, boost::math::constants::pi<double>() / 2 + 1.5765e-6, 0, 1.23, 0}, 1);
     const auto [x2, v2] = kep_to_cart<double>({1., .000005, boost::math::constants::pi<double>() / 2, 0, 4.56, 0}, 1);
 
-    sim s({x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize}, 0.23,
-          kw::conj_thresh = psize * 100);
+    for (auto n_par_ct : {1u, 3u}) {
+        sim s({x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize}, 0.23,
+              kw::conj_thresh = psize * 100, kw::n_par_ct = n_par_ct);
 
-    auto sv = xt::adapt(s.get_state().data(), {2, 7});
-    auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
+        auto sv = xt::adapt(s.get_state().data(), {2, 7});
+        auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
 
-    while (s.get_conjunctions().empty()) {
-        REQUIRE(s.step() == outcome::success);
+        while (s.get_conjunctions().empty()) {
+            REQUIRE(s.step() == outcome::success);
+        }
+
+        REQUIRE(s.get_conjunctions().size() == 1u);
+        REQUIRE(s.get_conjunctions()[0].i == 0u);
+        REQUIRE(s.get_conjunctions()[0].j == 1u);
+        REQUIRE(std::abs(s.get_conjunctions()[0].time - boost::math::constants::pi<double>() / 2) < 1e-4);
+        REQUIRE(s.get_conjunctions()[0].dist < psize * 100);
+
+        // Run a corresponding heyoka integration with event detection
+        // and compare.
+        auto dyn = dynamics::kepler();
+        auto subs_dict = std::unordered_map<std::string, hy::expression>{
+            {"x", "x0"_var}, {"y", "y0"_var}, {"z", "z0"_var}, {"vx", "vx0"_var}, {"vy", "vy0"_var}, {"vz", "vz0"_var}};
+        for (auto &[lhs, rhs] : dyn) {
+            lhs = hy::subs(lhs, subs_dict);
+            rhs = hy::subs(rhs, subs_dict);
+        }
+
+        subs_dict = std::unordered_map<std::string, hy::expression>{
+            {"x", "x1"_var}, {"y", "y1"_var}, {"z", "z1"_var}, {"vx", "vx1"_var}, {"vy", "vy1"_var}, {"vz", "vz1"_var}};
+        for (const auto &[lhs, rhs] : dynamics::kepler()) {
+            dyn.emplace_back(hy::subs(lhs, subs_dict), hy::subs(rhs, subs_dict));
+        }
+
+        auto ev_eq = ("x1"_var - "x0"_var) * ("vx1"_var - "vx0"_var) + ("y1"_var - "y0"_var) * ("vy1"_var - "vy0"_var)
+                     + ("z1"_var - "z0"_var) * ("vz1"_var - "vz0"_var);
+
+        auto ta = hy::taylor_adaptive<double>{
+            dyn,
+            {x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], x2[0], x2[1], x2[2], v2[0], v2[1], v2[2]},
+            hy::kw::t_events = {hy::t_event<double>{ev_eq}}};
+
+        const auto oc = std::get<0>(ta.propagate_until(100));
+
+        REQUIRE(oc == hy::taylor_outcome{-1});
+        REQUIRE(std::abs(ta.get_time() - s.get_conjunctions()[0].time) < 1e-15);
+
+        const auto &st = ta.get_state();
+
+        REQUIRE(std::abs(std::sqrt((st[0] - st[6]) * (st[0] - st[6]) + (st[1] - st[7]) * (st[1] - st[7])
+                                   + (st[2] - st[8]) * (st[2] - st[8]))
+                         - s.get_conjunctions()[0].dist)
+                < 1e-9);
     }
-
-    REQUIRE(s.get_conjunctions().size() == 1u);
-    REQUIRE(s.get_conjunctions()[0].i == 0u);
-    REQUIRE(s.get_conjunctions()[0].j == 1u);
-    REQUIRE(std::abs(s.get_conjunctions()[0].time - boost::math::constants::pi<double>() / 2) < 1e-4);
-    REQUIRE(s.get_conjunctions()[0].dist < psize * 100);
-
-    // Run a corresponding heyoka integration with event detection
-    // and compare.
-    auto dyn = dynamics::kepler();
-    auto subs_dict = std::unordered_map<std::string, hy::expression>{
-        {"x", "x0"_var}, {"y", "y0"_var}, {"z", "z0"_var}, {"vx", "vx0"_var}, {"vy", "vy0"_var}, {"vz", "vz0"_var}};
-    for (auto &[lhs, rhs] : dyn) {
-        lhs = hy::subs(lhs, subs_dict);
-        rhs = hy::subs(rhs, subs_dict);
-    }
-
-    subs_dict = std::unordered_map<std::string, hy::expression>{
-        {"x", "x1"_var}, {"y", "y1"_var}, {"z", "z1"_var}, {"vx", "vx1"_var}, {"vy", "vy1"_var}, {"vz", "vz1"_var}};
-    for (const auto &[lhs, rhs] : dynamics::kepler()) {
-        dyn.emplace_back(hy::subs(lhs, subs_dict), hy::subs(rhs, subs_dict));
-    }
-
-    auto ev_eq = ("x1"_var - "x0"_var) * ("vx1"_var - "vx0"_var) + ("y1"_var - "y0"_var) * ("vy1"_var - "vy0"_var)
-                 + ("z1"_var - "z0"_var) * ("vz1"_var - "vz0"_var);
-
-    auto ta = hy::taylor_adaptive<double>{
-        dyn,
-        {x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], x2[0], x2[1], x2[2], v2[0], v2[1], v2[2]},
-        hy::kw::t_events = {hy::t_event<double>{ev_eq}}};
-
-    const auto oc = std::get<0>(ta.propagate_until(100));
-
-    REQUIRE(oc == hy::taylor_outcome{-1});
-    REQUIRE(std::abs(ta.get_time() - s.get_conjunctions()[0].time) < 1e-15);
-
-    const auto &st = ta.get_state();
-
-    REQUIRE(std::abs(std::sqrt((st[0] - st[6]) * (st[0] - st[6]) + (st[1] - st[7]) * (st[1] - st[7])
-                               + (st[2] - st[8]) * (st[2] - st[8]))
-                     - s.get_conjunctions()[0].dist)
-            < 1e-9);
 }
 
 // Test in which a conjunction is discarded because
@@ -204,26 +210,28 @@ TEST_CASE("polar conj discard")
     x4[0] = -x4[0];
     auto v4 = v3;
 
-    sim s({x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize,
-           x3[0], x3[1], x3[2], v3[0], v3[1], v3[2], psize, x4[0], x4[1], x4[2], v4[0], v4[1], v4[2], psize},
-          0.23, kw::conj_thresh = psize * 100);
+    for (auto n_par_ct : {1u, 3u}) {
+        sim s({x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize,
+               x3[0], x3[1], x3[2], v3[0], v3[1], v3[2], psize, x4[0], x4[1], x4[2], v4[0], v4[1], v4[2], psize},
+              0.23, kw::conj_thresh = psize * 100, kw::n_par_ct = n_par_ct);
 
-    while (true) {
-        const auto oc = s.step();
+        while (true) {
+            const auto oc = s.step();
 
-        if (oc != outcome::success) {
-            REQUIRE(oc == outcome::collision);
-            break;
+            if (oc != outcome::success) {
+                REQUIRE(oc == outcome::collision);
+                break;
+            }
         }
+
+        // NOTE: only the conjunction between 0 and 1 is reported.
+        REQUIRE(s.get_conjunctions().size() == 1u);
+        REQUIRE(s.get_conjunctions()[0].i == 0u);
+        REQUIRE(s.get_conjunctions()[0].j == 1u);
+
+        // The conjunction time must be before the simulation time.
+        REQUIRE(s.get_conjunctions()[0].time < s.get_time());
     }
-
-    // NOTE: only the conjunction between 0 and 1 is reported.
-    REQUIRE(s.get_conjunctions().size() == 1u);
-    REQUIRE(s.get_conjunctions()[0].i == 0u);
-    REQUIRE(s.get_conjunctions()[0].j == 1u);
-
-    // The conjunction time must be before the simulation time.
-    REQUIRE(s.get_conjunctions()[0].time < s.get_time());
 }
 
 // Test multiple steps triggering conjunctions: check that the conjunctions
@@ -241,31 +249,33 @@ TEST_CASE("multiple conjs")
     x4[0] = -x4[0] + 1e-6;
     auto v4 = v3;
 
-    sim s({x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize,
-           x3[0], x3[1], x3[2], v3[0], v3[1], v3[2], psize, x4[0], x4[1], x4[2], v4[0], v4[1], v4[2], psize},
-          0.23, kw::conj_thresh = psize * 100);
+    for (auto n_par_ct : {1u, 3u}) {
+        sim s({x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize,
+               x3[0], x3[1], x3[2], v3[0], v3[1], v3[2], psize, x4[0], x4[1], x4[2], v4[0], v4[1], v4[2], psize},
+              0.23, kw::conj_thresh = psize * 100, kw::n_par_ct = n_par_ct);
 
-    while (true) {
-        const auto oc = s.step();
+        while (true) {
+            const auto oc = s.step();
 
-        REQUIRE(oc == outcome::success);
+            REQUIRE(oc == outcome::success);
 
-        if (s.get_time() > 26.) {
-            break;
+            if (s.get_time() > 26.) {
+                break;
+            }
         }
+
+        REQUIRE(s.get_conjunctions().size() == 8u);
+        REQUIRE(std::is_sorted(s.get_conjunctions().begin(), s.get_conjunctions().end(),
+                               [](const auto &c1, const auto &c2) { return c1.time < c2.time; }));
+        REQUIRE(s.get_conjunctions().back().time < s.get_time());
+
+        // Stream/format operator for the conjunction struct.
+        std::ostringstream oss;
+        oss << s.get_conjunctions()[0];
+        REQUIRE(!oss.str().empty());
+
+        oss.str("");
+        oss << fmt::format("{}", s.get_conjunctions()[0]);
+        REQUIRE(!oss.str().empty());
     }
-
-    REQUIRE(s.get_conjunctions().size() == 8u);
-    REQUIRE(std::is_sorted(s.get_conjunctions().begin(), s.get_conjunctions().end(),
-                           [](const auto &c1, const auto &c2) { return c1.time < c2.time; }));
-    REQUIRE(s.get_conjunctions().back().time < s.get_time());
-
-    // Stream/format operator for the conjunction struct.
-    std::ostringstream oss;
-    oss << s.get_conjunctions()[0];
-    REQUIRE(!oss.str().empty());
-
-    oss.str("");
-    oss << fmt::format("{}", s.get_conjunctions()[0]);
-    REQUIRE(!oss.str().empty());
 }
