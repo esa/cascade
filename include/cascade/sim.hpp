@@ -389,9 +389,9 @@ public:
     outcome step();
     outcome propagate_until(double);
 
-    // NOTE: these two helpers are used to fetch
-    // copies of the shared pointers storing the state
-    // vector and the pars vector. The intended purpose
+    // NOTE: these helpers are used to fetch
+    // copies of shared pointers to internal data.
+    // The intended purpose
     // is to increase the reference count of the shared
     // pointers so that the destruction of the shared
     // pointers in this does not necessarily lead to
@@ -400,7 +400,7 @@ public:
     // on the Python side in order to guarantee that
     // the destruction of a sim object or the invocation
     // of set_new_state_pars() & co. does not trigger
-    // the destruction of the state/params vector if a
+    // the destruction of the state/params/conj vectors if a
     // NumPy array holds a reference to them.
     // NOTE: it is prohibited to resize the vectors
     // stored in the returned shared pointers.
@@ -413,6 +413,10 @@ public:
     [[nodiscard]] auto _get_pars_ptr() const
     {
         return m_pars;
+    }
+    [[nodiscard]] auto _get_conjunctions_ptr() const
+    {
+        return m_det_conj;
     }
 };
 

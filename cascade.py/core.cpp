@@ -67,6 +67,9 @@ PYBIND11_MODULE(core, m)
         .value("exit", outcome::exit)
         .value("err_nf_state", outcome::err_nf_state);
 
+    // Conjunction structure.
+    PYBIND11_NUMPY_DTYPE(sim::conjunction, i, j, time, dist);
+
     // Dynamics submodule.
     auto dynamics_module = m.def_submodule("dynamics");
     dynamics_module.def("kepler", &dynamics::kepler, "mu"_a = 1.);
@@ -213,7 +216,7 @@ PYBIND11_MODULE(core, m)
                                })
         .def_property_readonly("pars",
                                [](const sim &s) {
-                                   // NOTE: same idea as in the pars getter.
+                                   // NOTE: same idea as in the state getter.
                                    auto pptr = s._get_pars_ptr();
 
                                    auto uptr = std::make_unique<decltype(pptr)>(std::move(pptr));
@@ -279,6 +282,27 @@ PYBIND11_MODULE(core, m)
                 s.set_new_state_pars(std::move(state_vec), std::move(pars_vec));
             },
             "new_state"_a, "new_pars"_a = py::none{})
+        // Conjunctions.
+        .def_property_readonly("conjunctions",
+                        [](const sim &s) {
+                            // NOTE: same idea as in the state getter.
+                            auto cptr = s._get_conjunctions_ptr();
+
+                            auto uptr = std::make_unique<decltype(cptr)>(std::move(cptr));
+
+                            py::capsule conjs_caps(uptr.get(), [](void *ptr) {
+                                std::unique_ptr<decltype(cptr)> vptr(static_cast<decltype(cptr) *>(ptr));
+                            });
+
+                            auto *ptr = uptr.release();
+
+                            auto ret = py::array_t<sim::conjunction>(
+                                py::array::ShapeContainer{boost::numeric_cast<py::ssize_t>(s.get_conjunctions().size())},
+                                (**ptr).data(), std::move(conjs_caps));
+
+                            return ret;
+                        })
+        .def("reset_conjunctions", &sim::reset_conjunctions)
         // Remove particles.
         .def("remove_particles", &sim::remove_particles)
         // Repr.
