@@ -1290,14 +1290,18 @@ outcome sim::step()
             const auto new_it = append_conj_data(logger);
 
             // Identify the first conjunction added during this superstep
-            // happening after the current time.
+            // happening at or after the current time.
+            // NOTE: use lower rather than upper bound for consistency
+            // with event detection, which is performed in a half-open
+            // range - a conjunction exactly at t == m_data->time should
+            // trigger in the next step.
             const auto conj_it
-                = std::upper_bound(new_it, m_det_conj->end(),
+                = std::lower_bound(new_it, m_det_conj->end(),
                                    // NOTE: use only the first component of the time, which is
                                    // what the users see.
-                                   m_data->time.hi, [](const auto &tgt_tm, const auto &c) { return tgt_tm < c.time; });
+                                   m_data->time.hi, [](const auto &c, const auto &tgt_tm) { return c.time < tgt_tm; });
 
-            // Erase the conjunctions happening after the current time.
+            // Erase the conjunctions happening at or after the current time.
             m_det_conj->erase(conj_it, m_det_conj->end());
         }
     }

@@ -752,4 +752,10 @@ std::ostream &operator<<(std::ostream &os, const sim &s)
     return os;
 }
 
+std::ostream &operator<<(std::ostream &os, const sim::conjunction &c)
+{
+    return os << "{" << c.i << ", " << c.j << ", " << fmt::format("{}", c.time) << ", " << fmt::format("{}", c.dist)
+              << "}";
+}
+
 } // namespace cascade

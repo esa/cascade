@@ -704,6 +704,7 @@ void sim::narrow_phase_parallel()
                             // Do some checking before moving on.
                             if (!std::isfinite(delta_i) || !std::isfinite(delta_j) || !std::isfinite(rf_int)
                                 || delta_i < 0 || delta_j < 0 || rf_int < 0) {
+                                // LCOV_EXCL_START
                                 // Bail out in case of errors.
                                 logger->warn("During the narrow phase collision detection of particles {} and {}, "
                                              "an invalid time interval for polynomial root finding was generated - the "
@@ -711,6 +712,7 @@ void sim::narrow_phase_parallel()
                                              pi, pj);
 
                                 break;
+                                // LCOV_EXCL_STOP
                             }
 
                             // Fetch pointers to the original Taylor polynomials for the two particles.
@@ -845,10 +847,10 @@ void sim::narrow_phase_parallel()
                                         // Compute the conjunction distance square.
                                         const auto conj_dist2 = detail::poly_eval(ss_diff_ptr, conj_tm, order);
 
-                                        if (!std::isfinite(conj_dist2) || conj_dist2 < 0.) {
+                                        if (!std::isfinite(conj_dist2)) {
                                             // LCOV_EXCL_START
                                             logger->warn(
-                                                "An invalid conjunction distance square of {} was computed for the "
+                                                "A non-finite conjunction distance square of {} was computed for the "
                                                 "particles at indices {} and {}, the conjunction will be ignored",
                                                 conj_dist2, pi, pj);
                                             continue;
@@ -868,7 +870,11 @@ void sim::narrow_phase_parallel()
                                                         // to the beginning of the superstep, and then,
                                                         // finally to the absolute time coordinate.
                                                         static_cast<double>(init_time + (lb_rf + conj_tm)),
-                                                        std::sqrt(conj_dist2)
+                                                        // NOTE: conj_dist2 is finite but it could still
+                                                        // be negative due to floating-point rounding
+                                                        // (e.g., zero-distance conjunctions). Ensure
+                                                        // we do not produce NaN here.
+                                                        std::sqrt(std::max(conj_dist2, 0.))
 #if defined(__clang__)
                                                 }
 #endif

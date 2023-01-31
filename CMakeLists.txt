@@ -176,7 +176,7 @@ target_link_libraries(cascade PUBLIC Boost::boost)
 
 # fmt.
 find_package(fmt CONFIG REQUIRED)
-target_link_libraries(cascade PRIVATE fmt::fmt)
+target_link_libraries(cascade PUBLIC fmt::fmt)
 
 # heyoka.
 find_package(heyoka CONFIG REQUIRED)

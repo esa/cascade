@@ -26,9 +26,12 @@
 
 #include <boost/numeric/conversion/cast.hpp>
 
+#include <fmt/core.h>
+
 #include <heyoka/detail/igor.hpp>
 #include <heyoka/expression.hpp>
 
+#include <cascade/detail/fmt_compat.hpp>
 #include <cascade/detail/visibility.hpp>
 
 namespace cascade
@@ -411,7 +414,18 @@ public:
 };
 
 CASCADE_DLL_PUBLIC std::ostream &operator<<(std::ostream &, const sim &);
+CASCADE_DLL_PUBLIC std::ostream &operator<<(std::ostream &, const sim::conjunction &);
 
 } // namespace cascade
+
+// fmt formatters.
+namespace fmt
+{
+
+template <>
+struct formatter<cascade::sim::conjunction> : cascade::detail::ostream_formatter {
+};
+
+} // namespace fmt
 
 #endif

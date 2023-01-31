@@ -6,14 +6,15 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#include <algorithm>
 #include <cmath>
 #include <initializer_list>
+#include <sstream>
 #include <unordered_map>
 
 #include <boost/math/constants/constants.hpp>
 
 #include <fmt/core.h>
-#include <fmt/ranges.h>
 
 #include <xtensor/xadapt.hpp>
 #include <xtensor/xio.hpp>
@@ -93,6 +94,10 @@ TEST_CASE("polar conj")
                                + (st[2] - st[8]) * (st[2] - st[8]))
                      - s.get_conjunctions()[0].dist)
             < 1e-9);
+
+    // Test also reset_conjunctions().
+    s.reset_conjunctions();
+    REQUIRE(s.get_conjunctions().empty());
 }
 
 // Like above, but the IC are set such that the conjunction happens barely outside the limit
@@ -183,4 +188,84 @@ TEST_CASE("polar conj barely")
                                + (st[2] - st[8]) * (st[2] - st[8]))
                      - s.get_conjunctions()[0].dist)
             < 1e-9);
+}
+
+// Test in which a conjunction is discarded because
+// it happens just after a collision event.
+TEST_CASE("polar conj discard")
+{
+    const auto psize = 1.57e-8;
+    const auto [x1, v1]
+        = kep_to_cart<double>({1., .000005, boost::math::constants::pi<double>() / 2 + 1e-6, 0, 1.23, 0}, 1);
+    const auto [x2, v2] = kep_to_cart<double>({1., .000005, boost::math::constants::pi<double>() / 2, 0, 4.56, 0}, 1);
+
+    const auto [x3, v3] = kep_to_cart<double>({1. + 1e-7, 0., 0., 0., 0., 0}, 1);
+    auto x4 = x3;
+    x4[0] = -x4[0];
+    auto v4 = v3;
+
+    sim s({x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize,
+           x3[0], x3[1], x3[2], v3[0], v3[1], v3[2], psize, x4[0], x4[1], x4[2], v4[0], v4[1], v4[2], psize},
+          0.23, kw::conj_thresh = psize * 100);
+
+    while (true) {
+        const auto oc = s.step();
+
+        if (oc != outcome::success) {
+            REQUIRE(oc == outcome::collision);
+            break;
+        }
+    }
+
+    // NOTE: only the conjunction between 0 and 1 is reported.
+    REQUIRE(s.get_conjunctions().size() == 1u);
+    REQUIRE(s.get_conjunctions()[0].i == 0u);
+    REQUIRE(s.get_conjunctions()[0].j == 1u);
+
+    // The conjunction time must be before the simulation time.
+    REQUIRE(s.get_conjunctions()[0].time < s.get_time());
+}
+
+// Test multiple steps triggering conjunctions: check that the conjunctions
+// are kept in chrono order and that the logic for resizing the
+// conj vector works properly.
+TEST_CASE("multiple conjs")
+{
+    const auto psize = 1.57e-8;
+    const auto [x1, v1]
+        = kep_to_cart<double>({1., .000005, boost::math::constants::pi<double>() / 2 + 1e-6, 0, 1.23, 0}, 1);
+    const auto [x2, v2] = kep_to_cart<double>({1., .000005, boost::math::constants::pi<double>() / 2, 0, 4.56, 0}, 1);
+
+    const auto [x3, v3] = kep_to_cart<double>({1. + 1e-7, 0., 0., 0., 0., 0}, 1);
+    auto x4 = x3;
+    x4[0] = -x4[0] + 1e-6;
+    auto v4 = v3;
+
+    sim s({x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize,
+           x3[0], x3[1], x3[2], v3[0], v3[1], v3[2], psize, x4[0], x4[1], x4[2], v4[0], v4[1], v4[2], psize},
+          0.23, kw::conj_thresh = psize * 100);
+
+    while (true) {
+        const auto oc = s.step();
+
+        REQUIRE(oc == outcome::success);
+
+        if (s.get_time() > 26.) {
+            break;
+        }
+    }
+
+    REQUIRE(s.get_conjunctions().size() == 8u);
+    REQUIRE(std::is_sorted(s.get_conjunctions().begin(), s.get_conjunctions().end(),
+                           [](const auto &c1, const auto &c2) { return c1.time < c2.time; }));
+    REQUIRE(s.get_conjunctions().back().time < s.get_time());
+
+    // Stream/format operator for the conjunction struct.
+    std::ostringstream oss;
+    oss << s.get_conjunctions()[0];
+    REQUIRE(!oss.str().empty());
+
+    oss.str("");
+    oss << fmt::format("{}", s.get_conjunctions()[0]);
+    REQUIRE(!oss.str().empty());
 }
