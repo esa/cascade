@@ -243,13 +243,13 @@
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#we-setup-the-simulation">
-   We setup the simulation
+  <a class="reference internal nav-link" href="#setup-of-the-simulation">
+   Setup of the simulation
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#we-run-the-simulation">
-   We run the simulation
+  <a class="reference internal nav-link" href="#running-the-simulation">
+   Running the simulation
   </a>
  </li>
 </ul>
@@ -266,7 +266,7 @@
                 
   <section class="tex2jax_ignore mathjax_ignore" id="years-of-leo">
 <h1>20 years of LEO<a class="headerlink" href="#years-of-leo" title="Permalink to this heading">¶</a></h1>
-<p>In this example we will consider the tracked population of objects orbiting in Low Earth Orbit and evolve it for twenty years while counting collisions and removing decayed objects.
+<p>In this example we will consider the tracked population of objects orbiting in Low Earth Orbit and run a simulation while detecting collisions and removing decayed objects.
 We start, as always, with some imports:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -282,8 +282,8 @@ We start, as always, with some imports:</p>
 </div>
 <section id="loading-the-initial-leo-population">
 <h2>Loading the initial LEO population<a class="headerlink" href="#loading-the-initial-leo-population" title="Permalink to this heading">¶</a></h2>
-<p>To define the initial LEO population from the objects tracked by the <a class="reference external" href="https://en.wikipedia.org/wiki/United_States_Space_Surveillance_Network">US Space Surveillance Network (SSN)</a>.
-The necessary steps to prepare the initial state are described by the code described in <a class="reference internal" href="../utilities/leo_population.html"><span class="doc std std-doc">The current LEO population</span></a></p>
+<p>Let us define the initial LEO population from the objects tracked by the <a class="reference external" href="https://en.wikipedia.org/wiki/United_States_Space_Surveillance_Network">US Space Surveillance Network (SSN)</a>.
+The necessary steps to prepare such data are described by the code made available as a cascade utility in <a class="reference internal" href="../utilities/leo_population.html"><span class="doc std std-doc">The current LEO population</span></a></p>
 <p>The file needed is:</p>
 <ul class="simple">
 <li><p><strong>leo_population.pk</strong> - created by <a class="reference internal" href="../utilities/leo_population.html"><span class="doc std std-doc">The current LEO population</span></a> notebook.</p></li>
@@ -320,7 +320,7 @@ Velocity (km/s):  [ 1.38399824  5.88779107 -3.78530589]
 </div>
 </div>
 </div>
-<p>on top of all the info distributed from the <a class="reference external" href="https://en.wikipedia.org/wiki/United_States_Space_Surveillance_Network">US Space Surveillance Network (SSN)</a> we have added to the satcat (see <a class="reference internal" href="../utilities/leo_population.html"><span class="doc std std-doc">The current LEO population</span></a> notebook)an estimate of the object radius which we will need to define the various collisional radii. As we will be using a dynamics that also models the atmospheric drag via the BSTAR coefficient, we create the array to be used as parameter when instantiating a :class:<code class="docutils literal notranslate"><span class="pre">~cascade.sim</span></code>.</p>
+<p>On top of all the info distributed from the <a class="reference external" href="https://en.wikipedia.org/wiki/United_States_Space_Surveillance_Network">US Space Surveillance Network (SSN)</a> we have added to the satcat (see <a class="reference internal" href="../utilities/leo_population.html"><span class="doc std std-doc">The current LEO population</span></a> notebook) dictionary an estimate of the object radius which we will need to define the various collisional radii. As we will be using a dynamics that also models the atmospheric drag via the BSTAR coefficient, we create the array to be used as parameter when instantiating a :class:<code class="docutils literal notranslate"><span class="pre">~cascade.sim</span></code>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Array containing the BSTAR coefficient in the SI units used</span>
@@ -344,7 +344,7 @@ Velocity (km/s):  [ 1.38399824  5.88779107 -3.78530589]
 </section>
 <section id="building-the-dynamical-system-to-integrate">
 <h2>Building the dynamical system to integrate<a class="headerlink" href="#building-the-dynamical-system-to-integrate" title="Permalink to this heading">¶</a></h2>
-<p>The dynamics in the LEO environment is dominated by drag and gravitational effects. The effect of the Moon gravity, Sun gravity and solar radiation pressure are not considered, even if they would not add much complexity in this simulation. We make use of :class:<code class="docutils literal notranslate"><span class="pre">~cascade.dynamics.simple_earth</span></code> defining the analytical expressions for such a dynamics.</p>
+<p>The dynamics in the LEO environment is dominated by drag and gravitational effects. The effect of the Moon gravity, Sun gravity and solar radiation pressure are much weaker and thus not considered here, even if they would not add much complexity in the simulation. We make use of the cascade class <code class="docutils literal notranslate"><span class="pre">cascade.dynamics.simple_earth</span></code> returning analytical expressions for such a dynamics.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dyn</span> <span class="o">=</span>  <span class="n">csc</span><span class="o">.</span><span class="n">dynamics</span><span class="o">.</span><span class="n">simple_earth</span><span class="p">(</span><span class="n">J2</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">C22S22</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">sun</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">moon</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">SRP</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">drag</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -352,7 +352,7 @@ Velocity (km/s):  [ 1.38399824  5.88779107 -3.78530589]
 </div>
 </div>
 </div>
-<p>and we inspect it visually to check that all is defined as expected (the analytical expression are long and complex, but this will not be an issue for heyoka).</p>
+<p>Let us inspect it visually to check that all is defined as expected. The analytical expression are long and complex, but this will not be an issue for <a class="reference external" href="https://bluescarni.github.io/heyoka.py/">heyoka</a> that is  using <a class="reference external" href="https://en.wikipedia.org/wiki/LLVM">LLVM</a> behind the scenes to compile them, as well as all the needed high order derivatives needed to define a Taylor integration scheme.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dyn</span>
@@ -374,13 +374,13 @@ Velocity (km/s):  [ 1.38399824  5.88779107 -3.78530589]
 </div>
 </div>
 </section>
-<section id="we-setup-the-simulation">
-<h2>We setup the simulation<a class="headerlink" href="#we-setup-the-simulation" title="Permalink to this heading">¶</a></h2>
-<p>the global cascade logger is here informed of the level of information we want to be reported to screen during the simulation. We also set the number of threads to be used to 16, clearly this number depends on the resources available on the node used.</p>
+<section id="setup-of-the-simulation">
+<h2>Setup of the simulation<a class="headerlink" href="#setup-of-the-simulation" title="Permalink to this heading">¶</a></h2>
+<p>The global cascade logger is here informed of the level of information we want to be reported to screen during the simulation. We also set the number of threads to be used to 32, clearly this number depends on the resources available on the particular computer used to run the simulation and the ability to run the threads in parallel.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">csc</span><span class="o">.</span><span class="n">set_logger_level_info</span><span class="p">()</span>
-<span class="n">csc</span><span class="o">.</span><span class="n">set_nthreads</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span>
+<span class="n">csc</span><span class="o">.</span><span class="n">set_nthreads</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -438,28 +438,28 @@ COSMOS 1408 DEB - 1982-092BKD
 </div>
 </div>
 </div>
-<p>We can now instantiate the cascade simulation. This will trigger the JIT compilation of the numerical integrators with the selected dynamics with event detection and thus take a few seconds.
-Note that this is to be paid only once and as far as the dynamics is kept the same simulations can be made reusing the same simulation object.</p>
-<p>As a collisional timestep, a parameter that can be tuned to get the best efficiency, we use the arbitrary value of the ISS orbital period divided by 25.</p>
+<p>We can now instantiate the cascade simulation. This will trigger the <a class="reference external" href="https://en.wikipedia.org/wiki/LLVM">LLVM</a> compilation of the needed Taylor integrators representing the selected dynamics as well as the event detection, thus taking a few seconds.
+Note that this cost is to be paid only once. As far as the dynamics remains unchanged other simulations can be made reusing the same object.</p>
+<p>As a collisional timestep, a parameter that can be tuned to get the best efficiency, we use the value of the ISS orbital period divided by 25.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Prepare the data in the shape expected by the simulation object.</span>
 <span class="n">ic_state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">r_ic</span><span class="p">,</span> <span class="n">v_ic</span><span class="p">,</span> <span class="n">RADIUS</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">r_ic</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">))])</span>
 <span class="n">BSTARS</span> <span class="o">=</span> <span class="n">BSTARS</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">r_ic</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span>
-<span class="c1"># The collisional timestep is set to 1/25 of the ISS orbital period</span>
-<span class="n">collisional_step</span> <span class="o">=</span> <span class="mi">90</span><span class="o">*</span><span class="mi">60</span> <span class="o">/</span> <span class="mi">25</span>
-<span class="n">sim</span> <span class="o">=</span> <span class="n">csc</span><span class="o">.</span><span class="n">sim</span><span class="p">(</span><span class="n">ic_state</span><span class="p">,</span> <span class="n">collisional_step</span><span class="p">,</span> <span class="n">dyn</span><span class="o">=</span><span class="n">dyn</span><span class="p">,</span> <span class="n">pars</span><span class="o">=</span><span class="n">BSTARS</span><span class="p">,</span> <span class="n">reentry_radius</span><span class="o">=</span><span class="n">reentry_radius</span><span class="p">,</span> <span class="n">n_par_ct</span> <span class="o">=</span> <span class="mi">30</span><span class="p">)</span>
+<span class="c1"># The collisional timestep is set to 1/40 of the ISS orbital period</span>
+<span class="n">collisional_step</span> <span class="o">=</span> <span class="mi">90</span><span class="o">*</span><span class="mi">60</span> <span class="o">/</span> <span class="mi">40</span>
+<span class="n">sim</span> <span class="o">=</span> <span class="n">csc</span><span class="o">.</span><span class="n">sim</span><span class="p">(</span><span class="n">ic_state</span><span class="p">,</span> <span class="n">collisional_step</span><span class="p">,</span> <span class="n">dyn</span><span class="o">=</span><span class="n">dyn</span><span class="p">,</span> <span class="n">pars</span><span class="o">=</span><span class="n">BSTARS</span><span class="p">,</span> <span class="n">reentry_radius</span><span class="o">=</span><span class="n">reentry_radius</span><span class="p">,</span> <span class="n">n_par_ct</span> <span class="o">=</span> <span class="mi">120</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 </section>
-<section id="we-run-the-simulation">
-<h2>We run the simulation<a class="headerlink" href="#we-run-the-simulation" title="Permalink to this heading">¶</a></h2>
-<p>The following block will start a simulation where the method <em>step</em> of a :class:<code class="docutils literal notranslate"><span class="pre">~cascade.sim</span></code> is called up to when the simulation time reaches a maximum allocated.
+<section id="running-the-simulation">
+<h2>Running the simulation<a class="headerlink" href="#running-the-simulation" title="Permalink to this heading">¶</a></h2>
+<p>The following block will perform a simulation where the method <em>step</em> of a cascade <code class="docutils literal notranslate"><span class="pre">sim</span></code> object is called  repeatedly up to when the simulation time reaches the maximum allocated (<code class="docutils literal notranslate"><span class="pre">final_t</span></code>).
 All collision events and orbital decays are logged on files and on screen.</p>
-<p>The simulation can take up to days to end if we are set to simulate 20 years and on a few CPUs only. In this notebook we thus set it to end after 30 days, and will report the extrapolated time of execution for 20 years.
-As a consequence mostly reentry events are triggered. You can let it run for longer and collision events will also appear.</p>
+<p>The simulation can take up to days to complete if we are set to simulate 20 years and on a few CPUs only. In this notebook we thus set it to end after 30 days, and will report the extrapolated time of execution for 20 years.</p>
+<p>As a consequence mostly reentry events are triggered. You can let the simulation run for longer by changing the value for <code class="docutils literal notranslate"><span class="pre">final_t</span></code> and collision events will also appear.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">time</span>
@@ -531,70 +531,71 @@ COSMOS 1408 DEB, 1982-092AHN,  0.05382193033468462 REMOVED
 CZ-3B R/B, 2021-003B,  0.061109115323666155 REMOVED
 FREGAT DEB, 2011-037LV,  0.07330302827907705 REMOVED
 FREGAT DEB, 2011-037NV,  0.07449452724975524 REMOVED
-STARLINK-1919, 2020-074AG,  0.2142516031022719 REMOVED
-COSMOS 1408 DEB, 1982-092KJ,  0.5662938890378839 REMOVED
-COSMOS 2251 DEB, 1993-036AEZ,  0.6238039100945278 REMOVED
-COSMOS 1408 DEB, 1982-092ANG,  0.7531321743658845 REMOVED
-FALCON 9 DEB, 2020-055BR,  0.9420367945206399 REMOVED
-COSMOS 1408 DEB, 1982-092GN,  1.008246169630039 REMOVED
-COSMOS 1408 DEB, 1982-092TY,  1.0425599079990473 REMOVED
-COSMOS 1408 DEB, 1982-092SQ,  1.0720537058921977 REMOVED
-COSMOS 2241, 1993-022A,  1.6112104439376482 REMOVED
-CZ-2D DEB, 2017-077D,  1.6243326864745287 REMOVED
-COSMOS 1408 DEB, 1982-092BBR,  1.8406286003954586 REMOVED
-COSMOS 1408 DEB, 1982-092APD,  1.9207567080081032 REMOVED
-COSMOS 1408 DEB, 1982-092AQN,  2.323993858440506 REMOVED
-COSMOS 1408 DEB, 1982-092BCU,  2.5696359225310954 REMOVED
-COSMOS 1408 DEB, 1982-092AWP,  2.672832891709416 REMOVED
-STARLINK-1064, 2019-074BJ,  2.9005896261186233 REMOVED
-COSMOS 2251 DEB, 1993-036BGH,  3.0364635167384044 REMOVED
-COSMOS 1408 DEB, 1982-092ACC,  3.71129335948165 REMOVED
-COSMOS 1408 DEB, 1982-092HV,  3.727092013779681 REMOVED
-FENGYUN 1C DEB, 1999-025CVY,  4.318001830705077 REMOVED
-COSMOS 1408 DEB, 1982-092QH,  5.240540225701083 REMOVED
-COSMOS 1408 DEB, 1982-092MN,  5.555927183146009 REMOVED
-COSMOS 1408 DEB, 1982-092KV,  5.731769635356648 REMOVED
-COSMOS 1408 DEB, 1982-092PQ,  6.015140014435219 REMOVED
-COSMOS 1408 DEB, 1982-092BHF,  6.27486601381062 REMOVED
-COSMOS 1408 DEB, 1982-092AWZ,  6.290924935718586 REMOVED
-COSMOS 1408 DEB, 1982-092AYM,  6.81499287930922 REMOVED
-COSMOS 1408 DEB, 1982-092AWJ,  7.308427052693511 REMOVED
-COSMOS 1408 DEB, 1982-092PG,  7.397451390234956 REMOVED
-FREGAT DEB, 2011-037BC,  7.8765716605911775 REMOVED
-COSMOS 1408 DEB, 1982-092ACJ,  8.855366703577669 REMOVED
-COSMOS 1408 DEB, 1982-092NE,  9.149533323777966 REMOVED
-IRIDIUM 33 DEB, 1997-051DC,  9.310838016061565 REMOVED
-COSMOS 1408 DEB, 1982-092YV,  9.574387059957244 REMOVED
-COSMOS 1408 DEB, 1982-092SZ,  9.774361772729716 REMOVED
-COSMOS 1408 DEB, 1982-092KE,  11.310753322335822 REMOVED
-COSMOS 1408 DEB, 1982-092AP,  11.429939170343635 REMOVED
-COSMOS 1408 DEB, 1982-092AJN,  12.546476527746691 REMOVED
-COSMOS 1408 DEB, 1982-092AKT,  13.11550601706388 REMOVED
-QUETZAL-1, 1998-067RL,  13.647193283524606 REMOVED
-FREGAT DEB, 2011-037L,  15.168027690240649 REMOVED
-STARLINK-1859, 2020-088AA,  15.378380569731808 REMOVED
-COSMOS 1408 DEB, 1982-092ASR,  15.488187261651209 REMOVED
-COSMOS 1408 DEB, 1982-092BAJ,  15.790589986097318 REMOVED
-STARLINK-2306, 2021-024M,  17.866511338935595 REMOVED
-COSMOS 1408 DEB, 1982-092ALC,  17.933014217612698 REMOVED
-COSMOS 1408 DEB, 1982-092AZH,  18.704542466188467 REMOVED
-COSMOS 1408 DEB, 1982-092AER,  18.806819401666313 REMOVED
-COSMOS 1408 DEB, 1982-092AMJ,  20.216621873438317 REMOVED
-COSMOS 1408 DEB, 1982-092MS,  20.774824068261207 REMOVED
-COSMOS 1408 DEB, 1982-092BEY,  21.525051787764557 REMOVED
-COSMOS 1408 DEB, 1982-092ASS,  23.49900473136754 REMOVED
-COSMOS 1408 DEB, 1982-092BBQ,  24.007952028293676 REMOVED
-COSMOS 1408 DEB, 1982-092BFP,  24.101413639544695 REMOVED
-COSMOS 1408 DEB, 1982-092BHE,  28.152084406173298 REMOVED
-COSMOS 1408 DEB, 1982-092AFD,  28.478181021140173 REMOVED
-COSMOS 1408 DEB, 1982-092PK,  29.269725667791615 REMOVED
-COSMOS 1408 DEB, 1982-092AJS,  29.531879411145646 REMOVED
-Elapsed [s]:  140.304270029068
-Time projected to 20 years is  9.490024931132792  hours
+STARLINK-1919, 2020-074AG,  0.21425160310227995 REMOVED
+COSMOS 1408 DEB, 1982-092KJ,  0.5662938890380064 REMOVED
+COSMOS 2251 DEB, 1993-036AEZ,  0.6238039100945627 REMOVED
+COSMOS 1408 DEB, 1982-092ANG,  0.7531321743660606 REMOVED
+FALCON 9 DEB, 2020-055BR,  0.9420367945206803 REMOVED
+COSMOS 1408 DEB, 1982-092GN,  1.008246169629845 REMOVED
+COSMOS 1408 DEB, 1982-092TY,  1.0425599079990764 REMOVED
+COSMOS 1408 DEB, 1982-092SQ,  1.0720537058920492 REMOVED
+COSMOS 2241, 1993-022A,  1.6112104439376314 REMOVED
+CZ-2D DEB, 2017-077D,  1.624332686474556 REMOVED
+COSMOS 1408 DEB, 1982-092BBR,  1.8406286003952987 REMOVED
+COSMOS 1408 DEB, 1982-092APD,  1.9207567080093246 REMOVED
+COSMOS 1408 DEB, 1982-092AQN,  2.3239938584399304 REMOVED
+COSMOS 1408 DEB, 1982-092BCU,  2.5696359225329957 REMOVED
+COSMOS 1408 DEB, 1982-092AWP,  2.672832891709164 REMOVED
+STARLINK-1064, 2019-074BJ,  2.900589626118199 REMOVED
+COSMOS 2251 DEB, 1993-036BGH,  3.036463516740673 REMOVED
+COSMOS 1408 DEB, 1982-092ACC,  3.7112933594826285 REMOVED
+COSMOS 1408 DEB, 1982-092HV,  3.7270920137791705 REMOVED
+FENGYUN 1C DEB, 1999-025CVY,  4.318001830712988 REMOVED
+COSMOS 1408 DEB, 1982-092QH,  5.240540225699056 REMOVED
+COSMOS 1408 DEB, 1982-092MN,  5.555927183147772 REMOVED
+COSMOS 1408 DEB, 1982-092KV,  5.731769635348274 REMOVED
+COSMOS 1408 DEB, 1982-092PQ,  6.015140014434743 REMOVED
+COSMOS 1408 DEB, 1982-092BHF,  6.274866013801969 REMOVED
+COSMOS 1408 DEB, 1982-092AWZ,  6.290924935712509 REMOVED
+COSMOS 1408 DEB, 1982-092AYM,  6.81499287930357 REMOVED
+COSMOS 1408 DEB, 1982-092AWJ,  7.308427052695066 REMOVED
+COSMOS 1408 DEB, 1982-092PG,  7.397451390240031 REMOVED
+FREGAT DEB, 2011-037BC,  7.876571660590149 REMOVED
+COSMOS 1408 DEB, 1982-092ACJ,  8.855366703572233 REMOVED
+COSMOS 1408 DEB, 1982-092NE,  9.149533323775291 REMOVED
+IRIDIUM 33 DEB, 1997-051DC,  9.310838016049313 REMOVED
+COSMOS 1408 DEB, 1982-092YV,  9.574387059958713 REMOVED
+COSMOS 1408 DEB, 1982-092SZ,  9.7743617727449 REMOVED
+COSMOS 1408 DEB, 1982-092KE,  11.31075332232809 REMOVED
+COSMOS 1408 DEB, 1982-092AP,  11.429939170343582 REMOVED
+COSMOS 1408 DEB, 1982-092AJN,  12.546476527748634 REMOVED
+COSMOS 1408 DEB, 1982-092AKT,  13.115506017039019 REMOVED
+QUETZAL-1, 1998-067RL,  13.647193283524608 REMOVED
+FREGAT DEB, 2011-037L,  15.16802769025021 REMOVED
+STARLINK-1859, 2020-088AA,  15.378380569707032 REMOVED
+COSMOS 1408 DEB, 1982-092ASR,  15.488187261630962 REMOVED
+COSMOS 1408 DEB, 1982-092BAJ,  15.79058998613543 REMOVED
+STARLINK-2306, 2021-024M,  17.866511338947312 REMOVED
+COSMOS 1408 DEB, 1982-092ALC,  17.933014217631968 REMOVED
+COSMOS 1408 DEB, 1982-092AZH,  18.704542466159598 REMOVED
+COSMOS 1408 DEB, 1982-092AER,  18.80681940163051 REMOVED
+COSMOS 1408 DEB, 1982-092AMJ,  20.21662187343785 REMOVED
+COSMOS 1408 DEB, 1982-092MS,  20.774824068242282 REMOVED
+COSMOS 1408 DEB, 1982-092BEY,  21.525051787779784 REMOVED
+COSMOS 1408 DEB, 1982-092ASS,  23.49900473135704 REMOVED
+COSMOS 1408 DEB, 1982-092BBQ,  24.00795202832335 REMOVED
+COSMOS 1408 DEB, 1982-092BFP,  24.101413639557776 REMOVED
+COSMOS 1408 DEB, 1982-092BHE,  28.152084406142794 REMOVED
+COSMOS 1408 DEB, 1982-092AFD,  28.478181021158605 REMOVED
+COSMOS 1408 DEB, 1982-092PK,  29.269725667804103 REMOVED
+COSMOS 1408 DEB, 1982-092AJS,  29.531879411125722 REMOVED
+Elapsed [s]:  62.71999549865723
+Time projected to 20 years is  4.242310806645288  hours
 </pre></div>
 </div>
 </div>
 </div>
+<p>The total simulation time, ultimately determined by the underlying CPU architecture, is sensitive also to the choices made for  <code class="docutils literal notranslate"><span class="pre">n_par_ct</span></code> and <code class="docutils literal notranslate"><span class="pre">collisional_step</span></code> which determine the efficient use of the CPUs as well as the perfromances of the underlying original collision detection algorithm based on the manipulation of the dense output of the Taylor integrators.</p>
 </section>
 </section>
 
