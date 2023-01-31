@@ -38,6 +38,11 @@ inline ival operator+(ival a, ival b)
     return ival(a.lower + b.lower, a.upper + b.upper);
 }
 
+inline ival operator+(double a, ival b)
+{
+    return ival(a) + b;
+}
+
 inline ival operator*(ival a, ival b)
 {
     const auto tmp1 = a.lower * b.lower;
@@ -49,6 +54,11 @@ inline ival operator*(ival a, ival b)
     const auto u = std::max(std::max(tmp1, tmp2), std::max(tmp3, tmp4));
 
     return ival(l, u);
+}
+
+inline ival operator*(double a, ival b)
+{
+    return ival(a) * b;
 }
 
 } // namespace cascade::detail

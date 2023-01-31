@@ -26,39 +26,41 @@ TEST_CASE("last bit flip")
 {
     const auto GMe = 398600441800000.0;
 
-    std::array<std::vector<double>, 7> data;
+    for (auto n_par_ct : {1u, 3u}) {
+        std::array<std::vector<double>, 7> data;
 
-    auto names = std::vector<std::string>{"x_lbf.txt",  "y_lbf.txt",  "z_lbf.txt",    "vx_lbf.txt",
-                                          "vy_lbf.txt", "vz_lbf.txt", "sizes_lbf.txt"};
+        auto names = std::vector<std::string>{"x_lbf.txt",  "y_lbf.txt",  "z_lbf.txt",    "vx_lbf.txt",
+                                              "vy_lbf.txt", "vz_lbf.txt", "sizes_lbf.txt"};
 
-    for (auto i = 0u; i < 7u; ++i) {
-        std::fstream in(names[i]);
+        for (auto i = 0u; i < 7u; ++i) {
+            std::fstream in(names[i]);
 
-        std::string line;
+            std::string line;
 
-        while (std::getline(in, line)) {
-            double value = 0;
-            std::stringstream ss(line);
+            while (std::getline(in, line)) {
+                double value = 0;
+                std::stringstream ss(line);
 
-            ss >> value;
+                ss >> value;
 
-            data[i].push_back(value);
+                data[i].push_back(value);
+            }
         }
+
+        std::vector<double> state;
+        for (decltype(state.size()) i = 0; i < data[0].size(); ++i) {
+            state.push_back(data[0][i]);
+            state.push_back(data[1][i]);
+            state.push_back(data[2][i]);
+            state.push_back(data[3][i]);
+            state.push_back(data[4][i]);
+            state.push_back(data[5][i]);
+            state.push_back(data[6][i]);
+        }
+
+        sim s(state, 0.23 * 806.81, kw::dyn = dynamics::kepler(GMe), kw::n_par_ct = n_par_ct);
+
+        auto oc = s.step();
+        REQUIRE((oc == outcome::success || oc == outcome::collision));
     }
-
-    std::vector<double> state;
-    for (decltype(state.size()) i = 0; i < data[0].size(); ++i) {
-        state.push_back(data[0][i]);
-        state.push_back(data[1][i]);
-        state.push_back(data[2][i]);
-        state.push_back(data[3][i]);
-        state.push_back(data[4][i]);
-        state.push_back(data[5][i]);
-        state.push_back(data[6][i]);
-    }
-
-    sim s(state, 0.23 * 806.81, kw::dyn = dynamics::kepler(GMe));
-
-    auto oc = s.step();
-    REQUIRE((oc == outcome::success || oc == outcome::collision));
 }

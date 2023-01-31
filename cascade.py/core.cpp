@@ -55,6 +55,9 @@ PYBIND11_MODULE(core, m)
     using namespace cascade;
     namespace cpy = cascade_py;
 
+    // Dynamics submodule (exposed in cores with underscores and imported via python in the correct namespace)
+    m.def("_kepler", &dynamics::kepler, "mu"_a = 1.);
+
     // Expose the logging setter functions.
     cpy::expose_logging_setters(m);
 
@@ -67,8 +70,8 @@ PYBIND11_MODULE(core, m)
         .value("exit", outcome::exit)
         .value("err_nf_state", outcome::err_nf_state);
 
-    // Dynamics "submodule" symbols.
-    m.def("_kepler", &dynamics::kepler, "mu"_a = 1.);
+    // Conjunction structure.
+    PYBIND11_NUMPY_DTYPE(sim::conjunction, i, j, time, dist);
 
     // sim class.
     py::class_<sim>(m, "sim", py::dynamic_attr{})
@@ -77,7 +80,7 @@ PYBIND11_MODULE(core, m)
                          std::optional<std::vector<std::pair<hy::expression, hy::expression>>> dyn_,
                          std::optional<std::variant<double, std::vector<double>>> c_radius_,
                          std::optional<double> d_radius_, const std::optional<py::array_t<double>> &pars_,
-                         std::optional<double> tol_, bool ha, std::uint32_t n_par_ct) {
+                         std::optional<double> tol_, bool ha, std::uint32_t n_par_ct, double conj_thresh) {
                  // Check the input state.
                  if (state.ndim() != 2) {
                      throw std::invalid_argument(fmt::format(
@@ -141,16 +144,17 @@ PYBIND11_MODULE(core, m)
                      [&](auto &&cr_val) {
                          return sim(std::move(state_vec), ct, kw::dyn = std::move(dyn),
                                     kw::c_radius = std::forward<decltype(cr_val)>(cr_val), kw::d_radius = d_radius,
-                                    kw::pars = std::move(pars_vec), kw::tol = tol, kw::high_accuracy = ha, kw::n_par_ct = n_par_ct);
+                                    kw::pars = std::move(pars_vec), kw::tol = tol, kw::high_accuracy = ha, kw::n_par_ct = n_par_ct, kw::conj_thresh = conj_thresh);
                      },
                      std::move(c_radius));
              }),
              "state"_a, "ct"_a, "dyn"_a = py::none{}, "c_radius"_a = py::none{}, "d_radius"_a = py::none{},
-             "pars"_a = py::none{}, "tol"_a = py::none{}, "high_accuracy"_a = false, "n_par_ct"_a = 1)
+             "pars"_a = py::none{}, "tol"_a = py::none{}, "high_accuracy"_a = false, "n_par_ct"_a = 1, "conj_thresh"_a = 0.)
         .def_property_readonly("interrupt_info", &sim::get_interrupt_info)
         .def_property("time", &sim::get_time, &sim::set_time)
         .def_property("ct", &sim::get_ct, &sim::set_ct)
         .def_property("n_par_ct", &sim::get_n_par_ct, &sim::set_n_par_ct)
+        .def_property("conj_thresh", &sim::get_conj_thresh, &sim::set_conj_thresh)
         .def_property_readonly("nparts", &sim::get_nparts)
         .def_property_readonly("npars", &sim::get_npars)
         .def_property_readonly("tol", &sim::get_tol)
@@ -211,7 +215,7 @@ PYBIND11_MODULE(core, m)
                                })
         .def_property_readonly("pars",
                                [](const sim &s) {
-                                   // NOTE: same idea as in the pars getter.
+                                   // NOTE: same idea as in the state getter.
                                    auto pptr = s._get_pars_ptr();
 
                                    auto uptr = std::make_unique<decltype(pptr)>(std::move(pptr));
@@ -277,6 +281,30 @@ PYBIND11_MODULE(core, m)
                 s.set_new_state_pars(std::move(state_vec), std::move(pars_vec));
             },
             "new_state"_a, "new_pars"_a = py::none{})
+        // Conjunctions.
+        .def_property_readonly("conjunctions",
+                        [](const sim &s) {
+                            // NOTE: same idea as in the state getter.
+                            auto cptr = s._get_conjunctions_ptr();
+
+                            auto uptr = std::make_unique<decltype(cptr)>(std::move(cptr));
+
+                            py::capsule conjs_caps(uptr.get(), [](void *ptr) {
+                                std::unique_ptr<decltype(cptr)> vptr(static_cast<decltype(cptr) *>(ptr));
+                            });
+
+                            auto *ptr = uptr.release();
+
+                            auto ret = py::array_t<sim::conjunction>(
+                                py::array::ShapeContainer{boost::numeric_cast<py::ssize_t>(s.get_conjunctions().size())},
+                                (**ptr).data(), std::move(conjs_caps));
+
+                            // Ensure the returned array is read-only.
+                            ret.attr("flags").attr("writeable") = false;
+
+                            return ret;
+                        })
+        .def("reset_conjunctions", &sim::reset_conjunctions)
         // Remove particles.
         .def("remove_particles", &sim::remove_particles)
         // Repr.

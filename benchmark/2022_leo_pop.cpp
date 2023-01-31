@@ -107,6 +107,7 @@ Allowed options:
                                         collisional time step
   -p [ --n_par_ct ] arg (=30)           number of collisional timesteps to
                                         be processed in parallel
+  -t [ --conj_thresh ] arg (=0)         conjunction tracking threshold
 
 To recover the results prior to this benchmark code obtained on the large dataset, use -c 64.5448
 */
@@ -127,7 +128,8 @@ int main(int ac, char *av[])
         "large,l", po::value<bool>()->default_value(false), "augments with >500000 small debris")(
         "rcs_factor,r", po::value<double>()->default_value(1.), "factor for the radius (collisions)")(
         "c_timestep,c", po::value<double>()->default_value(185.5663), "collisional time step")(
-        "n_par_ct,p", po::value<std::uint32_t>(), "number of collisional timesteps to be processed in parallel");
+        "n_par_ct,p", po::value<std::uint32_t>(), "number of collisional timesteps to be processed in parallel")(
+        "conj_thresh,t", po::value<double>(), "conjunction tracking threshold");
 
     po::variables_map vm;
     po::store(po::parse_command_line(ac, av, desc), vm);
@@ -167,6 +169,11 @@ int main(int ac, char *av[])
     std::uint32_t n_par_ct = 30;
     if (vm.count("n_par_ct")) {
         n_par_ct = vm["n_par_ct"].as<std::uint32_t>();
+    }
+
+    double conj_thresh = 0;
+    if (vm.count("conj_thresh")) {
+        conj_thresh = vm["conj_thresh"].as<double>();
     }
 
     std::cout << "\nRunning " << max_steps << " steps with " << n_cpus << " cpus\n"
@@ -292,7 +299,8 @@ int main(int ac, char *av[])
     } else {
         c_rad = min_radius;
     }
-    sim s(state, c_timestep, kw::dyn = dyn, kw::pars = pars, kw::c_radius = c_rad, kw::n_par_ct = n_par_ct);
+    sim s(state, c_timestep, kw::dyn = dyn, kw::pars = pars, kw::c_radius = c_rad, kw::n_par_ct = n_par_ct,
+          kw::conj_thresh = conj_thresh);
     // Perform steps of the simulation.
     // ------------------------------------------------------------------------------------------------------
     outcome oc;

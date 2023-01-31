@@ -246,6 +246,15 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
     // Fetch the particle radius.
     const auto p_radius = sv(pidx, 6);
 
+    // Check it.
+    if (!std::isfinite(p_radius) || p_radius < 0) {
+        throw std::invalid_argument(
+            fmt::format("An invalid particle size of {} was detected for the particle at index {}", p_radius, pidx));
+    }
+
+    // Compute the conjunction radius.
+    const auto conj_radius = m_conj_thresh / 2;
+
     // Cache a few quantities.
     const auto order = m_data->s_ta.get_order();
     const auto &s_data = m_data->s_data;
@@ -341,10 +350,12 @@ void sim::compute_particle_aabb(unsigned chunk_idx, const T &chunk_begin, const 
 
         std::array xyzr_int{horner_eval(tc_ptr_x), horner_eval(tc_ptr_y), horner_eval(tc_ptr_z), horner_eval(tc_ptr_r)};
 
-        // Adjust the intervals accounting for the particle radius.
+        // Adjust the intervals accounting for the particle radius and/or conjunction tracking.
         for (auto &val : xyzr_int) {
-            val.lower -= p_radius;
-            val.upper += p_radius;
+            // NOTE: std::max() here is safe, as both p_radius and conj_radius have
+            // been sanity checked.
+            val.lower -= std::max(p_radius, conj_radius);
+            val.upper += std::max(p_radius, conj_radius);
         }
 
         // A couple of helpers to cast lower/upper bounds from double to float. After
@@ -541,6 +552,9 @@ outcome sim::step()
     // the superstep.
     const auto init_time = m_data->time;
 
+    // Are we detecting conjunctions in this timestep?
+    const auto with_conj = m_conj_thresh != 0;
+
     // Prepare the s_data buffers with the correct sizes.
 
     // NOTE: this is a helper that resizes vec to new_size
@@ -594,7 +608,7 @@ outcome sim::step()
     resize_if_needed(nchunks, m_data->bp_coll, m_data->bp_data_caches);
 
     // Narrow phase data.
-    resize_if_needed(nchunks, m_data->np_caches);
+    resize_if_needed(nchunks, m_data->np_caches, m_data->conj_vecs);
 
     // Stopping terminal events and err_nf_state vectors.
     m_data->ste_vec.clear();
@@ -1200,7 +1214,8 @@ outcome sim::step()
         // - copy in final_state, which was
         //   filled in during the numerical integration
         //   of the particles,
-        // - reset the interrupt info.
+        // - reset the interrupt info,
+        // - copy over the conjunction data, if needed.
 
         assert(!interrupt_time);
 
@@ -1218,6 +1233,11 @@ outcome sim::step()
 
         // Reset the interrupt data.
         m_int_info.reset();
+
+        // Append the conjunction data, if needed.
+        if (with_conj) {
+            append_conj_data(logger);
+        }
     } else {
         // Some event interrupted the integration.
         // We need to:
@@ -1226,7 +1246,10 @@ outcome sim::step()
         // - update the time coordinate,
         // - copy in final_state, which was filled
         //   in by dense_propagate(),
-        // - set up the interrupt info.
+        // - set up the interrupt info,
+        // - copy over the conjunction data, if needed,
+        //   getting rid of the conjunctions
+        //   that happen after the interrupt time.
 
         assert(interrupt_time);
 
@@ -1260,6 +1283,26 @@ outcome sim::step()
                 assert(oc == outcome::reentry);
                 assert(ste_it != m_data->ste_vec.end());
                 m_int_info.emplace(std::get<0>(*ste_it));
+        }
+
+        // Append the conjunction data, if needed.
+        if (with_conj) {
+            const auto new_it = append_conj_data(logger);
+
+            // Identify the first conjunction added during this superstep
+            // happening at or after the current time.
+            // NOTE: use lower rather than upper bound for consistency
+            // with event detection, which is performed in a half-open
+            // range - a conjunction exactly at t == m_data->time should
+            // trigger in the next step.
+            const auto conj_it
+                = std::lower_bound(new_it, m_det_conj->end(),
+                                   // NOTE: use only the first component of the time, which is
+                                   // what the users see.
+                                   m_data->time.hi, [](const auto &c, const auto &tgt_tm) { return c.time < tgt_tm; });
+
+            // Erase the conjunctions happening at or after the current time.
+            m_det_conj->erase(conj_it, m_det_conj->end());
         }
     }
 
@@ -1553,6 +1596,77 @@ void sim::copy_from_final_state() noexcept
             }
         }
     });
+}
+
+// Small helper to append the detected conjunctions data
+// from the chunk-local vectors to the global
+// one. The appended data will be sorted in chronological
+// order. The return value is an iterator in m_det_conj
+// pointing to the first element that was appended,
+// or m_det_conj->end() if no elements were appended.
+//
+// We can mark it noexcept since in narrow_phase_parallel()
+// we ensured that the global vector is prepared with sufficient
+// capacity (thus no reallocation can take place, and no exception
+// can be thrown), and we need the noexcept guarantee where this function
+// is used.
+std::vector<sim::conjunction>::iterator sim::append_conj_data(void *logger_) noexcept
+{
+    spdlog::stopwatch sw;
+
+    auto *logger = static_cast<decltype(detail::get_logger())>(logger_);
+
+    // NOTE: this is supposed to be used only
+    // when conjunction detection is active.
+    assert(m_conj_thresh != 0);
+
+    // Is the global vector originally empty?
+    const auto orig_empty = m_det_conj->empty();
+
+    // Store an iterator to the original last element of
+    // m_det_conj, or end() if orig_empty == true.
+    const auto orig_last_it = orig_empty ? m_det_conj->end() : m_det_conj->end() - 1;
+
+#if !defined(NDEBUG)
+
+    // Store the original m_det_conj data pointer
+    // in order to check that no reallocation took place.
+    // NOTE: this is well-defined even if orig_empty == true.
+    const auto *orig_ptr = m_det_conj->data();
+
+#endif
+
+    // Append the data.
+    for (const auto &vec : m_data->conj_vecs) {
+        m_det_conj->insert(m_det_conj->end(), vec.begin(), vec.end());
+    }
+
+    if (!orig_empty) {
+        // NOTE: run this check only if m_det_conj
+        // originally contained something (and thus
+        // orig_ptr actually points to a conjunction object),
+        // otherwise I am not sure what sort of guarantees
+        // we have on orig_ptr.
+        assert(orig_ptr == m_det_conj->data());
+    }
+
+    // Build the return value: if m_det_conj was originally empty, then the first
+    // element that was appended is begin() (which will coincide with end()
+    // in case no conjunctions were detected). Otherwise, take the iterator
+    // to the last original element (which is still valid thanks to the fact
+    // that no reallocation took place), and increase it by one: this will either
+    // return an iterator to the first added element, or end() if no conjunctions
+    // were detected.
+    auto retval = orig_empty ? m_det_conj->begin() : orig_last_it + 1;
+
+    // Sort the added elements in chronological order.
+    // NOTE: this can be parallelised: worth it?
+    std::sort(retval, m_det_conj->end(),
+              [](const conjunction &c1, const conjunction &c2) { return c1.time < c2.time; });
+
+    logger->trace("Runtime for append_conj_data(): {}s", sw);
+
+    return retval;
 }
 
 } // namespace cascade
