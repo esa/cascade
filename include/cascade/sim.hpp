@@ -26,9 +26,12 @@
 
 #include <boost/numeric/conversion/cast.hpp>
 
+#include <fmt/core.h>
+
 #include <heyoka/detail/igor.hpp>
 #include <heyoka/expression.hpp>
 
+#include <cascade/detail/fmt_compat.hpp>
 #include <cascade/detail/visibility.hpp>
 
 namespace cascade
@@ -59,6 +62,7 @@ IGOR_MAKE_NAMED_ARGUMENT(d_radius);
 IGOR_MAKE_NAMED_ARGUMENT(tol);
 IGOR_MAKE_NAMED_ARGUMENT(high_accuracy);
 IGOR_MAKE_NAMED_ARGUMENT(n_par_ct);
+IGOR_MAKE_NAMED_ARGUMENT(conj_thresh);
 
 } // namespace kw
 
@@ -77,6 +81,19 @@ class CASCADE_DLL_PUBLIC sim
 public:
     using size_type = std::vector<double>::size_type;
 
+    // Struct representing detected conjunctions.
+    struct conjunction {
+        // Indices of the two particles.
+        size_type i = 0;
+        size_type j = 0;
+
+        // Absolute time coordinate.
+        double time = 0;
+
+        // Conjunction distance.
+        double dist = 0;
+    };
+
 private:
     struct sim_data;
 
@@ -86,6 +103,9 @@ private:
     // state/pars, it grabs a copy of the shared pointer,
     // so that if m_state/m_pars are reset with new values,
     // the existing NumPy arrays still work safely.
+    // NOTE: we need to document well that the vectors
+    // returned by get_state()/get_pars()/get_conjunctions()
+    // will be invalidated under certain circumstances.
     std::shared_ptr<std::vector<double>> m_state;
     std::shared_ptr<std::vector<double>> m_pars;
     // The collisional timestep.
@@ -107,11 +127,17 @@ private:
     double m_d_radius = 0;
     // Number of params in the dynamics.
     std::uint32_t m_npars = 0;
+    // Conjunction threshold
+    double m_conj_thresh = 0;
+    // List of detected conjunctions.
+    // NOTE: wrap into shared_ptr for the same
+    // reasons explained above for m_state.
+    std::shared_ptr<std::vector<conjunction>> m_det_conj;
     // The internal implementation-detail data (buffers, caches, etc.).
     std::unique_ptr<sim_data> m_data;
 
     void finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>>, std::vector<double>,
-                       std::variant<double, std::vector<double>>, double, double, bool, std::uint32_t);
+                       std::variant<double, std::vector<double>>, double, double, bool, std::uint32_t, double);
     CASCADE_DLL_LOCAL void add_jit_functions();
     CASCADE_DLL_LOCAL void morton_encode_sort_parallel();
     CASCADE_DLL_LOCAL void construct_bvh_trees_parallel();
@@ -136,6 +162,7 @@ private:
     CASCADE_DLL_LOCAL void init_batch_ta(T &, size_type, size_type) const;
     template <typename T>
     CASCADE_DLL_LOCAL void compute_particle_aabb(unsigned, const T &, const T &, size_type);
+    CASCADE_DLL_LOCAL std::vector<conjunction>::iterator append_conj_data(void *) noexcept;
 
     // Private delegating constructor machinery. This is used
     // in the generic constructor to move the initialisation of
@@ -266,7 +293,20 @@ public:
             }
         }
 
-        finalise_ctor(std::move(dyn), std::move(pars), std::move(c_radius), d_radius, tol, ha, n_par_ct);
+        // Conjunction threshold (defaults to zero).
+        double conj_thresh = 0;
+        if constexpr (p.has(kw::conj_thresh)) {
+            if constexpr (std::convertible_to<decltype(p(kw::conj_thresh)), double>) {
+                conj_thresh = static_cast<double>(std::forward<decltype(p(kw::conj_thresh))>(p(kw::conj_thresh)));
+            } else {
+                // LCOV_EXCL_START
+                static_assert(detail::always_false_v<KwArgs...>,
+                              "The 'conj_thresh' keyword argument is of the wrong type.");
+                // LCOV_EXCL_STOP
+            }
+        }
+
+        finalise_ctor(std::move(dyn), std::move(pars), std::move(c_radius), d_radius, tol, ha, n_par_ct, conj_thresh);
     }
     sim(const sim &);
     sim(sim &&) noexcept;
@@ -332,15 +372,26 @@ public:
         return m_d_radius;
     }
 
+    [[nodiscard]] double get_conj_thresh() const
+    {
+        return m_conj_thresh;
+    }
+    void set_conj_thresh(double);
+    [[nodiscard]] const auto &get_conjunctions() const
+    {
+        return *m_det_conj;
+    }
+    void reset_conjunctions();
+
     void set_new_state_pars(std::vector<double>, std::vector<double> = {});
     void remove_particles(std::vector<size_type>);
 
     outcome step();
     outcome propagate_until(double);
 
-    // NOTE: these two helpers are used to fetch
-    // copies of the shared pointers storing the state
-    // vector and the pars vector. The intended purpose
+    // NOTE: these helpers are used to fetch
+    // copies of shared pointers to internal data.
+    // The intended purpose
     // is to increase the reference count of the shared
     // pointers so that the destruction of the shared
     // pointers in this does not necessarily lead to
@@ -349,7 +400,7 @@ public:
     // on the Python side in order to guarantee that
     // the destruction of a sim object or the invocation
     // of set_new_state_pars() & co. does not trigger
-    // the destruction of the state/params vector if a
+    // the destruction of the state/params/conj vectors if a
     // NumPy array holds a reference to them.
     // NOTE: it is prohibited to resize the vectors
     // stored in the returned shared pointers.
@@ -363,10 +414,25 @@ public:
     {
         return m_pars;
     }
+    [[nodiscard]] auto _get_conjunctions_ptr() const
+    {
+        return m_det_conj;
+    }
 };
 
 CASCADE_DLL_PUBLIC std::ostream &operator<<(std::ostream &, const sim &);
+CASCADE_DLL_PUBLIC std::ostream &operator<<(std::ostream &, const sim::conjunction &);
 
 } // namespace cascade
+
+// fmt formatters.
+namespace fmt
+{
+
+template <>
+struct formatter<cascade::sim::conjunction> : cascade::detail::ostream_formatter {
+};
+
+} // namespace fmt
 
 #endif

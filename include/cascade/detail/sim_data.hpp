@@ -212,8 +212,6 @@ struct sim::sim_data {
     // Temporary buffer used in the construction of the BVH trees.
     std::vector<std::vector<std::uint32_t, detail::no_init_alloc<std::uint32_t>>> nc_buffer, ps_buffer, nplc_buffer;
 
-    // Chunk-local vectors of detected broad phase collisions between AABBs.
-    std::vector<oneapi::tbb::concurrent_vector<std::pair<size_type, size_type>>> bp_coll;
     // Data structure used during parallel broad phase collision detection.
     struct bp_data {
         // Local list of detected AABBs collisions.
@@ -225,6 +223,8 @@ struct sim::sim_data {
     // NOTE: indirect concurrent queue through a unique_ptr because otherwise
     // TBB puts a copy constructor requirement on the inner unique_ptr.
     std::vector<std::unique_ptr<oneapi::tbb::concurrent_queue<std::unique_ptr<bp_data>>>> bp_data_caches;
+    // Chunk-local vectors of detected broad phase collisions between AABBs.
+    std::vector<oneapi::tbb::concurrent_vector<std::pair<size_type, size_type>>> bp_coll;
 
     // Struct for holding polynomial caches used during
     // narrow phase collision detection.
@@ -255,8 +255,9 @@ struct sim::sim_data {
         using isol_t = std::vector<std::tuple<double, double>>;
 
         // Polynomial buffers used in the construction
-        // of the dist square polynomial.
-        std::array<std::vector<double>, 7> dist2;
+        // of the dist square polynomial and its time
+        // derivative.
+        std::array<std::vector<double>, 8> dist2;
         // Vector to store the input for the cfunc used to compute
         // the distance square polynomial.
         std::vector<double> diff_input;
@@ -271,6 +272,18 @@ struct sim::sim_data {
         wlist_t wlist;
         // The list of isolating intervals.
         isol_t isol;
+
+        // The vector into which detected conjunctions are
+        // temporarily written during polynomial root finding.
+        // The tuple contains:
+        // - the indices of the 2 particles,
+        // - the time coordinate of the conjunction (relative
+        //   to the time interval in which root finding is performed,
+        //   i.e., **NOT** relative to the beginning of the superstep).
+        std::vector<std::tuple<size_type, size_type, double>> tmp_conj_vec;
+        // Local list of detected conjunctions (same role as the bp
+        // member in bp_data).
+        std::vector<conjunction> local_conj_vec;
     };
     // NOTE: indirect through a unique_ptr, because for some reason a std::vector of
     // concurrent_queue requires copy ctability of np_data, which is not available due to
@@ -280,8 +293,10 @@ struct sim::sim_data {
     // NOTE: use a concurrent vector for the time being,
     // in the assumption that collisions are infrequent.
     // We can later consider solutions with better concurrency
-    // if needed (e.g., chunk local concurrent queues of collision vectors).
+    // if needed (e.g., chunk-local concurrent queues of collision vectors).
     oneapi::tbb::concurrent_vector<std::tuple<size_type, size_type, double>> coll_vec;
+    // Chunk-local vectors of detected conjunctions.
+    std::vector<oneapi::tbb::concurrent_vector<conjunction>> conj_vecs;
 
     // Structures to record terminal events and nf_error conditions.
     // NOTE: these cannot be chunk-local because they are written to

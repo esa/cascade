@@ -173,7 +173,7 @@ void sim::broad_phase_parallel()
                     } while (!stack.empty());
                 }
 
-                // Atomically merge the local bp into the global one.
+                // Atomically merge the local bp into the chunk-local one.
                 bp_cv.grow_by(local_bp.begin(), local_bp.end());
 
                 // Put the local data back into the cache.

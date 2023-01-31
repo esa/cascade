@@ -43,6 +43,7 @@ TEST_CASE("basic")
         REQUIRE(std::get<0>(s.get_c_radius()) == 0.);
         REQUIRE(s.get_d_radius() == 0.);
         REQUIRE(s.get_n_par_ct() == 1u);
+        REQUIRE(s.get_conj_thresh() == 0.);
     }
 
     // Construction with non-default parameters.
@@ -52,7 +53,7 @@ TEST_CASE("basic")
 
         sim s({1., .001, .001, .001, 1., .001, .001}, .5, kw::dyn = dyn, kw::pars = {.002, .001},
               kw::c_radius = {.1, .2, .3}, kw::d_radius = 100., kw::tol = 1e-12, kw::high_accuracy = true,
-              kw::n_par_ct = 5);
+              kw::n_par_ct = 5, kw::conj_thresh = 42.);
 
         REQUIRE(!s.get_state().empty());
         REQUIRE(s.get_state() == std::vector{1., .001, .001, .001, 1., .001, .001});
@@ -68,6 +69,7 @@ TEST_CASE("basic")
         REQUIRE(s.get_d_radius() == 100.);
         REQUIRE(s.get_time() == 0.);
         REQUIRE(s.get_n_par_ct() == 5u);
+        REQUIRE(s.get_conj_thresh() == 42.);
 
         // Take a single step.
         s.step();
@@ -86,6 +88,7 @@ TEST_CASE("basic")
         REQUIRE(std::get<1>(s2.get_c_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s2.get_d_radius() == 100.);
         REQUIRE(s2.get_n_par_ct() == 5u);
+        REQUIRE(s2.get_conj_thresh() == 42.);
 
         // Test also with move.
         auto s3 = std::move(s2);
@@ -101,6 +104,7 @@ TEST_CASE("basic")
         REQUIRE(std::get<1>(s3.get_c_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s3.get_d_radius() == 100.);
         REQUIRE(s3.get_n_par_ct() == 5u);
+        REQUIRE(s3.get_conj_thresh() == 42.);
 
         // Revive s2 via assignment.
         s2 = std::move(s3);
@@ -116,6 +120,7 @@ TEST_CASE("basic")
         REQUIRE(std::get<1>(s2.get_c_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s2.get_d_radius() == 100.);
         REQUIRE(s2.get_n_par_ct() == 5u);
+        REQUIRE(s2.get_conj_thresh() == 42.);
 
         // Revive s3 via assignment.
         s3 = s2;
@@ -131,6 +136,7 @@ TEST_CASE("basic")
         REQUIRE(std::get<1>(s3.get_c_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s3.get_d_radius() == 100.);
         REQUIRE(s3.get_n_par_ct() == 5u);
+        REQUIRE(s3.get_conj_thresh() == 42.);
 
         // Take a step for both s and s3, and compare
         s.step();
@@ -147,6 +153,7 @@ TEST_CASE("basic")
         REQUIRE(std::get<1>(s3.get_c_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s3.get_d_radius() == 100.);
         REQUIRE(s3.get_n_par_ct() == 5u);
+        REQUIRE(s3.get_conj_thresh() == 42.);
     }
 
     // Error modes.
@@ -189,6 +196,10 @@ TEST_CASE("basic")
 
     REQUIRE_THROWS_MATCHES(sim({}, .5, kw::n_par_ct = 0), std::invalid_argument,
                            Message("The number of collisional timesteps to be processed in parallel cannot be zero"));
+
+    REQUIRE_THROWS_MATCHES(
+        sim({}, .5, kw::conj_thresh = -1.), std::invalid_argument,
+        Message("The conjunction threshold value -1 is invalid: it must be finite and non-negative"));
 }
 
 TEST_CASE("remove particles")
@@ -382,4 +393,17 @@ TEST_CASE("ct api")
     REQUIRE_THROWS_AS(s.set_ct(std::numeric_limits<double>::quiet_NaN()), std::invalid_argument);
     REQUIRE_THROWS_MATCHES(s.set_n_par_ct(0), std::invalid_argument,
                            Message("The number of collisional timesteps to be processed in parallel cannot be zero"));
+}
+
+TEST_CASE("conj thresh api")
+{
+    using Catch::Matchers::Message;
+
+    sim s;
+
+    s.set_conj_thresh(.1);
+
+    REQUIRE(s.get_conj_thresh() == .1);
+
+    REQUIRE_THROWS_AS(s.set_conj_thresh(std::numeric_limits<double>::quiet_NaN()), std::invalid_argument);
 }
