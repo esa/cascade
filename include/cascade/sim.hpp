@@ -103,6 +103,9 @@ private:
     // state/pars, it grabs a copy of the shared pointer,
     // so that if m_state/m_pars are reset with new values,
     // the existing NumPy arrays still work safely.
+    // NOTE: we need to document well that the vectors
+    // returned by get_state()/get_pars()/get_conjunctions()
+    // will be invalidated under certain circumstances.
     std::shared_ptr<std::vector<double>> m_state;
     std::shared_ptr<std::vector<double>> m_pars;
     // The collisional timestep.
