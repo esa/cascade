@@ -126,7 +126,7 @@
    "id": "682994db",
    "metadata": {},
    "source": [
-    "# Building the dynamical system to integrate\n",
+    "## Building the dynamical system to integrate\n",
     "The dynamics in the LEO environment is dominated by drag and gravitational effects. The effect of the Moon gravity, Sun gravity and solar radiation pressure are not considered, even if they would not add much complexity in this simulation. We make use of :class:`~cascade.dynamics.simple_earth` defining the analytical expressions for such a dynamics."
    ]
   },
@@ -179,11 +179,12 @@
    ]
   },
   {
+   "attachments": {},
    "cell_type": "markdown",
    "id": "b90bebf2",
    "metadata": {},
    "source": [
-    "# We setup the simulation"
+    "## We setup the simulation"
    ]
   },
   {
@@ -309,7 +310,7 @@
    "id": "ac13212b",
    "metadata": {},
    "source": [
-    "# We run the simulation\n",
+    "## We run the simulation\n",
     "The following block will start a simulation where the method *step* of a :class:`~cascade.sim` is called up to when the simulation time reaches a maximum allocated. \n",
     "All collision events and orbital decays are logged on files and on screen.\n",
     "\n",

@@ -102,21 +102,6 @@
    20 years of LEO
   </a>
  </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="#building-the-dynamical-system-to-integrate">
-   Building the dynamical system to integrate
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="#we-setup-the-simulation">
-   We setup the simulation
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="#we-run-the-simulation">
-   We run the simulation
-  </a>
- </li>
 </ul>
 <p class="caption collapsible-parent" role="heading">
  <span class="caption-text">
@@ -247,29 +232,22 @@
         </div>
         <nav id="bd-toc-nav">
             <ul class="nav section-nav flex-column">
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#">
-   20 years of LEO
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#loading-the-initial-leo-population">
+   Loading the initial LEO population
   </a>
-  <ul class="nav section-nav flex-column">
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#loading-the-initial-leo-population">
-     Loading the initial LEO population
-    </a>
-   </li>
-  </ul>
  </li>
- <li class="toc-h1 nav-item toc-entry">
+ <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#building-the-dynamical-system-to-integrate">
    Building the dynamical system to integrate
   </a>
  </li>
- <li class="toc-h1 nav-item toc-entry">
+ <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#we-setup-the-simulation">
    We setup the simulation
   </a>
  </li>
- <li class="toc-h1 nav-item toc-entry">
+ <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#we-run-the-simulation">
    We run the simulation
   </a>
@@ -364,9 +342,8 @@ Velocity (km/s):  [ 1.38399824  5.88779107 -3.78530589]
 </div>
 </div>
 </section>
-</section>
-<section class="tex2jax_ignore mathjax_ignore" id="building-the-dynamical-system-to-integrate">
-<h1>Building the dynamical system to integrate<a class="headerlink" href="#building-the-dynamical-system-to-integrate" title="Permalink to this heading">¶</a></h1>
+<section id="building-the-dynamical-system-to-integrate">
+<h2>Building the dynamical system to integrate<a class="headerlink" href="#building-the-dynamical-system-to-integrate" title="Permalink to this heading">¶</a></h2>
 <p>The dynamics in the LEO environment is dominated by drag and gravitational effects. The effect of the Moon gravity, Sun gravity and solar radiation pressure are not considered, even if they would not add much complexity in this simulation. We make use of :class:<code class="docutils literal notranslate"><span class="pre">~cascade.dynamics.simple_earth</span></code> defining the analytical expressions for such a dynamics.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -397,8 +374,8 @@ Velocity (km/s):  [ 1.38399824  5.88779107 -3.78530589]
 </div>
 </div>
 </section>
-<section class="tex2jax_ignore mathjax_ignore" id="we-setup-the-simulation">
-<h1>We setup the simulation<a class="headerlink" href="#we-setup-the-simulation" title="Permalink to this heading">¶</a></h1>
+<section id="we-setup-the-simulation">
+<h2>We setup the simulation<a class="headerlink" href="#we-setup-the-simulation" title="Permalink to this heading">¶</a></h2>
 <p>the global cascade logger is here informed of the level of information we want to be reported to screen during the simulation. We also set the number of threads to be used to 16, clearly this number depends on the resources available on the node used.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -477,8 +454,8 @@ Note that this is to be paid only once and as far as the dynamics is kept the sa
 </div>
 </div>
 </section>
-<section class="tex2jax_ignore mathjax_ignore" id="we-run-the-simulation">
-<h1>We run the simulation<a class="headerlink" href="#we-run-the-simulation" title="Permalink to this heading">¶</a></h1>
+<section id="we-run-the-simulation">
+<h2>We run the simulation<a class="headerlink" href="#we-run-the-simulation" title="Permalink to this heading">¶</a></h2>
 <p>The following block will start a simulation where the method <em>step</em> of a :class:<code class="docutils literal notranslate"><span class="pre">~cascade.sim</span></code> is called up to when the simulation time reaches a maximum allocated.
 All collision events and orbital decays are logged on files and on screen.</p>
 <p>The simulation can take up to days to end if we are set to simulate 20 years and on a few CPUs only. In this notebook we thus set it to end after 30 days, and will report the extrapolated time of execution for 20 years.
@@ -618,6 +595,7 @@ Time projected to 20 years is  9.490024931132792  hours
 </div>
 </div>
 </div>
+</section>
 </section>
 
 
