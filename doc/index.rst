@@ -8,16 +8,16 @@ Cascade
    As the number of artificial satellites orbiting our planet grows, the likelihood of collisions increases,
    potentially leading to a chain reaction that could make certain orbits unusable.
 
-Cascade is a Python library developed to propagate the evolution of large number of orbiting objects while detecting
+Cascade is a C++/Python library developed to propagate the evolution of large number of orbiting objects while detecting
 reliably close encounters and collisions. It is coded in modern C++20 with focus on the efficency of the underlying N-body 
-simulation with collision detection. 
+simulation with collision/conjunction detection.
 
 Notable features include:
 
-- guaranteed detection of all occuring collisions.
-- high precision orbital propagation via Taylor integration.
-- possibility to define custom dynamics.
-- automatic usage of modern SIMD instruction sets (including AVX/AVX2/AVX-512/Neon/VSX).
+- guaranteed detection of all occuring collisions and conjunctions,
+- high precision orbital propagation via Taylor integration,
+- possibility to define custom dynamics,
+- automatic usage of modern SIMD instruction sets (including AVX/AVX2/AVX-512/Neon/VSX),
 - automatic multi-threaded parallelisation.
 
 cascade is released under the MPL-2.0 license. The authors are Francesco Biscani and Dario Izzo (European Space Agency).

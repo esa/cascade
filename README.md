@@ -21,9 +21,9 @@ cascade
   </p>
 </p>
 
-Cascade is a Python library developed to propagate the evolution of large number of orbiting objects while detecting
+Cascade is a C++/Python library developed to propagate the evolution of large number of orbiting objects while detecting
 reliably close encounters and collisions. It is coded in modern C++20 with focus on the efficency of the underlying N-body 
-simulation with collision detection.
+simulation with collision/conjunction detection.
 
 Installation
 ===============
