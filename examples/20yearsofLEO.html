@@ -440,7 +440,7 @@ COSMOS 1408 DEB - 1982-092BKD
 </div>
 <p>We can now instantiate the cascade simulation. This will trigger the <a class="reference external" href="https://en.wikipedia.org/wiki/LLVM">LLVM</a> compilation of the needed Taylor integrators representing the selected dynamics as well as the event detection, thus taking a few seconds.
 Note that this cost is to be paid only once. As far as the dynamics remains unchanged other simulations can be made reusing the same object.</p>
-<p>As a collisional timestep, a parameter that can be tuned to get the best efficiency, we use the value of the ISS orbital period divided by 25.</p>
+<p>As a collisional timestep, a parameter that can be tuned to get the best efficiency, we use the value of the ISS orbital period divided by 40.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Prepare the data in the shape expected by the simulation object.</span>
@@ -514,7 +514,7 @@ All collision events and orbital decays are logged on files and on screen.</p>
 <span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
 <span class="n">elapsed</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Elapsed [s]: &quot;</span><span class="p">,</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Time projected to 20 years is &quot;</span><span class="p">,</span> <span class="n">elapsed</span> <span class="o">/</span> <span class="mi">30</span> <span class="o">*</span> <span class="mi">20</span> <span class="o">*</span><span class="mf">365.25</span> <span class="o">/</span> <span class="mi">60</span> <span class="o">/</span> <span class="mi">60</span><span class="p">,</span> <span class="s2">&quot; hours&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Time projected to simulate 20 years is &quot;</span><span class="p">,</span> <span class="n">elapsed</span> <span class="o">/</span> <span class="mi">30</span> <span class="o">*</span> <span class="mi">20</span> <span class="o">*</span><span class="mf">365.25</span> <span class="o">/</span> <span class="mi">60</span> <span class="o">/</span> <span class="mi">60</span><span class="p">,</span> <span class="s2">&quot; hours&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -589,8 +589,8 @@ COSMOS 1408 DEB, 1982-092BHE,  28.152084406142794 REMOVED
 COSMOS 1408 DEB, 1982-092AFD,  28.478181021158605 REMOVED
 COSMOS 1408 DEB, 1982-092PK,  29.269725667804103 REMOVED
 COSMOS 1408 DEB, 1982-092AJS,  29.531879411125722 REMOVED
-Elapsed [s]:  62.71999549865723
-Time projected to 20 years is  4.242310806645288  hours
+Elapsed [s]:  64.79247164726257
+Time projected to simulate 20 years is  4.382490790585677  hours
 </pre></div>
 </div>
 </div>
