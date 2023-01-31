@@ -300,6 +300,9 @@ PYBIND11_MODULE(core, m)
                                 py::array::ShapeContainer{boost::numeric_cast<py::ssize_t>(s.get_conjunctions().size())},
                                 (**ptr).data(), std::move(conjs_caps));
 
+                            // Ensure the returned array is read-only.
+                            ret.attr("flags").attr("writeable") = false;
+
                             return ret;
                         })
         .def("reset_conjunctions", &sim::reset_conjunctions)

@@ -15,6 +15,59 @@ class sim_test_case(_ut.TestCase):
         self.test_remove_particles()
         self.test_set_new_state_pars()
         self.test_ct_api()
+        self.test_conjunctions()
+
+    def test_conjunctions(self):
+        from . import sim
+        import gc
+        import numpy as np
+
+        # NOTE: initial conditions corresponding to
+        # 2 particles with polar conjunctions.
+        r1 = (0.3342377271241684, 0.942488801930755, 0.0)
+        v1 = (0.009424730938644767, -0.003342321565239028, 0.9999500004176654)
+        r2 = (-0.15179985849820377, -0.988411251938142, 0.0)
+        v2 = (6.052273379648475e-17, -9.295060541060909e-18, 1.000000000001)
+
+        psize = 1.57e-8
+
+        s = sim(
+            [list(r1) + list(v1) + [psize], list(r2) + list(v2) + [psize]],
+            0.23,
+            conj_thresh=psize * 100000000,
+        )
+
+        cv0 = s.conjunctions
+        self.assertEqual(len(cv0), 0)
+
+        s.propagate_until(2.0)
+        cv1 = s.conjunctions
+        self.assertEqual(len(cv1), 1)
+
+        s.propagate_until(20.0)
+        cv2 = s.conjunctions
+        self.assertEqual(len(cv2), 6)
+
+        del s
+
+        gc.collect()
+
+        # "Use" the stored conjunction vectors
+        # to test they are still valid.
+        self.assertEqual(len(cv0), 0)
+
+        self.assertEqual(len(cv1), 1)
+        self.assertTrue(np.all(cv1["time"] == cv1["time"]))
+
+        self.assertEqual(len(cv2), 6)
+        self.assertTrue(np.all(cv2["dist"] == cv2["dist"]))
+
+        # Make sure the conjunctions array are read-only.
+        with self.assertRaises(ValueError) as cm:
+            cv2["dist"][0] = 0
+
+        with self.assertRaises(ValueError) as cm:
+            cv2.resize((100,))
 
     def test_ct_api(self):
         from . import sim
@@ -51,6 +104,14 @@ class sim_test_case(_ut.TestCase):
         self.assertEqual(s.c_radius, 0.0)
         self.assertEqual(s.d_radius, 0.0)
         self.assertEqual(s.n_par_ct, 1)
+        self.assertEqual(s.conj_thresh, 0)
+
+        with self.assertRaises(ValueError) as cm:
+            s.conj_thresh = -1
+        self.assertTrue(
+            "The conjunction threshold value -1 is invalid: it must be finite and non-negative"
+            in str(cm.exception)
+        )
 
         dyn = dynamics.kepler()
         dyn[0] = (dyn[0][0], dyn[0][1] + hy.par[1])
@@ -65,6 +126,7 @@ class sim_test_case(_ut.TestCase):
             tol=1e-12,
             high_accuracy=True,
             n_par_ct=2,
+            conj_thresh=0.1,
         )
 
         self.assertTrue(
@@ -80,6 +142,7 @@ class sim_test_case(_ut.TestCase):
         self.assertEqual(s.d_radius, 100.0)
         self.assertEqual(s.tol, 1e-12)
         self.assertEqual(s.n_par_ct, 2)
+        self.assertEqual(s.conj_thresh, 0.1)
 
         self.assertEqual(s.step(), outcome.success)
 
