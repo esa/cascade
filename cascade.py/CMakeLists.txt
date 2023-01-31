@@ -65,7 +65,7 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/_version.py"
 # Then all the ${CASCADE_PY_PYTHON_FILES}.
 foreach ( file ${CASCADE_PY_PYTHON_FILES} )
     get_filename_component( dir ${file} DIRECTORY )
-    install( FILES ${file} DESTINATION ${_CASCADE_PY_INSTALL_DIR}/${dir} )
+    install( FILES ${file} DESTINATION "${_CASCADE_PY_INSTALL_DIR}/${dir}" )
 endforeach()
 
 unset(_CASCADE_PY_INSTALL_DIR)
