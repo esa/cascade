@@ -1,6 +1,7 @@
 # Build dirs.
 build*
 doc/_build
+doc/examples/out
 
 # Notebooks bits.
 .ipynb_checkpoints
