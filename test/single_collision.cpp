@@ -168,3 +168,25 @@ TEST_CASE("single collision equatorial propagate_until")
     REQUIRE(!s.get_interrupt_info());
     REQUIRE(s.get_time() == .5);
 }
+
+// Test to check only incoming collisions are detected.
+TEST_CASE("single collision skip outgoing")
+{
+    const auto psize = 1.57e-8;
+    const auto [x1, v1] = kep_to_cart<double>({1.05, 0., 0., 0., 0., 0}, 1);
+    auto x2 = x1;
+    auto v2 = v1;
+    v2[1] = -v1[1];
+
+    const auto s0
+        = std::vector{x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize};
+    const auto s0_view = xt::adapt(s0.data(), {2, 7});
+
+    sim s(s0, 0.23);
+
+    REQUIRE(s.step() == outcome::success);
+
+    const auto oc = s.propagate_until(100);
+
+    REQUIRE(oc == outcome::collision);
+}
