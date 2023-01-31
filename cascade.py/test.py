@@ -48,6 +48,9 @@ class sim_test_case(_ut.TestCase):
         cv2 = s.conjunctions
         self.assertEqual(len(cv2), 6)
 
+        s.reset_conjunctions()
+        self.assertEqual(len(s.conjunctions), 0)
+
         del s
 
         gc.collect()
