@@ -397,7 +397,7 @@ This makes the <em>Cube</em> approach scale remarkably well as an n-body collisi
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>46.2 ms ± 3.56 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>33.1 ms ± 178 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
 </pre></div>
 </div>
 </div>
@@ -449,7 +449,7 @@ We start precomputing all the positions and velocities of the orbiting objects i
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Time to perform all numerical integrations:  32.64615821838379
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Time to perform all numerical integrations:  19.566089153289795
 </pre></div>
 </div>
 </div>
@@ -460,6 +460,7 @@ We start precomputing all the positions and velocities of the orbiting objects i
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
 <span class="n">undecayed</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">r_sgp4</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
 <span class="n">n_collisions</span><span class="o">=</span><span class="mi">0</span>
+<span class="n">N_tot</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">r_sgp4</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
     <span class="n">Lcube</span> <span class="o">=</span> <span class="mf">10.</span> <span class="c1">#km</span>
     <span class="n">time_grid</span>  <span class="o">=</span> <span class="mi">5</span> <span class="c1">#days</span>
@@ -496,6 +497,7 @@ We start precomputing all the positions and velocities of the orbiting objects i
         <span class="n">s2</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">U</span>
         <span class="c1"># collision probability</span>
         <span class="n">Pij</span> <span class="o">=</span> <span class="n">s1</span><span class="o">*</span><span class="n">s2</span><span class="o">*</span><span class="n">Vrel</span><span class="o">*</span><span class="n">sigma</span><span class="o">*</span><span class="n">U</span><span class="o">*</span><span class="n">time_grid</span><span class="o">*</span><span class="n">pk</span><span class="o">.</span><span class="n">DAY2SEC</span>
+        <span class="n">N_tot</span> <span class="o">+=</span> <span class="n">Pij</span>
         <span class="c1"># Store</span>
         <span class="k">if</span> <span class="n">Pij</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">():</span>
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Collision! pair: </span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">, years: </span><span class="si">{</span><span class="n">i</span><span class="o">*</span><span class="mi">5</span><span class="o">/</span><span class="mf">365.25</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -504,22 +506,24 @@ We start precomputing all the positions and velocities of the orbiting objects i
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Time elasped: &quot;</span><span class="p">,</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Decayed objects: &quot;</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">undecayed</span><span class="p">))</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of collisions: &quot;</span><span class="p">,</span> <span class="n">n_collisions</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Expected number of collisions: &quot;</span><span class="p">,</span> <span class="n">N_tot</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Collision! pair: [14675, 16483], years: 0.05475701574264202
-Collision! pair: [14171, 16142], years: 1.0677618069815196
-Collision! pair: [12868, 13418], years: 8.145106091718
-Collision! pair: [13090, 14427], years: 10.03422313483915
-Collision! pair: [919, 14280], years: 11.704312114989733
-Collision! pair: [872, 15634], years: 11.991786447638603
-Collision! pair: [14304, 15069], years: 13.388090349075975
-Collision! pair: [3170, 5644], years: 16.290212183436
-Collision! pair: [6048, 10811], years: 18.795345653661876
-Time elasped:  86.71606779098511
-Decayed objects:  4991
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Collision! pair: [14084, 14352], years: 0.6844626967830253
+Collision! pair: [8170, 13942], years: 1.7659137577002053
+Collision! pair: [12625, 18100], years: 1.943874058863792
+Collision! pair: [13644, 15509], years: 2.6694045174537986
+Collision! pair: [13059, 15181], years: 6.1738535249828885
+Collision! pair: [13322, 14410], years: 9.267624914442163
+Collision! pair: [1012, 11892], years: 10.581793292265571
+Collision! pair: [4762, 4984], years: 16.632443531827516
+Collision! pair: [1671, 5447], years: 16.79671457905544
+Time elasped:  67.86483788490295
+Decayed objects:  4990
 Number of collisions:  9
+Expected number of collisions:  11.538803066221181
 </pre></div>
 </div>
 </div>

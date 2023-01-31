@@ -205,7 +205,7 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "46.2 ms ± 3.56 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)\n"
+      "33.1 ms ± 178 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)\n"
      ]
     }
    ],
@@ -277,7 +277,7 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "Time to perform all numerical integrations:  32.64615821838379\n"
+      "Time to perform all numerical integrations:  19.566089153289795\n"
      ]
     }
    ],
@@ -309,18 +309,19 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "Collision! pair: [14675, 16483], years: 0.05475701574264202\n",
-      "Collision! pair: [14171, 16142], years: 1.0677618069815196\n",
-      "Collision! pair: [12868, 13418], years: 8.145106091718\n",
-      "Collision! pair: [13090, 14427], years: 10.03422313483915\n",
-      "Collision! pair: [919, 14280], years: 11.704312114989733\n",
-      "Collision! pair: [872, 15634], years: 11.991786447638603\n",
-      "Collision! pair: [14304, 15069], years: 13.388090349075975\n",
-      "Collision! pair: [3170, 5644], years: 16.290212183436\n",
-      "Collision! pair: [6048, 10811], years: 18.795345653661876\n",
-      "Time elasped:  86.71606779098511\n",
-      "Decayed objects:  4991\n",
-      "Number of collisions:  9\n"
+      "Collision! pair: [14084, 14352], years: 0.6844626967830253\n",
+      "Collision! pair: [8170, 13942], years: 1.7659137577002053\n",
+      "Collision! pair: [12625, 18100], years: 1.943874058863792\n",
+      "Collision! pair: [13644, 15509], years: 2.6694045174537986\n",
+      "Collision! pair: [13059, 15181], years: 6.1738535249828885\n",
+      "Collision! pair: [13322, 14410], years: 9.267624914442163\n",
+      "Collision! pair: [1012, 11892], years: 10.581793292265571\n",
+      "Collision! pair: [4762, 4984], years: 16.632443531827516\n",
+      "Collision! pair: [1671, 5447], years: 16.79671457905544\n",
+      "Time elasped:  67.86483788490295\n",
+      "Decayed objects:  4990\n",
+      "Number of collisions:  9\n",
+      "Expected number of collisions:  11.538803066221181\n"
      ]
     }
    ],
@@ -328,6 +329,7 @@
     "start = time.time()\n",
     "undecayed = set(np.arange(r_sgp4.shape[0]))\n",
     "n_collisions=0\n",
+    "N_tot = 0\n",
     "for i in range(r_sgp4.shape[1]):\n",
     "    Lcube = 10. #km\n",
     "    time_grid  = 5 #days\n",
@@ -364,6 +366,7 @@
     "        s2 = 1./U\n",
     "        # collision probability\n",
     "        Pij = s1*s2*Vrel*sigma*U*time_grid*pk.DAY2SEC\n",
+    "        N_tot += Pij\n",
     "        # Store\n",
     "        if Pij > np.random.random():\n",
     "            print(f\"Collision! pair: {pair}, years: {i*5/365.25}\")\n",
@@ -371,7 +374,8 @@
     "end = time.time()\n",
     "print(\"Time elasped: \", end - start)\n",
     "print(\"Decayed objects: \", r.shape[0] - len(undecayed))\n",
-    "print(\"Number of collisions: \", n_collisions)"
+    "print(\"Number of collisions: \", n_collisions)\n",
+    "print(\"Expected number of collisions: \", N_tot)"
    ]
   },
   {
