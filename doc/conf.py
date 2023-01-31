@@ -68,7 +68,9 @@ nb_execution_mode = "force"
 
 nb_execution_excludepatterns = [
     "simple_atmosphere.ipynb",
-    "cubes.ipynb"
+    "cubes.ipynb",
+    "20yearsofLEO.ipynb",
+
 ]
 
 latex_engine = "xelatex"

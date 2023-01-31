@@ -125,7 +125,7 @@ class sim_test_case(_ut.TestCase):
         self.assertEqual(s.ct, 1.0)
         self.assertFalse(s.high_accuracy)
         self.assertEqual(s.npars, 0)
-        self.assertEqual(s.c_radius, 0.0)
+        self.assertEqual(s.reentry_radius, 0.0)
         self.assertEqual(s.d_radius, 0.0)
         self.assertEqual(s.n_par_ct, 1)
         self.assertEqual(s.conj_thresh, 0)
@@ -145,7 +145,7 @@ class sim_test_case(_ut.TestCase):
             state=[[1.0, 0.001, 0.001, 0.001, 1.0, 0.001, 0.001]],
             dyn=dyn,
             pars=[[0.002, 0.001]],
-            c_radius=[0.1, 0.2, 0.3],
+            reentry_radius=[0.1, 0.2, 0.3],
             d_radius=100.0,
             tol=1e-12,
             high_accuracy=True,
@@ -162,7 +162,7 @@ class sim_test_case(_ut.TestCase):
         self.assertEqual(s.ct, 0.5)
         self.assertTrue(s.high_accuracy)
         self.assertEqual(s.npars, 2)
-        self.assertEqual(s.c_radius, [0.1, 0.2, 0.3])
+        self.assertEqual(s.reentry_radius, [0.1, 0.2, 0.3])
         self.assertEqual(s.d_radius, 100.0)
         self.assertEqual(s.tol, 1e-12)
         self.assertEqual(s.n_par_ct, 2)
@@ -179,7 +179,7 @@ class sim_test_case(_ut.TestCase):
         self.assertEqual(s.ct, 0.5)
         self.assertTrue(s.high_accuracy)
         self.assertEqual(s.npars, 2)
-        self.assertEqual(s.c_radius, [0.1, 0.2, 0.3])
+        self.assertEqual(s.reentry_radius, [0.1, 0.2, 0.3])
         self.assertEqual(s.d_radius, 100.0)
         self.assertEqual(s.tol, 1e-12)
 
@@ -188,13 +188,13 @@ class sim_test_case(_ut.TestCase):
             state=[[1.0, 0.001, 0.001, 0.001, 1.0, 0.001, 0.001]],
             dyn=dyn,
             pars=[[0.002, 0.001]],
-            c_radius=0.1,
+            reentry_radius=0.1,
             d_radius=100.0,
             tol=1e-12,
             high_accuracy=True,
         )
 
-        self.assertEqual(s.c_radius, 0.1)
+        self.assertEqual(s.reentry_radius, 0.1)
 
         with self.assertRaises(ValueError) as cm:
             sim(state=[1.0, 2.0, 3.0], ct=1)
