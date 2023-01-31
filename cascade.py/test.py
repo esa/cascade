@@ -1,4 +1,4 @@
-# Copyright 2022 Francesco Biscani (bluescarni@gmail.com), Dario Izzo (dario.izzo@gmail.com)
+# Copyright 2023 Francesco Biscani (bluescarni@gmail.com), Dario Izzo (dario.izzo@gmail.com)
 #
 # This file is part of the cascade.py library.
 #
@@ -7,6 +7,27 @@
 # with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import unittest as _ut
+
+class dynamics_test_case(_ut.TestCase):
+    def runTest(self):
+            self.test_simple_earth_api()
+            self.test_kepler_equivalence()
+
+    def test_simple_earth_api(self):
+        from .dynamics import simple_earth
+        simple_earth(J2=True, C22S22=False,sun=False,moon=False,SRP=False,drag=False)
+        simple_earth(J2=True, C22S22=True,sun=False,moon=False,SRP=False,drag=False)
+        simple_earth(J2=True, C22S22=True,sun=True,moon=False,SRP=False,drag=False)
+        simple_earth(J2=True, C22S22=True,sun=True,moon=True,SRP=False,drag=False)
+        simple_earth(J2=True, C22S22=True,sun=True,moon=True,SRP=True,drag=False)
+        simple_earth(J2=True, C22S22=True,sun=True,moon=True,SRP=False,drag=True)
+        simple_earth(J2=True, C22S22=True,sun=True,moon=True,SRP=True,drag=True)
+
+    def test_kepler_equivalence(self):
+        from .dynamics import simple_earth, kepler
+        dyn1 = simple_earth(J2=False, C22S22=False,sun=False,moon=False,SRP=False,drag=False)
+        dyn2 = kepler(mu = 3.986004407799724e+5 * 1E9)
+        self.assertEqual(dyn1, dyn2)
 
 
 class sim_test_case(_ut.TestCase):
@@ -288,7 +309,9 @@ class sim_test_case(_ut.TestCase):
 def run_test_suite():
     retval = 0
 
-    suite = _ut.TestLoader().loadTestsFromTestCase(sim_test_case)
+    suite = _ut.TestLoader().loadTestsFromTestCase(dynamics_test_case)
+    suite.addTests(_ut.makeSuite(sim_test_case))
+
 
     test_result = _ut.TextTestRunner(verbosity=2).run(suite)
 

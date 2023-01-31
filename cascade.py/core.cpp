@@ -1,4 +1,4 @@
-// Copyright 2022 Francesco Biscani (bluescarni@gmail.com), Dario Izzo (dario.izzo@gmail.com)
+// Copyright 2023 Francesco Biscani (bluescarni@gmail.com), Dario Izzo (dario.izzo@gmail.com)
 //
 // This file is part of the cascade.py library.
 //
@@ -55,6 +55,9 @@ PYBIND11_MODULE(core, m)
     using namespace cascade;
     namespace cpy = cascade_py;
 
+    // Dynamics submodule (exposed in cores with underscores and imported via python in the correct namespace)
+    m.def("_kepler", &dynamics::kepler, "mu"_a = 1.);
+
     // Expose the logging setter functions.
     cpy::expose_logging_setters(m);
 
@@ -69,10 +72,6 @@ PYBIND11_MODULE(core, m)
 
     // Conjunction structure.
     PYBIND11_NUMPY_DTYPE(sim::conjunction, i, j, time, dist);
-
-    // Dynamics submodule.
-    auto dynamics_module = m.def_submodule("dynamics");
-    dynamics_module.def("kepler", &dynamics::kepler, "mu"_a = 1.);
 
     // sim class.
     py::class_<sim>(m, "sim", py::dynamic_attr{})

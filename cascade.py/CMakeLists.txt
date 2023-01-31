@@ -4,17 +4,10 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/_version.py.in" "${CMAKE_CURRENT_BIN
 # The list of cascade.py's Python files.
 set(CASCADE_PY_PYTHON_FILES
     __init__.py
+    dynamics/__init__.py
+    dynamics/_simple_earth.py
     test.py
 )
-
-# Copy the python files in the current binary dir,
-# so that we can import cascade from the build dir.
-# NOTE: importing from the build dir will work
-# only on single-configuration generators.
-foreach(CASCADE_PY_PYTHON_FILE ${CASCADE_PY_PYTHON_FILES})
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${CASCADE_PY_PYTHON_FILE}"
-        "${CMAKE_CURRENT_BINARY_DIR}/${CASCADE_PY_PYTHON_FILE}" COPYONLY)
-endforeach()
 
 # Core module.
 Python3_add_library(core MODULE WITH_SOABI
@@ -66,7 +59,13 @@ install(TARGETS core
 )
 
 # Add the Python files.
-install(FILES ${CASCADE_PY_PYTHON_FILES} "${CMAKE_CURRENT_BINARY_DIR}/_version.py"
+# First the __version__.py file configured in the binary directory.
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/_version.py"
     DESTINATION ${_CASCADE_PY_INSTALL_DIR})
+# Then all the ${CASCADE_PY_PYTHON_FILES}.
+foreach ( file ${CASCADE_PY_PYTHON_FILES} )
+    get_filename_component( dir ${file} DIRECTORY )
+    install( FILES ${file} DESTINATION "${_CASCADE_PY_INSTALL_DIR}/${dir}" )
+endforeach()
 
 unset(_CASCADE_PY_INSTALL_DIR)

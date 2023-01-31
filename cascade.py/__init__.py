@@ -1,4 +1,4 @@
-# Copyright 2022 Francesco Biscani (bluescarni@gmail.com), Dario Izzo (dario.izzo@gmail.com)
+# Copyright 2023 Francesco Biscani (bluescarni@gmail.com), Dario Izzo (dario.izzo@gmail.com)
 #
 # This file is part of the cascade.py library.
 #
@@ -17,7 +17,10 @@ from ._version import __version__
 # expressions.
 import heyoka as _hy
 
-# We import the sub-modules into the root namespace.
+# We import core into the root namespace.
 from .core import *
 
-del _hy
+# We import the sub-modules.
+import cascade.dynamics 
+
+del _hy 
