@@ -7,6 +7,7 @@
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include <cmath>
+#include <initializer_list>
 #include <iostream>
 #include <limits>
 #include <variant>
@@ -37,24 +38,27 @@ TEST_CASE("single collision polar")
     const auto [x1, v1] = kep_to_cart<double>({1.05, .05, boost::math::constants::pi<double>() / 2, 0, 1.23, 0}, 1);
     const auto [x2, v2] = kep_to_cart<double>({1.05, .05, boost::math::constants::pi<double>() / 2, 0, 4.56, 0}, 1);
 
-    sim s({x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize}, 0.23);
+    for (auto n_par_ct : {1u, 3u}) {
+        sim s({x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize}, 0.23,
+              kw::n_par_ct = n_par_ct);
 
-    auto sv = xt::adapt(s.get_state().data(), {2, 7});
-    auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
+        auto sv = xt::adapt(s.get_state().data(), {2, 7});
+        auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
 
-    while (s.step() != outcome::collision) {
+        while (s.step() != outcome::collision) {
+        }
+
+        const auto &i_info = std::get<0>(*s.get_interrupt_info());
+        std::cout << fmt::format("Simulation end time: {}\n", s.get_time());
+        std::cout << fmt::format("Colliding particles: {}\n", i_info);
+        std::cout << "x/y/z coordinates at collision time:\n" << pos << '\n';
+
+        const auto dx = pos(0, 0) - pos(1, 0);
+        const auto dy = pos(0, 1) - pos(1, 1);
+        const auto dz = pos(0, 2) - pos(1, 2);
+
+        REQUIRE(dx * dx + dy * dy + dz * dz - 4 * psize * psize < std::numeric_limits<double>::epsilon() * 10);
     }
-
-    const auto &i_info = std::get<0>(*s.get_interrupt_info());
-    std::cout << fmt::format("Simulation end time: {}\n", s.get_time());
-    std::cout << fmt::format("Colliding particles: {}\n", i_info);
-    std::cout << "x/y/z coordinates at collision time:\n" << pos << '\n';
-
-    const auto dx = pos(0, 0) - pos(1, 0);
-    const auto dy = pos(0, 1) - pos(1, 1);
-    const auto dz = pos(0, 2) - pos(1, 2);
-
-    REQUIRE(dx * dx + dy * dy + dz * dz - 4 * psize * psize < std::numeric_limits<double>::epsilon() * 10);
 }
 
 TEST_CASE("single collision propagate_until")
@@ -65,49 +69,51 @@ TEST_CASE("single collision propagate_until")
     const auto [x1, v1] = kep_to_cart<double>({1.05, .05, boost::math::constants::pi<double>() / 2, 0, 1.23, 0}, 1);
     const auto [x2, v2] = kep_to_cart<double>({1.05, .05, boost::math::constants::pi<double>() / 2, 0, 4.56, 0}, 1);
 
-    const auto s0
-        = std::vector{x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize};
-    const auto s0_view = xt::adapt(s0.data(), {2, 7});
+    for (auto n_par_ct : {1u, 3u}) {
+        const auto s0 = std::vector{x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize,
+                                    x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize};
+        const auto s0_view = xt::adapt(s0.data(), {2, 7});
 
-    sim s(s0, 0.23);
+        sim s(s0, 0.23, kw::n_par_ct = n_par_ct);
 
-    auto sv = xt::adapt(s.get_state_data(), {2, 7});
-    auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
+        auto sv = xt::adapt(s.get_state_data(), {2, 7});
+        auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
 
-    // Propagate until *after* the collision time.
-    auto oc = s.propagate_until(10);
+        // Propagate until *after* the collision time.
+        auto oc = s.propagate_until(10);
 
-    REQUIRE(oc == outcome::collision);
-    REQUIRE(s.get_time() < 9);
+        REQUIRE(oc == outcome::collision);
+        REQUIRE(s.get_time() < 9);
 
-    const auto &i_info = std::get<0>(*s.get_interrupt_info());
-    std::cout << fmt::format("Simulation end time: {}\n", s.get_time());
-    std::cout << fmt::format("Colliding particles: {}\n", i_info);
-    std::cout << "x/y/z coordinates at collision time:\n" << pos << '\n';
+        const auto &i_info = std::get<0>(*s.get_interrupt_info());
+        std::cout << fmt::format("Simulation end time: {}\n", s.get_time());
+        std::cout << fmt::format("Colliding particles: {}\n", i_info);
+        std::cout << "x/y/z coordinates at collision time:\n" << pos << '\n';
 
-    const auto dx = pos(0, 0) - pos(1, 0);
-    const auto dy = pos(0, 1) - pos(1, 1);
-    const auto dz = pos(0, 2) - pos(1, 2);
+        const auto dx = pos(0, 0) - pos(1, 0);
+        const auto dy = pos(0, 1) - pos(1, 1);
+        const auto dz = pos(0, 2) - pos(1, 2);
 
-    REQUIRE(dx * dx + dy * dy + dz * dz - 4 * psize * psize < std::numeric_limits<double>::epsilon() * 10);
+        REQUIRE(dx * dx + dy * dy + dz * dz - 4 * psize * psize < std::numeric_limits<double>::epsilon() * 10);
 
-    // Propagate until *before* the collision time.
-    sv = s0_view;
-    s.set_time(0);
+        // Propagate until *before* the collision time.
+        sv = s0_view;
+        s.set_time(0);
 
-    oc = s.propagate_until(0.5);
-    REQUIRE(oc == outcome::time_limit);
-    REQUIRE(!s.get_interrupt_info());
-    REQUIRE(s.get_time() == .5);
+        oc = s.propagate_until(0.5);
+        REQUIRE(oc == outcome::time_limit);
+        REQUIRE(!s.get_interrupt_info());
+        REQUIRE(s.get_time() == .5);
 
-    // Propagate until shortly *before* the collision time.
-    sv = s0_view;
-    s.set_time(0);
+        // Propagate until shortly *before* the collision time.
+        sv = s0_view;
+        s.set_time(0);
 
-    oc = s.propagate_until(1.57);
-    REQUIRE(oc == outcome::time_limit);
-    REQUIRE(s.get_time() == Approx(1.57).epsilon(0.).margin(1e-15));
-    REQUIRE(!s.get_interrupt_info());
+        oc = s.propagate_until(1.57);
+        REQUIRE(oc == outcome::time_limit);
+        REQUIRE(s.get_time() == Approx(1.57).epsilon(0.).margin(1e-15));
+        REQUIRE(!s.get_interrupt_info());
+    }
 }
 
 // Same as above, but equatorial orbits. This tests a configuration
@@ -121,28 +127,30 @@ TEST_CASE("single collision equatorial")
     x2[0] = -x2[0];
     auto v2 = v1;
 
-    const auto s0
-        = std::vector{x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize};
-    const auto s0_view = xt::adapt(s0.data(), {2, 7});
+    for (auto n_par_ct : {1u, 3u}) {
+        const auto s0 = std::vector{x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize,
+                                    x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize};
+        const auto s0_view = xt::adapt(s0.data(), {2, 7});
 
-    sim s(s0, 0.23);
+        sim s(s0, 0.23, kw::n_par_ct = n_par_ct);
 
-    auto sv = xt::adapt(s.get_state_data(), {2, 7});
-    auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
+        auto sv = xt::adapt(s.get_state_data(), {2, 7});
+        auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
 
-    while (s.step() != outcome::collision) {
+        while (s.step() != outcome::collision) {
+        }
+
+        const auto &i_info = std::get<0>(*s.get_interrupt_info());
+        std::cout << fmt::format("Simulation end time: {}\n", s.get_time());
+        std::cout << fmt::format("Colliding particles: {}\n", i_info);
+        std::cout << "x/y/z coordinates at collision time:\n" << pos << '\n';
+
+        const auto dx = pos(0, 0) - pos(1, 0);
+        const auto dy = pos(0, 1) - pos(1, 1);
+        const auto dz = pos(0, 2) - pos(1, 2);
+
+        REQUIRE(dx * dx + dy * dy + dz * dz - 4 * psize * psize < std::numeric_limits<double>::epsilon() * 10);
     }
-
-    const auto &i_info = std::get<0>(*s.get_interrupt_info());
-    std::cout << fmt::format("Simulation end time: {}\n", s.get_time());
-    std::cout << fmt::format("Colliding particles: {}\n", i_info);
-    std::cout << "x/y/z coordinates at collision time:\n" << pos << '\n';
-
-    const auto dx = pos(0, 0) - pos(1, 0);
-    const auto dy = pos(0, 1) - pos(1, 1);
-    const auto dz = pos(0, 2) - pos(1, 2);
-
-    REQUIRE(dx * dx + dy * dy + dz * dz - 4 * psize * psize < std::numeric_limits<double>::epsilon() * 10);
 }
 
 TEST_CASE("single collision equatorial propagate_until")
@@ -153,20 +161,22 @@ TEST_CASE("single collision equatorial propagate_until")
     x2[0] = -x2[0];
     auto v2 = v1;
 
-    const auto s0
-        = std::vector{x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize};
-    const auto s0_view = xt::adapt(s0.data(), {2, 7});
+    for (auto n_par_ct : {1u, 3u}) {
+        const auto s0 = std::vector{x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize,
+                                    x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize};
+        const auto s0_view = xt::adapt(s0.data(), {2, 7});
 
-    sim s(s0, 0.23);
+        sim s(s0, 0.23, kw::n_par_ct = n_par_ct);
 
-    auto sv = xt::adapt(s.get_state_data(), {2, 7});
-    auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
+        auto sv = xt::adapt(s.get_state_data(), {2, 7});
+        auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
 
-    const auto oc = s.propagate_until(0.5);
+        const auto oc = s.propagate_until(0.5);
 
-    REQUIRE(oc == outcome::time_limit);
-    REQUIRE(!s.get_interrupt_info());
-    REQUIRE(s.get_time() == .5);
+        REQUIRE(oc == outcome::time_limit);
+        REQUIRE(!s.get_interrupt_info());
+        REQUIRE(s.get_time() == .5);
+    }
 }
 
 // Test to check only incoming collisions are detected.
@@ -178,15 +188,17 @@ TEST_CASE("single collision skip outgoing")
     auto v2 = v1;
     v2[1] = -v1[1];
 
-    const auto s0
-        = std::vector{x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize, x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize};
-    const auto s0_view = xt::adapt(s0.data(), {2, 7});
+    for (auto n_par_ct : {1u, 3u}) {
+        const auto s0 = std::vector{x1[0], x1[1], x1[2], v1[0], v1[1], v1[2], psize,
+                                    x2[0], x2[1], x2[2], v2[0], v2[1], v2[2], psize};
+        const auto s0_view = xt::adapt(s0.data(), {2, 7});
 
-    sim s(s0, 0.23);
+        sim s(s0, 0.23, kw::n_par_ct = n_par_ct);
 
-    REQUIRE(s.step() == outcome::success);
+        REQUIRE(s.step() == outcome::success);
 
-    const auto oc = s.propagate_until(100);
+        const auto oc = s.propagate_until(100);
 
-    REQUIRE(oc == outcome::collision);
+        REQUIRE(oc == outcome::collision);
+    }
 }
