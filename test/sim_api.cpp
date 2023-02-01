@@ -44,6 +44,9 @@ TEST_CASE("basic")
         REQUIRE(s.get_d_radius() == 0.);
         REQUIRE(s.get_n_par_ct() == 1u);
         REQUIRE(s.get_conj_thresh() == 0.);
+        REQUIRE(s.get_min_coll_radius() == 0.);
+        REQUIRE(s.get_coll_whitelist().empty());
+        REQUIRE(s.get_conj_whitelist().empty());
     }
 
     // Construction with non-default parameters.
@@ -51,9 +54,12 @@ TEST_CASE("basic")
         auto dyn = dynamics::kepler();
         dyn[0].second += heyoka::par[1];
 
+        using whitelist_t = sim::whitelist_t;
+
         sim s({1., .001, .001, .001, 1., .001, .001}, .5, kw::dyn = dyn, kw::pars = {.002, .001},
               kw::c_radius = {.1, .2, .3}, kw::d_radius = 100., kw::tol = 1e-12, kw::high_accuracy = true,
-              kw::n_par_ct = 5, kw::conj_thresh = 42.);
+              kw::n_par_ct = 5, kw::conj_thresh = 42., kw::min_coll_radius = .1, kw::coll_whitelist = whitelist_t{1, 2},
+              kw::conj_whitelist = whitelist_t{3, 4});
 
         REQUIRE(!s.get_state().empty());
         REQUIRE(s.get_state() == std::vector{1., .001, .001, .001, 1., .001, .001});
@@ -70,6 +76,9 @@ TEST_CASE("basic")
         REQUIRE(s.get_time() == 0.);
         REQUIRE(s.get_n_par_ct() == 5u);
         REQUIRE(s.get_conj_thresh() == 42.);
+        REQUIRE(s.get_min_coll_radius() == .1);
+        REQUIRE(s.get_coll_whitelist() == whitelist_t{1, 2});
+        REQUIRE(s.get_conj_whitelist() == whitelist_t{3, 4});
 
         // Take a single step.
         s.step();
@@ -89,6 +98,9 @@ TEST_CASE("basic")
         REQUIRE(s2.get_d_radius() == 100.);
         REQUIRE(s2.get_n_par_ct() == 5u);
         REQUIRE(s2.get_conj_thresh() == 42.);
+        REQUIRE(s2.get_min_coll_radius() == .1);
+        REQUIRE(s2.get_coll_whitelist() == whitelist_t{1, 2});
+        REQUIRE(s2.get_conj_whitelist() == whitelist_t{3, 4});
 
         // Test also with move.
         auto s3 = std::move(s2);
@@ -105,6 +117,9 @@ TEST_CASE("basic")
         REQUIRE(s3.get_d_radius() == 100.);
         REQUIRE(s3.get_n_par_ct() == 5u);
         REQUIRE(s3.get_conj_thresh() == 42.);
+        REQUIRE(s3.get_min_coll_radius() == .1);
+        REQUIRE(s3.get_coll_whitelist() == whitelist_t{1, 2});
+        REQUIRE(s3.get_conj_whitelist() == whitelist_t{3, 4});
 
         // Revive s2 via assignment.
         s2 = std::move(s3);
@@ -121,6 +136,9 @@ TEST_CASE("basic")
         REQUIRE(s2.get_d_radius() == 100.);
         REQUIRE(s2.get_n_par_ct() == 5u);
         REQUIRE(s2.get_conj_thresh() == 42.);
+        REQUIRE(s2.get_min_coll_radius() == .1);
+        REQUIRE(s2.get_coll_whitelist() == whitelist_t{1, 2});
+        REQUIRE(s2.get_conj_whitelist() == whitelist_t{3, 4});
 
         // Revive s3 via assignment.
         s3 = s2;
@@ -137,6 +155,9 @@ TEST_CASE("basic")
         REQUIRE(s3.get_d_radius() == 100.);
         REQUIRE(s3.get_n_par_ct() == 5u);
         REQUIRE(s3.get_conj_thresh() == 42.);
+        REQUIRE(s3.get_min_coll_radius() == .1);
+        REQUIRE(s3.get_coll_whitelist() == whitelist_t{1, 2});
+        REQUIRE(s3.get_conj_whitelist() == whitelist_t{3, 4});
 
         // Take a step for both s and s3, and compare
         s.step();
@@ -154,6 +175,9 @@ TEST_CASE("basic")
         REQUIRE(s3.get_d_radius() == 100.);
         REQUIRE(s3.get_n_par_ct() == 5u);
         REQUIRE(s3.get_conj_thresh() == 42.);
+        REQUIRE(s3.get_min_coll_radius() == .1);
+        REQUIRE(s3.get_coll_whitelist() == whitelist_t{1, 2});
+        REQUIRE(s3.get_conj_whitelist() == whitelist_t{3, 4});
     }
 
     // Error modes.
@@ -200,6 +224,10 @@ TEST_CASE("basic")
     REQUIRE_THROWS_MATCHES(
         sim({}, .5, kw::conj_thresh = -1.), std::invalid_argument,
         Message("The conjunction threshold value -1 is invalid: it must be finite and non-negative"));
+
+    REQUIRE_THROWS_MATCHES(
+        sim({}, .5, kw::min_coll_radius = -1.), std::invalid_argument,
+        Message("The minimum collisional radius cannot be NaN or negative, but the invalid value -1 was provided"));
 }
 
 TEST_CASE("remove particles")
@@ -397,8 +425,6 @@ TEST_CASE("ct api")
 
 TEST_CASE("conj thresh api")
 {
-    using Catch::Matchers::Message;
-
     sim s;
 
     s.set_conj_thresh(.1);
@@ -406,4 +432,25 @@ TEST_CASE("conj thresh api")
     REQUIRE(s.get_conj_thresh() == .1);
 
     REQUIRE_THROWS_AS(s.set_conj_thresh(std::numeric_limits<double>::quiet_NaN()), std::invalid_argument);
+}
+
+TEST_CASE("min coll radius api")
+{
+    using Catch::Matchers::Message;
+
+    sim s;
+
+    s.set_min_coll_radius(.1);
+    REQUIRE(s.get_min_coll_radius() == .1);
+
+    s.set_min_coll_radius(std::numeric_limits<double>::infinity());
+    REQUIRE(s.get_min_coll_radius() == std::numeric_limits<double>::infinity());
+
+    REQUIRE_THROWS_AS(s.set_min_coll_radius(std::numeric_limits<double>::quiet_NaN()), std::invalid_argument);
+    REQUIRE_THROWS_AS(s.set_min_coll_radius(-std::numeric_limits<double>::infinity()), std::invalid_argument);
+    REQUIRE_THROWS_AS(s.set_min_coll_radius(-1.), std::invalid_argument);
+
+    REQUIRE_THROWS_MATCHES(
+        s.set_min_coll_radius(-1.), std::invalid_argument,
+        Message("The minimum collisional radius cannot be NaN or negative, but the invalid value -1 was provided"));
 }

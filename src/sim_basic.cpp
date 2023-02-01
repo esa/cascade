@@ -114,7 +114,9 @@ sim::sim(const sim &other)
     : m_state(std::make_shared<std::vector<double>>(*other.m_state)),
       m_pars(std::make_shared<std::vector<double>>(*other.m_pars)), m_ct(other.m_ct), m_n_par_ct(other.m_n_par_ct),
       m_int_info(other.m_int_info), m_c_radius(other.m_c_radius), m_d_radius(other.m_d_radius), m_npars(other.m_npars),
-      m_conj_thresh(other.m_conj_thresh), m_det_conj(std::make_shared<std::vector<conjunction>>(*other.m_det_conj))
+      m_conj_thresh(other.m_conj_thresh), m_det_conj(std::make_shared<std::vector<conjunction>>(*other.m_det_conj)),
+      m_min_coll_radius(other.m_min_coll_radius), m_coll_whitelist(other.m_coll_whitelist),
+      m_conj_whitelist(other.m_conj_whitelist)
 {
     // For m_data, we will be copying only:
     // - the integrator templates,
@@ -350,7 +352,8 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                         // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
                         std::variant<double, std::vector<double>> c_radius, double d_radius, double tol, bool ha,
                         // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-                        std::uint32_t n_par_ct, double conj_thresh)
+                        std::uint32_t n_par_ct, double conj_thresh, double min_coll_radius, whitelist_t coll_whitelist,
+                        whitelist_t conj_whitelist)
 {
     namespace hy = heyoka;
 
@@ -382,6 +385,13 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
 
     // Set the conjunction threshold.
     set_conj_thresh(conj_thresh);
+
+    // Set the minimum collisional radius.
+    set_min_coll_radius(min_coll_radius);
+
+    // Set the whitelists.
+    set_coll_whitelist(std::move(coll_whitelist));
+    set_conj_whitelist(std::move(conj_whitelist));
 
     if (dyn.empty()) {
         // Default is Keplerian dynamics with unitary mu.
@@ -756,6 +766,27 @@ std::ostream &operator<<(std::ostream &os, const sim::conjunction &c)
 {
     return os << "{" << c.i << ", " << c.j << ", " << fmt::format("{}", c.time) << ", " << fmt::format("{}", c.dist)
               << "}";
+}
+
+void sim::set_min_coll_radius(double min_coll_radius)
+{
+    if (std::isnan(min_coll_radius) || min_coll_radius < 0) {
+        throw std::invalid_argument(fmt::format(
+            "The minimum collisional radius cannot be NaN or negative, but the invalid value {} was provided",
+            min_coll_radius));
+    }
+
+    m_min_coll_radius = min_coll_radius;
+}
+
+void sim::set_coll_whitelist(whitelist_t wl)
+{
+    m_coll_whitelist = std::move(wl);
+}
+
+void sim::set_conj_whitelist(whitelist_t wl)
+{
+    m_conj_whitelist = std::move(wl);
 }
 
 } // namespace cascade

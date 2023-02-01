@@ -555,7 +555,7 @@ outcome sim::step()
     // Are we detecting conjunctions in this timestep?
     const auto with_conj = m_conj_thresh != 0;
 
-    // Prepare the s_data buffers with the correct sizes.
+    // Prepare the data in m_data with the correct sizes.
 
     // NOTE: this is a helper that resizes vec to new_size
     // only if vec is currently smaller than new_size.
@@ -606,6 +606,10 @@ outcome sim::step()
 
     // Broad phase data.
     resize_if_needed(nchunks, m_data->bp_coll, m_data->bp_data_caches);
+
+    // Activity flags.
+    using safe_flag_size_t = boost::safe_numerics::safe<decltype(m_data->coll_active.size())>;
+    resize_if_needed(safe_flag_size_t(nchunks) * nparts, m_data->coll_active, m_data->conj_active);
 
     // Narrow phase data.
     resize_if_needed(nchunks, m_data->np_caches, m_data->conj_vecs);

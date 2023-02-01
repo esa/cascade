@@ -20,6 +20,7 @@
 #include <ranges>
 #include <tuple>
 #include <type_traits>
+#include <unordered_set>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -63,6 +64,9 @@ IGOR_MAKE_NAMED_ARGUMENT(tol);
 IGOR_MAKE_NAMED_ARGUMENT(high_accuracy);
 IGOR_MAKE_NAMED_ARGUMENT(n_par_ct);
 IGOR_MAKE_NAMED_ARGUMENT(conj_thresh);
+IGOR_MAKE_NAMED_ARGUMENT(min_coll_radius);
+IGOR_MAKE_NAMED_ARGUMENT(coll_whitelist);
+IGOR_MAKE_NAMED_ARGUMENT(conj_whitelist);
 
 } // namespace kw
 
@@ -92,7 +96,16 @@ public:
 
         // Conjunction distance.
         double dist = 0;
+
+        // State of the two particles.
+        std::array<double, 6> state_i = {};
+        std::array<double, 6> state_j = {};
     };
+
+    // The whitelist type.
+    // NOTE: consider replacing this with the new Boost
+    // flat unordered set in the future.
+    using whitelist_t = std::unordered_set<size_type>;
 
 private:
     struct sim_data;
@@ -133,11 +146,16 @@ private:
     // NOTE: wrap into shared_ptr for the same
     // reasons explained above for m_state.
     std::shared_ptr<std::vector<conjunction>> m_det_conj;
+    // Minimum collisional radius.
+    double m_min_coll_radius = 0;
+    // The whitelists.
+    whitelist_t m_coll_whitelist, m_conj_whitelist;
     // The internal implementation-detail data (buffers, caches, etc.).
     std::unique_ptr<sim_data> m_data;
 
     void finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>>, std::vector<double>,
-                       std::variant<double, std::vector<double>>, double, double, bool, std::uint32_t, double);
+                       std::variant<double, std::vector<double>>, double, double, bool, std::uint32_t, double, double,
+                       whitelist_t, whitelist_t);
     CASCADE_DLL_LOCAL void add_jit_functions();
     CASCADE_DLL_LOCAL void morton_encode_sort_parallel();
     CASCADE_DLL_LOCAL void construct_bvh_trees_parallel();
@@ -306,7 +324,47 @@ public:
             }
         }
 
-        finalise_ctor(std::move(dyn), std::move(pars), std::move(c_radius), d_radius, tol, ha, n_par_ct, conj_thresh);
+        // Minimum collisional radius (defaults to zero).
+        double min_coll_radius = 0;
+        if constexpr (p.has(kw::min_coll_radius)) {
+            if constexpr (std::convertible_to<decltype(p(kw::min_coll_radius)), double>) {
+                min_coll_radius
+                    = static_cast<double>(std::forward<decltype(p(kw::min_coll_radius))>(p(kw::min_coll_radius)));
+            } else {
+                // LCOV_EXCL_START
+                static_assert(detail::always_false_v<KwArgs...>,
+                              "The 'min_coll_radius' keyword argument is of the wrong type.");
+                // LCOV_EXCL_STOP
+            }
+        }
+
+        // The whitelists (default to empty).
+        whitelist_t coll_whitelist;
+        if constexpr (p.has(kw::coll_whitelist)) {
+            if constexpr (std::is_assignable_v<whitelist_t &, decltype(p(kw::coll_whitelist))>) {
+                coll_whitelist = std::forward<decltype(p(kw::coll_whitelist))>(p(kw::coll_whitelist));
+            } else {
+                // LCOV_EXCL_START
+                static_assert(detail::always_false_v<KwArgs...>,
+                              "The 'coll_whitelist' keyword argument is of the wrong type.");
+                // LCOV_EXCL_STOP
+            }
+        }
+
+        whitelist_t conj_whitelist;
+        if constexpr (p.has(kw::conj_whitelist)) {
+            if constexpr (std::is_assignable_v<whitelist_t &, decltype(p(kw::conj_whitelist))>) {
+                conj_whitelist = std::forward<decltype(p(kw::conj_whitelist))>(p(kw::conj_whitelist));
+            } else {
+                // LCOV_EXCL_START
+                static_assert(detail::always_false_v<KwArgs...>,
+                              "The 'conj_whitelist' keyword argument is of the wrong type.");
+                // LCOV_EXCL_STOP
+            }
+        }
+
+        finalise_ctor(std::move(dyn), std::move(pars), std::move(c_radius), d_radius, tol, ha, n_par_ct, conj_thresh,
+                      min_coll_radius, std::move(coll_whitelist), std::move(conj_whitelist));
     }
     sim(const sim &);
     sim(sim &&) noexcept;
@@ -382,6 +440,24 @@ public:
         return *m_det_conj;
     }
     void reset_conjunctions();
+
+    [[nodiscard]] double get_min_coll_radius() const
+    {
+        return m_min_coll_radius;
+    }
+    void set_min_coll_radius(double);
+
+    [[nodiscard]] const auto &get_coll_whitelist() const
+    {
+        return m_coll_whitelist;
+    }
+    void set_coll_whitelist(whitelist_t);
+
+    [[nodiscard]] const auto &get_conj_whitelist() const
+    {
+        return m_conj_whitelist;
+    }
+    void set_conj_whitelist(whitelist_t);
 
     void set_new_state_pars(std::vector<double>, std::vector<double> = {});
     void remove_particles(std::vector<size_type>);

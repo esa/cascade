@@ -96,6 +96,21 @@ TEST_CASE("polar conj")
                          - s.get_conjunctions()[0].dist)
                 < 1e-9);
 
+        // Compare the states.
+        REQUIRE(std::abs(st[0] - s.get_conjunctions()[0].state_i[0]) < 1e-15);
+        REQUIRE(std::abs(st[1] - s.get_conjunctions()[0].state_i[1]) < 1e-15);
+        REQUIRE(std::abs(st[2] - s.get_conjunctions()[0].state_i[2]) < 1e-15);
+        REQUIRE(std::abs(st[3] - s.get_conjunctions()[0].state_i[3]) < 1e-15);
+        REQUIRE(std::abs(st[4] - s.get_conjunctions()[0].state_i[4]) < 1e-15);
+        REQUIRE(std::abs(st[5] - s.get_conjunctions()[0].state_i[5]) < 1e-15);
+
+        REQUIRE(std::abs(st[6] - s.get_conjunctions()[0].state_j[0]) < 1e-15);
+        REQUIRE(std::abs(st[7] - s.get_conjunctions()[0].state_j[1]) < 1e-15);
+        REQUIRE(std::abs(st[8] - s.get_conjunctions()[0].state_j[2]) < 1e-15);
+        REQUIRE(std::abs(st[9] - s.get_conjunctions()[0].state_j[3]) < 1e-15);
+        REQUIRE(std::abs(st[10] - s.get_conjunctions()[0].state_j[4]) < 1e-15);
+        REQUIRE(std::abs(st[11] - s.get_conjunctions()[0].state_j[5]) < 1e-15);
+
         // Test also reset_conjunctions().
         s.reset_conjunctions();
         REQUIRE(s.get_conjunctions().empty());
@@ -106,8 +121,6 @@ TEST_CASE("polar conj")
 // and thus it is not recorded.
 TEST_CASE("polar conj near miss")
 {
-    using namespace hy::literals;
-
     const auto psize = 1.57e-8;
     const auto [x1, v1]
         = kep_to_cart<double>({1., .000005, boost::math::constants::pi<double>() / 2 + 1.5775e-6, 0, 1.23, 0}, 1);
@@ -193,6 +206,20 @@ TEST_CASE("polar conj barely")
                                    + (st[2] - st[8]) * (st[2] - st[8]))
                          - s.get_conjunctions()[0].dist)
                 < 1e-9);
+
+        REQUIRE(std::abs(st[0] - s.get_conjunctions()[0].state_i[0]) < 1e-15);
+        REQUIRE(std::abs(st[1] - s.get_conjunctions()[0].state_i[1]) < 1e-15);
+        REQUIRE(std::abs(st[2] - s.get_conjunctions()[0].state_i[2]) < 1e-15);
+        REQUIRE(std::abs(st[3] - s.get_conjunctions()[0].state_i[3]) < 1e-15);
+        REQUIRE(std::abs(st[4] - s.get_conjunctions()[0].state_i[4]) < 1e-15);
+        REQUIRE(std::abs(st[5] - s.get_conjunctions()[0].state_i[5]) < 1e-15);
+
+        REQUIRE(std::abs(st[6] - s.get_conjunctions()[0].state_j[0]) < 1e-15);
+        REQUIRE(std::abs(st[7] - s.get_conjunctions()[0].state_j[1]) < 1e-15);
+        REQUIRE(std::abs(st[8] - s.get_conjunctions()[0].state_j[2]) < 1e-15);
+        REQUIRE(std::abs(st[9] - s.get_conjunctions()[0].state_j[3]) < 1e-15);
+        REQUIRE(std::abs(st[10] - s.get_conjunctions()[0].state_j[4]) < 1e-15);
+        REQUIRE(std::abs(st[11] - s.get_conjunctions()[0].state_j[5]) < 1e-15);
     }
 }
 

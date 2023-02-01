@@ -225,6 +225,10 @@ struct sim::sim_data {
     std::vector<std::unique_ptr<oneapi::tbb::concurrent_queue<std::unique_ptr<bp_data>>>> bp_data_caches;
     // Chunk-local vectors of detected broad phase collisions between AABBs.
     std::vector<oneapi::tbb::concurrent_vector<std::pair<size_type, size_type>>> bp_coll;
+    // Vectors to flag whether or not particles are active
+    // for collisions and conjunctions. The shape for both
+    // is (nchunks, nparts).
+    std::vector<char> coll_active, conj_active;
 
     // Struct for holding polynomial caches used during
     // narrow phase collision detection.
@@ -254,10 +258,12 @@ struct sim::sim_data {
         // The type used to store the list of isolating intervals.
         using isol_t = std::vector<std::tuple<double, double>>;
 
-        // Polynomial buffers used in the construction
-        // of the dist square polynomial and its time
-        // derivative.
-        std::array<std::vector<double>, 8> dist2;
+        // Buffers used as temporary storage for the results
+        // of operations on polynomials.
+        // NOTE: if we restructure the code to use JIT more,
+        // we should probably re-implement this as a flat
+        // 1D buffer rather than a collection of vectors.
+        std::array<std::vector<double>, 14> pbuffers;
         // Vector to store the input for the cfunc used to compute
         // the distance square polynomial.
         std::vector<double> diff_input;

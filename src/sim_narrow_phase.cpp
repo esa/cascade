@@ -503,6 +503,7 @@ void sim::narrow_phase_parallel()
     auto *logger = detail::get_logger();
 
     // Cache a few bits.
+    const auto nparts = get_nparts();
     const auto nchunks = m_data->nchunks;
     const auto order = m_data->s_ta.get_order();
     const auto &s_data = m_data->s_data;
@@ -520,6 +521,7 @@ void sim::narrow_phase_parallel()
         // LCOV_EXCL_STOP
     }
 
+    // Is conjunction detection activated globally?
     const auto with_conj = (m_conj_thresh != 0);
 
     // The time coordinate at the beginning of
@@ -533,6 +535,13 @@ void sim::narrow_phase_parallel()
     // access the particles' sizes.
     stdex::mdspan sv(std::as_const(m_state)->data(),
                      stdex::extents<size_type, stdex::dynamic_extent, 7u>(get_nparts()));
+
+    // Fetch views on the activity flag vectors.
+    using flag_size_t = decltype(m_data->coll_active.size());
+    stdex::mdspan coll_a_view(std::as_const(m_data)->coll_active.data(), static_cast<flag_size_t>(nchunks),
+                              static_cast<flag_size_t>(nparts));
+    stdex::mdspan conj_a_view(std::as_const(m_data)->conj_active.data(), static_cast<flag_size_t>(nchunks),
+                              static_cast<flag_size_t>(nparts));
 
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
@@ -569,7 +578,7 @@ void sim::narrow_phase_parallel()
 #if !defined(NDEBUG)
                     assert(pcaches);
 
-                    for (auto &v : pcaches->dist2) {
+                    for (auto &v : pcaches->pbuffers) {
                         assert(v.size() == order + 1u);
                     }
 
@@ -582,7 +591,7 @@ void sim::narrow_phase_parallel()
                     // Init pcaches.
                     pcaches = std::make_unique<sim_data::np_data>();
 
-                    for (auto &v : pcaches->dist2) {
+                    for (auto &v : pcaches->pbuffers) {
                         v.resize(boost::numeric_cast<decltype(v.size())>(order + 1u));
                     }
 
@@ -591,7 +600,9 @@ void sim::narrow_phase_parallel()
                 }
 
                 // Cache a few quantities.
-                auto &[xi_temp, yi_temp, zi_temp, xj_temp, yj_temp, zj_temp, ss_diff, ss_diff_der] = pcaches->dist2;
+                auto &[xi_temp, yi_temp, zi_temp, xj_temp, yj_temp, zj_temp, ss_diff, ss_diff_der, vxi_temp, vyi_temp,
+                       vzi_temp, vxj_temp, vyj_temp, vzj_temp]
+                    = pcaches->pbuffers;
                 auto &diff_input = pcaches->diff_input;
                 auto &wlist = pcaches->wlist;
                 auto &isol = pcaches->isol;
@@ -618,6 +629,17 @@ void sim::narrow_phase_parallel()
                         const auto pj = pc.second;
 
                         assert(pi != pj);
+
+                        // Get the activity flags.
+                        const auto pi_coll_active = coll_a_view(chunk_idx, pi);
+                        const auto pi_conj_active = conj_a_view(chunk_idx, pi);
+                        const auto pj_coll_active = coll_a_view(chunk_idx, pj);
+                        const auto pj_conj_active = conj_a_view(chunk_idx, pj);
+
+                        // Is conjunction detection active for this pair of particles?
+                        const auto pij_conj_active = pi_conj_active || pj_conj_active;
+
+                        assert(pi_coll_active || pj_coll_active || pi_conj_active || pj_conj_active);
 
                         // Fetch a reference to the substep data
                         // for the two particles.
@@ -729,14 +751,21 @@ void sim::narrow_phase_parallel()
                             const auto *poly_xi = &tcs_i(ss_idx_i, 0, 0);
                             const auto *poly_yi = &tcs_i(ss_idx_i, 1, 0);
                             const auto *poly_zi = &tcs_i(ss_idx_i, 2, 0);
+                            // NOTE: need the velocities only for the conjunctions.
+                            const auto *poly_vxi = pij_conj_active ? &tcs_i(ss_idx_i, 3, 0) : nullptr;
+                            const auto *poly_vyi = pij_conj_active ? &tcs_i(ss_idx_i, 4, 0) : nullptr;
+                            const auto *poly_vzi = pij_conj_active ? &tcs_i(ss_idx_i, 5, 0) : nullptr;
 
                             const auto *poly_xj = &tcs_j(ss_idx_j, 0, 0);
                             const auto *poly_yj = &tcs_j(ss_idx_j, 1, 0);
                             const auto *poly_zj = &tcs_j(ss_idx_j, 2, 0);
+                            const auto *poly_vxj = pij_conj_active ? &tcs_j(ss_idx_j, 3, 0) : nullptr;
+                            const auto *poly_vyj = pij_conj_active ? &tcs_j(ss_idx_j, 4, 0) : nullptr;
+                            const auto *poly_vzj = pij_conj_active ? &tcs_j(ss_idx_j, 5, 0) : nullptr;
 
                             // Perform the translations, if needed.
                             // NOTE: perhaps we can write a dedicated function
-                            // that does the translation for all 3 coordinates
+                            // that does the translation for all 3 coordinates/velocities
                             // at once, for better performance?
                             // NOTE: need to re-assign the poly_*i pointers if the
                             // translation happens, otherwise we can keep the pointer
@@ -748,6 +777,15 @@ void sim::narrow_phase_parallel()
                                 poly_yi = yi_temp.data();
                                 pta_cfunc(zi_temp.data(), poly_zi, &delta_i);
                                 poly_zi = zi_temp.data();
+
+                                if (pij_conj_active) {
+                                    pta_cfunc(vxi_temp.data(), poly_vxi, &delta_i);
+                                    poly_vxi = vxi_temp.data();
+                                    pta_cfunc(vyi_temp.data(), poly_vyi, &delta_i);
+                                    poly_vyi = vyi_temp.data();
+                                    pta_cfunc(vzi_temp.data(), poly_vzi, &delta_i);
+                                    poly_vzi = vzi_temp.data();
+                                }
                             }
 
                             if (delta_j != 0) {
@@ -757,6 +795,15 @@ void sim::narrow_phase_parallel()
                                 poly_yj = yj_temp.data();
                                 pta_cfunc(zj_temp.data(), poly_zj, &delta_j);
                                 poly_zj = zj_temp.data();
+
+                                if (pij_conj_active) {
+                                    pta_cfunc(vxj_temp.data(), poly_vxj, &delta_j);
+                                    poly_vxj = vxj_temp.data();
+                                    pta_cfunc(vyj_temp.data(), poly_vyj, &delta_j);
+                                    poly_vyj = vyj_temp.data();
+                                    pta_cfunc(vzj_temp.data(), poly_vzj, &delta_j);
+                                    poly_vzj = vzj_temp.data();
+                                }
                             }
 
                             // Copy over the data to diff_input.
@@ -780,19 +827,23 @@ void sim::narrow_phase_parallel()
                             // Remember the original constant term of the polynomial.
                             const auto orig_const_cf = ss_diff_ptr[0];
 
-                            // Step 1: detect physical collision.
-                            // Modify the constant term of the polynomial to account for
-                            // particle sizes.
-                            ss_diff_ptr[0] -= (p_rad_i + p_rad_j) * (p_rad_i + p_rad_j);
+                            // Step 1: detect physical collision, if needed.
+                            if (pi_coll_active || pj_coll_active) {
+                                // Modify the constant term of the polynomial to account for
+                                // particle sizes.
+                                ss_diff_ptr[0] -= (p_rad_i + p_rad_j) * (p_rad_i + p_rad_j);
 
-                            // Run polynomial root finding.
-                            detail::run_poly_root_finding(ss_diff_ptr, order, rf_int, isol, wlist, fex_check, rtscc,
-                                                          pt1, pi, pj, logger, -1, m_data->coll_vec, lb_rf, tmp, tmp1,
-                                                          tmp2, r_iso_cache);
+                                // Run polynomial root finding.
+                                detail::run_poly_root_finding(ss_diff_ptr, order, rf_int, isol, wlist, fex_check, rtscc,
+                                                              pt1, pi, pj, logger, -1, m_data->coll_vec, lb_rf, tmp,
+                                                              tmp1, tmp2, r_iso_cache);
+                            }
 
-                            // Step 2: do conjunction tracking, if requested.
-                            if (with_conj) {
-                                // Restore the original constant term of the polynomial.
+                            // Step 2: do conjunction tracking, if needed.
+                            if (pij_conj_active) {
+                                // Restore the original constant term of the polynomial,
+                                // which might have been modified by phyisical collision
+                                // detection.
                                 ss_diff_ptr[0] = orig_const_cf;
 
                                 // Evaluate the dist2 polynomial in the [0, rf_int) interval.
@@ -858,6 +909,23 @@ void sim::narrow_phase_parallel()
                                         }
 
                                         if (conj_dist2 < conj_thresh2) {
+                                            // Compute the state vector for the two particles.
+                                            std::array<double, 6> pi_state
+                                                = {detail::poly_eval(poly_xi, conj_tm, order),
+                                                   detail::poly_eval(poly_yi, conj_tm, order),
+                                                   detail::poly_eval(poly_zi, conj_tm, order),
+                                                   detail::poly_eval(poly_vxi, conj_tm, order),
+                                                   detail::poly_eval(poly_vyi, conj_tm, order),
+                                                   detail::poly_eval(poly_vzi, conj_tm, order)};
+
+                                            std::array<double, 6> pj_state
+                                                = {detail::poly_eval(poly_xj, conj_tm, order),
+                                                   detail::poly_eval(poly_yj, conj_tm, order),
+                                                   detail::poly_eval(poly_zj, conj_tm, order),
+                                                   detail::poly_eval(poly_vxj, conj_tm, order),
+                                                   detail::poly_eval(poly_vyj, conj_tm, order),
+                                                   detail::poly_eval(poly_vzj, conj_tm, order)};
+
                                             local_conj_vec.emplace_back(
 #if defined(__clang__)
                                                 conjunction {
@@ -874,7 +942,7 @@ void sim::narrow_phase_parallel()
                                                         // be negative due to floating-point rounding
                                                         // (e.g., zero-distance conjunctions). Ensure
                                                         // we do not produce NaN here.
-                                                        std::sqrt(std::max(conj_dist2, 0.))
+                                                        std::sqrt(std::max(conj_dist2, 0.)), pi_state, pj_state
 #if defined(__clang__)
                                                 }
 #endif
