@@ -65,15 +65,15 @@ def simple_earth(J2=True, J3=False, C22S22=True, sun=False, moon=False, SRP=Fals
     import heyoka as hy
     import numpy as np
 
-    #constants
+    #constants (final underscore reminds us its not SI)
     GMe_ = 3.986004407799724e+5 # [km^3/sec^2]
     GMo_ = 1.32712440018e+11 #[km^3/sec^2]
     GMm_ = 4.9028e+3 #[km^3/sec^2]
     Re_ = 6378.1363 #[km]
-    C20 = -4.84165371736e-4
+    C20 = -4.84165371736e-4 # (J2 in m^5/s^2 is 1.75553E25, C20 is the Stokes coefficient)
     C22 = 2.43914352398e-6
-    S22 = -1.40016683654e-6 # (J2 is 1.75553E25, this is the Stokes coefficient)
-    J3_value = -2.61913e29 # name is to differentiate from kwarg
+    S22 = -1.40016683654e-6 
+    J3_dim_value = -2.61913e29 # (m^6/s^2) is # name is to differentiate from kwarg
     theta_g = (np.pi/180)*280.4606 #[rad] # This value defines the rotation of the Earth fixed system at t0
     nu_e = (np.pi/180)*(4.178074622024230e-3) #[rad/sec] # This value represents the Earth spin angular velocity.
     nu_o = (np.pi/180)*(1.1407410259335311e-5) #[rad/sec]
@@ -110,9 +110,9 @@ def simple_earth(J2=True, J3=False, C22S22=True, sun=False, moon=False, SRP=Fals
 
     if J3:
         magr9 = magr2**(1/2) * magr2**4 # r**9
-        fJ3x = J3_value * x * y / magr9 * (10* z**2 -15/2 *(x**2 + y**2))
-        fJ3y = J3_value * z * y / magr9 * (10* z**2 -15/2 *(x**2 + y**2))
-        fJ3z = J3_value * 1 / magr9 * (4 * z**2 * (z**2 - 3 * (x**2 + y**2)) + 3/2 * (x**2 + y**2)**2)
+        fJ3x = J3_dim_value * x * y / magr9 * (10* z**2 -15/2 *(x**2 + y**2))
+        fJ3y = J3_dim_value * z * y / magr9 * (10* z**2 -15/2 *(x**2 + y**2))
+        fJ3z = J3_dim_value * 1 / magr9 * (4 * z**2 * (z**2 - 3 * (x**2 + y**2)) + 3/2 * (x**2 + y**2)**2)
         dyn[3] = (dyn[3][0], dyn[3][1] + fJ3x)
         dyn[4] = (dyn[4][0], dyn[4][1] + fJ3y)
         dyn[5] = (dyn[5][0], dyn[5][1] + fJ3z)
