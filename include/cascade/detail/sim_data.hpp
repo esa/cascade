@@ -260,7 +260,10 @@ struct sim::sim_data {
 
         // Buffers used as temporary storage for the results
         // of operations on polynomials.
-        std::array<std::vector<double>, 14> dist2;
+        // NOTE: if we restructure the code to use JIT more,
+        // we should probably re-implement this as a flat
+        // 1D buffer rather than a collection of vectors.
+        std::array<std::vector<double>, 14> pbuffers;
         // Vector to store the input for the cfunc used to compute
         // the distance square polynomial.
         std::vector<double> diff_input;

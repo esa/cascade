@@ -578,7 +578,7 @@ void sim::narrow_phase_parallel()
 #if !defined(NDEBUG)
                     assert(pcaches);
 
-                    for (auto &v : pcaches->dist2) {
+                    for (auto &v : pcaches->pbuffers) {
                         assert(v.size() == order + 1u);
                     }
 
@@ -591,7 +591,7 @@ void sim::narrow_phase_parallel()
                     // Init pcaches.
                     pcaches = std::make_unique<sim_data::np_data>();
 
-                    for (auto &v : pcaches->dist2) {
+                    for (auto &v : pcaches->pbuffers) {
                         v.resize(boost::numeric_cast<decltype(v.size())>(order + 1u));
                     }
 
@@ -602,7 +602,7 @@ void sim::narrow_phase_parallel()
                 // Cache a few quantities.
                 auto &[xi_temp, yi_temp, zi_temp, xj_temp, yj_temp, zj_temp, ss_diff, ss_diff_der, vxi_temp, vyi_temp,
                        vzi_temp, vxj_temp, vyj_temp, vzj_temp]
-                    = pcaches->dist2;
+                    = pcaches->pbuffers;
                 auto &diff_input = pcaches->diff_input;
                 auto &wlist = pcaches->wlist;
                 auto &isol = pcaches->isol;

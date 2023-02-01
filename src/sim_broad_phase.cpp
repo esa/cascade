@@ -209,11 +209,12 @@ void sim::broad_phase_parallel()
                                     }
 
                                     // Determine if i is active for collisions and conjunctions.
-                                    // NOTE: these computations are redundant, in the sense that
-                                    // they will be performed again when pidx == i in the outer loop.
-                                    // We cannot however safely store the results of these computations
-                                    // in coll/conj_active due to data races, hence we live with the
-                                    // duplication.
+                                    // NOTE: these computations will be performed multiple times,
+                                    // e.g., when pidx == i in the outer loop or when another particle
+                                    // has potential collisions/conjunctions with the particles in
+                                    // this node. We cannot however safely store the results of these
+                                    // computations in coll/conj_active due to data races, hence we
+                                    // live with the overhead duplication.
                                     const auto coll_active_i
                                         = (sv(orig_i, 6u) > min_coll_radius)
                                           && (coll_wl_empty || m_coll_whitelist.count(orig_i) == 1u);
