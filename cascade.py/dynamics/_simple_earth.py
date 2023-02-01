@@ -65,10 +65,10 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
     import numpy as np
 
     #constants
-    GMe = 3.986004407799724e+5 # [km^3/sec^2]
-    GMo = 1.32712440018e+11 #[km^3/sec^2]
-    GMm = 4.9028e+3 #[km^3/sec^2]
-    Re = 6378.1363 #[km]
+    GMe_ = 3.986004407799724e+5 # [km^3/sec^2]
+    GMo_ = 1.32712440018e+11 #[km^3/sec^2]
+    GMm_ = 4.9028e+3 #[km^3/sec^2]
+    Re_ = 6378.1363 #[km]
     C20 = -4.84165371736e-4
     C22 = 2.43914352398e-6
     S22 = -1.40016683654e-6
@@ -78,24 +78,25 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
     nu_ma = (np.pi/180)*(1.512151961904581e-4) #[rad/sec]
     nu_mp = (np.pi/180)*(1.2893925235125941e-6) #[rad/sec]
     nu_ms = (np.pi/180)*(6.128913003523574e-7) #[rad/sec]
-    alpha_o = 1.49619e+8 #[km]
+    alpha_o_ = 1.49619e+8 #[km]
     epsilon = (np.pi/180)*23.4392911 #[rad]
     phi_o = (np.pi/180)*357.5256 #[rad]
     Omega_plus_w = (np.pi/180)*282.94 #[rad]
-    PSRP = 4.56e-3 #[kg/(km*sec^2)]
+    PSRP_ = 4.56e-3 #[kg/(km*sec^2)]
 
     # Dynamical variables.
     x,y,z,vx,vy,vz = hy.make_vars("x","y","z","vx","vy","vz")
 
     # Create Keplerian dynamics in SI units.
-    GMe_SI = GMe * 1E9
+    GMe_SI = GMe_ * 1E9
     dyn = kepler(mu = GMe_SI)
 
     # Define the radius squared
     magr2 = hy.sum_sq([x, y, z])
 
+    Re_SI = Re_ * 1000
     if J2:
-        J2term1 = GMe_SI*(Re**2)*np.sqrt(5)*C20/(2*magr2**(1./2))
+        J2term1 = GMe_SI*(Re_SI**2)*np.sqrt(5)*C20/(2*magr2**(1/2))
         J2term2 = 3/(magr2**2)
         J2term3 = 15*(z**2)/(magr2**3)
         fJ2x = J2term1*x*(J2term2 - J2term3)
@@ -110,14 +111,14 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
         Y = -x*hy.sin(theta_g + nu_e*hy.time) + y*hy.cos(theta_g + nu_e*hy.time)
         Z = z
 
-        C22term1 = 5*GMe_SI*(Re**2)*np.sqrt(15)*C22/(2*magr2**(7./2))
-        C22term2 = GMe_SI*(Re**2)*np.sqrt(15)*C22/(magr2**(5./2))
+        C22term1 = 5*GMe_SI*(Re_SI**2)*np.sqrt(15)*C22/(2*magr2**(7/2))
+        C22term2 = GMe_SI*(Re_SI**2)*np.sqrt(15)*C22/(magr2**(5/2))
         fC22X = C22term1*X*(Y**2 - X**2) + C22term2*X
         fC22Y = C22term1*Y*(Y**2 - X**2) - C22term2*Y
         fC22Z = C22term1*Z*(Y**2 - X**2)
 
-        S22term1 = 5*GMe_SI*(Re**2)*np.sqrt(15)*S22/(magr2**(7./2))
-        S22term2 = GMe_SI*(Re**2)*np.sqrt(15)*S22/(magr2**(5./2))
+        S22term1 = 5*GMe_SI*(Re_SI**2)*np.sqrt(15)*S22/(magr2**(7./2))
+        S22term2 = GMe_SI*(Re_SI**2)*np.sqrt(15)*S22/(magr2**(5./2))
         fS22X = -S22term1*(X**2)*Y + S22term2*Y
         fS22Y = -S22term1*X*(Y**2) + S22term2*X
         fS22Z = -S22term1*X*Y*Z
@@ -147,7 +148,7 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
 
     if sun:
         #We add Sun's gravity
-        GMo_SI = GMo * 1E9
+        GMo_SI = GMo_ * 1E9
         fSunX = -GMo_SI*( (x - Xo)/(magRRo2**(3./2)) + Xo/(magRo2**(3./2)) )
         fSunY = -GMo_SI*( (y - Yo)/(magRRo2**(3./2)) + Yo/(magRo2**(3./2)) )
         fSunZ = -GMo_SI*( (z - Zo)/(magRRo2**(3./2)) + Zo/(magRo2**(3./2)) )
@@ -189,7 +190,7 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
         Zm =  np.cos(epsilon)*hy.sin(Bm)*rm + hy.cos(Bm)*np.sin(epsilon)*hy.sin(lambda_m)*rm
 
         #We add Moon's gravity 
-        GMm_SI = GMm * 1E9
+        GMm_SI = GMm_ * 1E9
         magRm2 = Xm**2 + Ym**2 + Zm**2
         magRRm2 = (x - Xm)**2 + (y - Ym)**2 + (z - Zm)**2
         fMoonX = -GMm_SI*( (x - Xm)/(magRRm2**(3./2)) + Xm/(magRm2**(3./2)) )
@@ -202,7 +203,6 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
 
     drag_par_idx = 0
     if drag:
-        Re_SI = Re * 1000.
         # Adds the drag force.
         magv2 = hy.sum_sq([vx, vy, vz])
         magv = hy.sqrt(magv2)
@@ -221,7 +221,7 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
     srp_par_idx = 0
     if SRP:
         PSRP_SI = PSRP / 1000. #[kg/(m*sec^2)]
-        alpha_o_SI = alpha_o * 1000. #[m]
+        alpha_o_SI = alpha_o_ * 1000. #[m]
         if drag:
             srp_par_idx=1
         SRPterm = hy.par[srp_par_idx]*PSRP_SI*(alpha_o_SI**2)/(magRRo2**(3./2))
