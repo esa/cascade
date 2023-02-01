@@ -211,7 +211,7 @@ void sim::broad_phase_parallel()
                                     // Determine if i is active for collisions and conjunctions.
                                     // NOTE: these computations are redundant, in the sense that
                                     // they will be performed again when pidx == i in the outer loop.
-                                    // We cannot however store safely the results of these computations
+                                    // We cannot however safely store the results of these computations
                                     // in coll/conj_active due to data races, hence we live with the
                                     // duplication.
                                     const auto coll_active_i
@@ -291,6 +291,13 @@ void sim::verify_broad_phase_parallel() const
     // Is the conjunction whitelist empty?
     const auto conj_wl_empty = m_conj_whitelist.empty();
 
+    // Fetch views on the activity flag vectors.
+    using flag_size_t = decltype(m_data->coll_active.size());
+    stdex::mdspan coll_a_view(m_data->coll_active.data(), static_cast<flag_size_t>(nchunks),
+                              static_cast<flag_size_t>(nparts));
+    stdex::mdspan conj_a_view(m_data->conj_active.data(), static_cast<flag_size_t>(nchunks),
+                              static_cast<flag_size_t>(nparts));
+
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
             // Build a set version of the collision list
@@ -322,6 +329,9 @@ void sim::verify_broad_phase_parallel() const
                     const auto coll_active_i
                         = (sv(i, 6u) > min_coll_radius) && (coll_wl_empty || m_coll_whitelist.count(i) == 1u);
                     const auto conj_active_i = with_conj && (conj_wl_empty || m_conj_whitelist.count(i) == 1u);
+
+                    assert(coll_active_i == coll_a_view(chunk_idx, i));
+                    assert(conj_active_i == conj_a_view(chunk_idx, i));
 
                     oneapi::tbb::parallel_for(
                         oneapi::tbb::blocked_range<size_type>(i + 1u, nparts), [&](const auto &rj) {

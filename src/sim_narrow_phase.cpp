@@ -634,6 +634,8 @@ void sim::narrow_phase_parallel()
                         const auto pj_coll_active = coll_a_view(chunk_idx, pj);
                         const auto pj_conj_active = conj_a_view(chunk_idx, pj);
 
+                        assert(pi_coll_active || pj_coll_active || pi_conj_active || pj_conj_active);
+
                         // Fetch a reference to the substep data
                         // for the two particles.
                         const auto &sd_i = s_data[pi];

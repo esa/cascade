@@ -390,8 +390,8 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
     set_min_coll_radius(min_coll_radius);
 
     // Set the whitelists.
-    m_coll_whitelist = std::move(coll_whitelist);
-    m_conj_whitelist = std::move(conj_whitelist);
+    set_coll_whitelist(std::move(coll_whitelist));
+    set_conj_whitelist(std::move(conj_whitelist));
 
     if (dyn.empty()) {
         // Default is Keplerian dynamics with unitary mu.
