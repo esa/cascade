@@ -503,6 +503,7 @@ void sim::narrow_phase_parallel()
     auto *logger = detail::get_logger();
 
     // Cache a few bits.
+    const auto nparts = get_nparts();
     const auto nchunks = m_data->nchunks;
     const auto order = m_data->s_ta.get_order();
     const auto &s_data = m_data->s_data;
@@ -520,6 +521,7 @@ void sim::narrow_phase_parallel()
         // LCOV_EXCL_STOP
     }
 
+    // Is conjunction detection activated globally?
     const auto with_conj = (m_conj_thresh != 0);
 
     // The time coordinate at the beginning of
@@ -533,6 +535,13 @@ void sim::narrow_phase_parallel()
     // access the particles' sizes.
     stdex::mdspan sv(std::as_const(m_state)->data(),
                      stdex::extents<size_type, stdex::dynamic_extent, 7u>(get_nparts()));
+
+    // Fetch views on the activity flag vectors.
+    using flag_size_t = decltype(m_data->coll_active.size());
+    stdex::mdspan coll_a_view(std::as_const(m_data)->coll_active.data(), static_cast<flag_size_t>(nchunks),
+                              static_cast<flag_size_t>(nparts));
+    stdex::mdspan conj_a_view(std::as_const(m_data)->conj_active.data(), static_cast<flag_size_t>(nchunks),
+                              static_cast<flag_size_t>(nparts));
 
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
@@ -618,6 +627,12 @@ void sim::narrow_phase_parallel()
                         const auto pj = pc.second;
 
                         assert(pi != pj);
+
+                        // Get the activity flags.
+                        const auto pi_coll_active = coll_a_view(chunk_idx, pi);
+                        const auto pi_conj_active = conj_a_view(chunk_idx, pi);
+                        const auto pj_coll_active = coll_a_view(chunk_idx, pj);
+                        const auto pj_conj_active = conj_a_view(chunk_idx, pj);
 
                         // Fetch a reference to the substep data
                         // for the two particles.
@@ -780,19 +795,23 @@ void sim::narrow_phase_parallel()
                             // Remember the original constant term of the polynomial.
                             const auto orig_const_cf = ss_diff_ptr[0];
 
-                            // Step 1: detect physical collision.
-                            // Modify the constant term of the polynomial to account for
-                            // particle sizes.
-                            ss_diff_ptr[0] -= (p_rad_i + p_rad_j) * (p_rad_i + p_rad_j);
+                            // Step 1: detect physical collision, if needed.
+                            if (pi_coll_active || pj_coll_active) {
+                                // Modify the constant term of the polynomial to account for
+                                // particle sizes.
+                                ss_diff_ptr[0] -= (p_rad_i + p_rad_j) * (p_rad_i + p_rad_j);
 
-                            // Run polynomial root finding.
-                            detail::run_poly_root_finding(ss_diff_ptr, order, rf_int, isol, wlist, fex_check, rtscc,
-                                                          pt1, pi, pj, logger, -1, m_data->coll_vec, lb_rf, tmp, tmp1,
-                                                          tmp2, r_iso_cache);
+                                // Run polynomial root finding.
+                                detail::run_poly_root_finding(ss_diff_ptr, order, rf_int, isol, wlist, fex_check, rtscc,
+                                                              pt1, pi, pj, logger, -1, m_data->coll_vec, lb_rf, tmp,
+                                                              tmp1, tmp2, r_iso_cache);
+                            }
 
-                            // Step 2: do conjunction tracking, if requested.
-                            if (with_conj) {
-                                // Restore the original constant term of the polynomial.
+                            // Step 2: do conjunction tracking, if needed.
+                            if (pi_conj_active || pj_conj_active) {
+                                // Restore the original constant term of the polynomial,
+                                // which might have been modified by phyisical collision
+                                // detection.
                                 ss_diff_ptr[0] = orig_const_cf;
 
                                 // Evaluate the dist2 polynomial in the [0, rf_int) interval.

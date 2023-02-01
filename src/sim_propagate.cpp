@@ -607,6 +607,10 @@ outcome sim::step()
     // Broad phase data.
     resize_if_needed(nchunks, m_data->bp_coll, m_data->bp_data_caches);
 
+    // Activity flags.
+    using safe_flag_size_t = boost::safe_numerics::safe<decltype(m_data->coll_active.size())>;
+    resize_if_needed(safe_flag_size_t(nchunks) * nparts, m_data->coll_active, m_data->conj_active);
+
     // Narrow phase data.
     resize_if_needed(nchunks, m_data->np_caches, m_data->conj_vecs);
 
