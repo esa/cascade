@@ -226,8 +226,9 @@ struct sim::sim_data {
     // Chunk-local vectors of detected broad phase collisions between AABBs.
     std::vector<oneapi::tbb::concurrent_vector<std::pair<size_type, size_type>>> bp_coll;
     // Vectors to flag whether or not particles are active
-    // for collisions and conjunctions. The shape for both
-    // is (nchunks, nparts).
+    // for collisions and conjunctions. These are determined
+    // at the beginning of each superstep. within which they
+    // do not change.
     std::vector<char> coll_active, conj_active;
 
     // Struct for holding polynomial caches used during

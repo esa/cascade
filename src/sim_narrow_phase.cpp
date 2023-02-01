@@ -503,7 +503,6 @@ void sim::narrow_phase_parallel()
     auto *logger = detail::get_logger();
 
     // Cache a few bits.
-    const auto nparts = get_nparts();
     const auto nchunks = m_data->nchunks;
     const auto order = m_data->s_ta.get_order();
     const auto &s_data = m_data->s_data;
@@ -535,13 +534,6 @@ void sim::narrow_phase_parallel()
     // access the particles' sizes.
     stdex::mdspan sv(std::as_const(m_state)->data(),
                      stdex::extents<size_type, stdex::dynamic_extent, 7u>(get_nparts()));
-
-    // Fetch views on the activity flag vectors.
-    using flag_size_t = decltype(m_data->coll_active.size());
-    stdex::mdspan coll_a_view(std::as_const(m_data)->coll_active.data(), static_cast<flag_size_t>(nchunks),
-                              static_cast<flag_size_t>(nparts));
-    stdex::mdspan conj_a_view(std::as_const(m_data)->conj_active.data(), static_cast<flag_size_t>(nchunks),
-                              static_cast<flag_size_t>(nparts));
 
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
@@ -631,15 +623,15 @@ void sim::narrow_phase_parallel()
                         assert(pi != pj);
 
                         // Get the activity flags.
-                        const auto pi_coll_active = coll_a_view(chunk_idx, pi);
-                        const auto pi_conj_active = conj_a_view(chunk_idx, pi);
-                        const auto pj_coll_active = coll_a_view(chunk_idx, pj);
-                        const auto pj_conj_active = conj_a_view(chunk_idx, pj);
+                        const auto pi_coll_active = m_data->coll_active[pi];
+                        const auto pi_conj_active = m_data->conj_active[pi];
+                        const auto pj_coll_active = m_data->coll_active[pj];
+                        const auto pj_conj_active = m_data->conj_active[pj];
+
+                        assert(pi_coll_active || pj_coll_active || pi_conj_active || pj_conj_active);
 
                         // Is conjunction detection active for this pair of particles?
                         const auto pij_conj_active = pi_conj_active || pj_conj_active;
-
-                        assert(pi_coll_active || pj_coll_active || pi_conj_active || pj_conj_active);
 
                         // Fetch a reference to the substep data
                         // for the two particles.
