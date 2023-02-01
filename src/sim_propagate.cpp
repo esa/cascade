@@ -555,7 +555,7 @@ outcome sim::step()
     // Are we detecting conjunctions in this timestep?
     const auto with_conj = m_conj_thresh != 0;
 
-    // Prepare the s_data buffers with the correct sizes.
+    // Prepare the data in m_data with the correct sizes.
 
     // NOTE: this is a helper that resizes vec to new_size
     // only if vec is currently smaller than new_size.
