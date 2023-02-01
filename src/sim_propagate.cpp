@@ -621,30 +621,23 @@ outcome sim::step()
     stdex::mdspan ubs(m_data->ubs.data(),
                       stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
 
-    // Fetch a view on the state vector in order to
-    // access the particles' sizes.
-    stdex::mdspan sv(std::as_const(m_state)->data(), stdex::extents<size_type, stdex::dynamic_extent, 7u>(nparts));
-
-    // Cache the minimum collisional radius.
-    const auto min_coll_radius = m_min_coll_radius;
-    // Is the collision whitelist empty?
-    const auto coll_wl_empty = m_coll_whitelist.empty();
-
     // Is conjunction detection enabled globally?
     const auto with_conj = (m_conj_thresh != 0);
-    // Is the conjunction whitelist empty?
-    const auto conj_wl_empty = m_conj_whitelist.empty();
 
     // Helper to set the coll/conj active flags for particle idx.
-    auto setup_cc_active_flags = [&](size_type idx) {
-        const auto coll_active_idx
-            = (sv(idx, 6u) > min_coll_radius) && (coll_wl_empty || m_coll_whitelist.count(idx) == 1u);
+    auto setup_cc_active_flags
+        = [&, min_coll_radius = m_min_coll_radius, coll_wl_empty = m_coll_whitelist.empty(),
+           conj_wl_empty = m_conj_whitelist.empty(),
+           sv = stdex::mdspan(std::as_const(m_state)->data(),
+                              stdex::extents<size_type, stdex::dynamic_extent, 7u>(nparts))](size_type idx) {
+              const auto coll_active_idx
+                  = (sv(idx, 6u) > min_coll_radius) && (coll_wl_empty || m_coll_whitelist.count(idx) == 1u);
 
-        const auto conj_active_idx = with_conj && (conj_wl_empty || m_conj_whitelist.count(idx) == 1u);
+              const auto conj_active_idx = with_conj && (conj_wl_empty || m_conj_whitelist.count(idx) == 1u);
 
-        m_data->coll_active[idx] = static_cast<char>(coll_active_idx);
-        m_data->conj_active[idx] = static_cast<char>(conj_active_idx);
-    };
+              m_data->coll_active[idx] = static_cast<char>(coll_active_idx);
+              m_data->conj_active[idx] = static_cast<char>(conj_active_idx);
+          };
 
     // Numerical integration and computation of the AABBs in batch mode.
     auto batch_int_aabb = [&](const auto &range) {
