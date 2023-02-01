@@ -28,7 +28,7 @@ def _compute_atmospheric_density(h):
         retval += alpha*hy.exp(-(h-gamma)*beta)
     return retval
 
-def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=True):
+def simple_earth(J2=True, J3=False, C22S22=True, sun=False, moon=False, SRP=False, drag=True):
     """Returns heyoka expressions to be used as dynamics in :class:`~cascade.sim` and corresponding
     to the Earth orbital environment as perturbed by selectable terms.
 
@@ -51,6 +51,7 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
 
     Args:
         J2 (bool, optional): adds the Earth J2 spherical harmonic (C20 Stokes' coefficient). Defaults to True.
+        J3 (bool, optional): adds the Earth J3 spherical harmonic (C30 Stokes' coefficient). Defaults to False.
         C22S22 (bool, optional): adds the Earth C22 and S22 Stokes' coefficients. Defaults to True.
         sun (bool, optional): adds the Sun gravity. Defaults to False.
         moon (bool, optional): adds the Moon gravity. Defaults to False.
@@ -71,7 +72,8 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
     Re_ = 6378.1363 #[km]
     C20 = -4.84165371736e-4
     C22 = 2.43914352398e-6
-    S22 = -1.40016683654e-6
+    S22 = -1.40016683654e-6 # (J2 is 1.75553E25, this is the Stokes coefficient)
+    J3_value = -2.61913e29 # name is to differentiate from kwarg
     theta_g = (np.pi/180)*280.4606 #[rad] # This value defines the rotation of the Earth fixed system at t0
     nu_e = (np.pi/180)*(4.178074622024230e-3) #[rad/sec] # This value represents the Earth spin angular velocity.
     nu_o = (np.pi/180)*(1.1407410259335311e-5) #[rad/sec]
@@ -105,6 +107,16 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
         dyn[3] = (dyn[3][0], dyn[3][1] + fJ2x)
         dyn[4] = (dyn[4][0], dyn[4][1] + fJ2y)
         dyn[5] = (dyn[5][0], dyn[5][1] + fJ2z)
+
+    if J3:
+        magr9 = magr2**(1/2) * magr2**4 # r**9
+        fJ3x = J3_value * x * y / magr9 * (10* z**2 -15/2 *(x**2 + y**2))
+        fJ3y = J3_value * z * y / magr9 * (10* z**2 -15/2 *(x**2 + y**2))
+        fJ3z = J3_value * 1 / magr9 * (4 * z**2 * (z**2 - 3 * (x**2 + y**2)) + 3/2 * (x**2 + y**2)**2)
+        dyn[3] = (dyn[3][0], dyn[3][1] + fJ3x)
+        dyn[4] = (dyn[4][0], dyn[4][1] + fJ3y)
+        dyn[5] = (dyn[5][0], dyn[5][1] + fJ3z)
+
 
     if C22S22:
         X =  x*hy.cos(theta_g + nu_e*hy.time) + y*hy.sin(theta_g + nu_e*hy.time)
@@ -220,7 +232,7 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
 
     srp_par_idx = 0
     if SRP:
-        PSRP_SI = PSRP / 1000. #[kg/(m*sec^2)]
+        PSRP_SI = PSRP_ / 1000. #[kg/(m*sec^2)]
         alpha_o_SI = alpha_o_ * 1000. #[m]
         if drag:
             srp_par_idx=1
