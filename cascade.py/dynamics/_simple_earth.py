@@ -28,7 +28,7 @@ def _compute_atmospheric_density(h):
         retval += alpha*hy.exp(-(h-gamma)*beta)
     return retval
 
-def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=True):
+def simple_earth(J2=True, J3=False, C22S22=True, sun=False, moon=False, SRP=False, drag=True):
     """Returns heyoka expressions to be used as dynamics in :class:`~cascade.sim` and corresponding
     to the Earth orbital environment as perturbed by selectable terms.
 
@@ -51,6 +51,7 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
 
     Args:
         J2 (bool, optional): adds the Earth J2 spherical harmonic (C20 Stokes' coefficient). Defaults to True.
+        J3 (bool, optional): adds the Earth J3 spherical harmonic (C30 Stokes' coefficient). Defaults to False.
         C22S22 (bool, optional): adds the Earth C22 and S22 Stokes' coefficients. Defaults to True.
         sun (bool, optional): adds the Sun gravity. Defaults to False.
         moon (bool, optional): adds the Moon gravity. Defaults to False.
@@ -64,38 +65,40 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
     import heyoka as hy
     import numpy as np
 
-    #constants
-    GMe = 3.986004407799724e+5 # [km^3/sec^2]
-    GMo = 1.32712440018e+11 #[km^3/sec^2]
-    GMm = 4.9028e+3 #[km^3/sec^2]
-    Re = 6378.1363 #[km]
-    C20 = -4.84165371736e-4
+    #constants (final underscore reminds us its not SI)
+    GMe_ = 3.986004407799724e+5 # [km^3/sec^2]
+    GMo_ = 1.32712440018e+11 #[km^3/sec^2]
+    GMm_ = 4.9028e+3 #[km^3/sec^2]
+    Re_ = 6378.1363 #[km]
+    C20 = -4.84165371736e-4 # (J2 in m^5/s^2 is 1.75553E25, C20 is the Stokes coefficient)
     C22 = 2.43914352398e-6
-    S22 = -1.40016683654e-6
+    S22 = -1.40016683654e-6 
+    J3_dim_value = -2.61913e29 # (m^6/s^2) is # name is to differentiate from kwarg
     theta_g = (np.pi/180)*280.4606 #[rad] # This value defines the rotation of the Earth fixed system at t0
     nu_e = (np.pi/180)*(4.178074622024230e-3) #[rad/sec] # This value represents the Earth spin angular velocity.
     nu_o = (np.pi/180)*(1.1407410259335311e-5) #[rad/sec]
     nu_ma = (np.pi/180)*(1.512151961904581e-4) #[rad/sec]
     nu_mp = (np.pi/180)*(1.2893925235125941e-6) #[rad/sec]
     nu_ms = (np.pi/180)*(6.128913003523574e-7) #[rad/sec]
-    alpha_o = 1.49619e+8 #[km]
+    alpha_o_ = 1.49619e+8 #[km]
     epsilon = (np.pi/180)*23.4392911 #[rad]
     phi_o = (np.pi/180)*357.5256 #[rad]
     Omega_plus_w = (np.pi/180)*282.94 #[rad]
-    PSRP = 4.56e-3 #[kg/(km*sec^2)]
+    PSRP_ = 4.56e-3 #[kg/(km*sec^2)]
 
     # Dynamical variables.
     x,y,z,vx,vy,vz = hy.make_vars("x","y","z","vx","vy","vz")
 
     # Create Keplerian dynamics in SI units.
-    GMe_SI = GMe * 1E9
+    GMe_SI = GMe_ * 1E9
     dyn = kepler(mu = GMe_SI)
 
     # Define the radius squared
     magr2 = hy.sum_sq([x, y, z])
 
+    Re_SI = Re_ * 1000
     if J2:
-        J2term1 = GMe_SI*(Re**2)*np.sqrt(5)*C20/(2*magr2**(1./2))
+        J2term1 = GMe_SI*(Re_SI**2)*np.sqrt(5)*C20/(2*magr2**(1/2))
         J2term2 = 3/(magr2**2)
         J2term3 = 15*(z**2)/(magr2**3)
         fJ2x = J2term1*x*(J2term2 - J2term3)
@@ -105,19 +108,29 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
         dyn[4] = (dyn[4][0], dyn[4][1] + fJ2y)
         dyn[5] = (dyn[5][0], dyn[5][1] + fJ2z)
 
+    if J3:
+        magr9 = magr2**(1/2) * magr2**4 # r**9
+        fJ3x = J3_dim_value * x * y / magr9 * (10* z**2 -15/2 *(x**2 + y**2))
+        fJ3y = J3_dim_value * z * y / magr9 * (10* z**2 -15/2 *(x**2 + y**2))
+        fJ3z = J3_dim_value * 1 / magr9 * (4 * z**2 * (z**2 - 3 * (x**2 + y**2)) + 3/2 * (x**2 + y**2)**2)
+        dyn[3] = (dyn[3][0], dyn[3][1] + fJ3x)
+        dyn[4] = (dyn[4][0], dyn[4][1] + fJ3y)
+        dyn[5] = (dyn[5][0], dyn[5][1] + fJ3z)
+
+
     if C22S22:
         X =  x*hy.cos(theta_g + nu_e*hy.time) + y*hy.sin(theta_g + nu_e*hy.time)
         Y = -x*hy.sin(theta_g + nu_e*hy.time) + y*hy.cos(theta_g + nu_e*hy.time)
         Z = z
 
-        C22term1 = 5*GMe_SI*(Re**2)*np.sqrt(15)*C22/(2*magr2**(7./2))
-        C22term2 = GMe_SI*(Re**2)*np.sqrt(15)*C22/(magr2**(5./2))
+        C22term1 = 5*GMe_SI*(Re_SI**2)*np.sqrt(15)*C22/(2*magr2**(7/2))
+        C22term2 = GMe_SI*(Re_SI**2)*np.sqrt(15)*C22/(magr2**(5/2))
         fC22X = C22term1*X*(Y**2 - X**2) + C22term2*X
         fC22Y = C22term1*Y*(Y**2 - X**2) - C22term2*Y
         fC22Z = C22term1*Z*(Y**2 - X**2)
 
-        S22term1 = 5*GMe_SI*(Re**2)*np.sqrt(15)*S22/(magr2**(7./2))
-        S22term2 = GMe_SI*(Re**2)*np.sqrt(15)*S22/(magr2**(5./2))
+        S22term1 = 5*GMe_SI*(Re_SI**2)*np.sqrt(15)*S22/(magr2**(7./2))
+        S22term2 = GMe_SI*(Re_SI**2)*np.sqrt(15)*S22/(magr2**(5./2))
         fS22X = -S22term1*(X**2)*Y + S22term2*Y
         fS22Y = -S22term1*X*(Y**2) + S22term2*X
         fS22Z = -S22term1*X*Y*Z
@@ -147,7 +160,7 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
 
     if sun:
         #We add Sun's gravity
-        GMo_SI = GMo * 1E9
+        GMo_SI = GMo_ * 1E9
         fSunX = -GMo_SI*( (x - Xo)/(magRRo2**(3./2)) + Xo/(magRo2**(3./2)) )
         fSunY = -GMo_SI*( (y - Yo)/(magRRo2**(3./2)) + Yo/(magRo2**(3./2)) )
         fSunZ = -GMo_SI*( (z - Zo)/(magRRo2**(3./2)) + Zo/(magRo2**(3./2)) )
@@ -189,7 +202,7 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
         Zm =  np.cos(epsilon)*hy.sin(Bm)*rm + hy.cos(Bm)*np.sin(epsilon)*hy.sin(lambda_m)*rm
 
         #We add Moon's gravity 
-        GMm_SI = GMm * 1E9
+        GMm_SI = GMm_ * 1E9
         magRm2 = Xm**2 + Ym**2 + Zm**2
         magRRm2 = (x - Xm)**2 + (y - Ym)**2 + (z - Zm)**2
         fMoonX = -GMm_SI*( (x - Xm)/(magRRm2**(3./2)) + Xm/(magRm2**(3./2)) )
@@ -202,7 +215,6 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
 
     drag_par_idx = 0
     if drag:
-        Re_SI = Re * 1000.
         # Adds the drag force.
         magv2 = hy.sum_sq([vx, vy, vz])
         magv = hy.sqrt(magv2)
@@ -220,8 +232,8 @@ def simple_earth(J2=True, C22S22=True, sun=False, moon=False, SRP=False, drag=Tr
 
     srp_par_idx = 0
     if SRP:
-        PSRP_SI = PSRP / 1000. #[kg/(m*sec^2)]
-        alpha_o_SI = alpha_o * 1000. #[m]
+        PSRP_SI = PSRP_ / 1000. #[kg/(m*sec^2)]
+        alpha_o_SI = alpha_o_ * 1000. #[m]
         if drag:
             srp_par_idx=1
         SRPterm = hy.par[srp_par_idx]*PSRP_SI*(alpha_o_SI**2)/(magRRo2**(3./2))

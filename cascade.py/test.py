@@ -15,19 +15,54 @@ class dynamics_test_case(_ut.TestCase):
 
     def test_simple_earth_api(self):
         from .dynamics import simple_earth
-        simple_earth(J2=True, C22S22=False,sun=False,moon=False,SRP=False,drag=False)
-        simple_earth(J2=True, C22S22=True,sun=False,moon=False,SRP=False,drag=False)
-        simple_earth(J2=True, C22S22=True,sun=True,moon=False,SRP=False,drag=False)
-        simple_earth(J2=True, C22S22=True,sun=True,moon=True,SRP=False,drag=False)
-        simple_earth(J2=True, C22S22=True,sun=True,moon=True,SRP=True,drag=False)
-        simple_earth(J2=True, C22S22=True,sun=True,moon=True,SRP=False,drag=True)
-        simple_earth(J2=True, C22S22=True,sun=True,moon=True,SRP=True,drag=True)
+        simple_earth(J2=True, J3=False, C22S22=False,sun=False,moon=False,SRP=False,drag=False)
+        simple_earth(J2=True, J3=True, C22S22=False,sun=False,moon=False,SRP=False,drag=False)
+        simple_earth(J2=True, J3=True, C22S22=True,sun=False,moon=False,SRP=False,drag=False)
+        simple_earth(J2=True, J3=True, C22S22=True,sun=True,moon=False,SRP=False,drag=False)
+        simple_earth(J2=True, J3=True, C22S22=True,sun=True,moon=True,SRP=False,drag=False)
+        simple_earth(J2=True, J3=True, C22S22=True,sun=True,moon=True,SRP=True,drag=False)
+        simple_earth(J2=True, J3=True, C22S22=True,sun=True,moon=True,SRP=False,drag=True)
+        simple_earth(J2=True, J3=True, C22S22=True,sun=True,moon=True,SRP=True,drag=True)
 
     def test_kepler_equivalence(self):
         from .dynamics import simple_earth, kepler
         dyn1 = simple_earth(J2=False, C22S22=False,sun=False,moon=False,SRP=False,drag=False)
         dyn2 = kepler(mu = 3.986004407799724e+5 * 1E9)
         self.assertEqual(dyn1, dyn2)
+
+    def test_perturbation_magnitudes(self):
+        from .dynamics import simple_earth, kepler
+        import numpy as np
+        from heyoka import make_cfunc
+        dynkep = simple_earth(J2=False, J3=False, C22S22=False,sun=False,moon=False,SRP=False,drag=False)
+        dynJ2 = simple_earth(J2=True, J3=False, C22S22=False,sun=False,moon=False,SRP=False,drag=False)
+        dynJ3 = simple_earth(J2=False, J3=True, C22S22=False,sun=False,moon=False,SRP=False,drag=False)
+
+        dynkep_c = make_cfunc([dynkep[i][1] for i in [3,4,5]])
+        dynJ2_c = make_cfunc([dynJ2[i][1] for i in [3,4,5]])
+        dynJ3_c = make_cfunc([dynJ3[i][1] for i in [3,4,5]])
+
+        # We compute the various acceleration magnitudes at 7000 km
+        pos = np.array([7000000., 0., 0.])
+        acckep = dynkep_c(pos)
+        accJ2 = dynJ2_c(pos) - dynkep_c(pos)
+        accJ3 = dynJ3_c(pos) - dynkep_c(pos)
+
+        # And check magnitudes
+        self.assertTrue(np.linalg.norm(acckep) > 8)
+        self.assertTrue(np.linalg.norm(accJ2) > 0.01)
+        self.assertTrue(np.linalg.norm(accJ3) > 0.00001)
+        self.assertTrue(np.linalg.norm(acckep) < 10)
+        self.assertTrue(np.linalg.norm(accJ2) < 0.1)
+        self.assertTrue(np.linalg.norm(accJ3) < 0.0001)
+
+
+
+
+
+
+
+
 
 
 class sim_test_case(_ut.TestCase):
@@ -125,7 +160,7 @@ class sim_test_case(_ut.TestCase):
         self.assertEqual(s.ct, 1.0)
         self.assertFalse(s.high_accuracy)
         self.assertEqual(s.npars, 0)
-        self.assertEqual(s.c_radius, 0.0)
+        self.assertEqual(s.reentry_radius, 0.0)
         self.assertEqual(s.d_radius, 0.0)
         self.assertEqual(s.n_par_ct, 1)
         self.assertEqual(s.conj_thresh, 0)
@@ -145,7 +180,7 @@ class sim_test_case(_ut.TestCase):
             state=[[1.0, 0.001, 0.001, 0.001, 1.0, 0.001, 0.001]],
             dyn=dyn,
             pars=[[0.002, 0.001]],
-            c_radius=[0.1, 0.2, 0.3],
+            reentry_radius=[0.1, 0.2, 0.3],
             d_radius=100.0,
             tol=1e-12,
             high_accuracy=True,
@@ -162,7 +197,7 @@ class sim_test_case(_ut.TestCase):
         self.assertEqual(s.ct, 0.5)
         self.assertTrue(s.high_accuracy)
         self.assertEqual(s.npars, 2)
-        self.assertEqual(s.c_radius, [0.1, 0.2, 0.3])
+        self.assertEqual(s.reentry_radius, [0.1, 0.2, 0.3])
         self.assertEqual(s.d_radius, 100.0)
         self.assertEqual(s.tol, 1e-12)
         self.assertEqual(s.n_par_ct, 2)
@@ -179,7 +214,7 @@ class sim_test_case(_ut.TestCase):
         self.assertEqual(s.ct, 0.5)
         self.assertTrue(s.high_accuracy)
         self.assertEqual(s.npars, 2)
-        self.assertEqual(s.c_radius, [0.1, 0.2, 0.3])
+        self.assertEqual(s.reentry_radius, [0.1, 0.2, 0.3])
         self.assertEqual(s.d_radius, 100.0)
         self.assertEqual(s.tol, 1e-12)
 
@@ -188,13 +223,13 @@ class sim_test_case(_ut.TestCase):
             state=[[1.0, 0.001, 0.001, 0.001, 1.0, 0.001, 0.001]],
             dyn=dyn,
             pars=[[0.002, 0.001]],
-            c_radius=0.1,
+            reentry_radius=0.1,
             d_radius=100.0,
             tol=1e-12,
             high_accuracy=True,
         )
 
-        self.assertEqual(s.c_radius, 0.1)
+        self.assertEqual(s.reentry_radius, 0.1)
 
         with self.assertRaises(ValueError) as cm:
             sim(state=[1.0, 2.0, 3.0], ct=1)

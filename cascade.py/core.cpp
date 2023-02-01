@@ -78,7 +78,7 @@ PYBIND11_MODULE(core, m)
         .def(py::init<>())
         .def(py::init([](const py::array_t<double> &state, double ct,
                          std::optional<std::vector<std::pair<hy::expression, hy::expression>>> dyn_,
-                         std::optional<std::variant<double, std::vector<double>>> c_radius_,
+                         std::optional<std::variant<double, std::vector<double>>> reentry_radius_,
                          std::optional<double> d_radius_, const std::optional<py::array_t<double>> &pars_,
                          std::optional<double> tol_, bool ha, std::uint32_t n_par_ct, double conj_thresh) {
                  // Check the input state.
@@ -103,10 +103,10 @@ PYBIND11_MODULE(core, m)
                  // Init the dynamics.
                  auto dyn = dyn_ ? std::move(*dyn_) : std::vector<std::pair<hy::expression, hy::expression>>{};
 
-                 // Init c_radius.
-                 auto c_radius = c_radius_ ? std::move(*c_radius_) : 0.;
+                 // Init reentry_radius_. When zero is not defined anf the corresponding event will not be instantiated.
+                 auto reentry_radius = reentry_radius_ ? std::move(*reentry_radius_) : 0.;
 
-                 // Init d_radius.
+                 // Init d_radius. When zero is not defined anf the corresponding event will not be instantiated.
                  auto d_radius = d_radius_ ? *d_radius_ : 0.;
 
                  // Prepare the pars vector.
@@ -146,9 +146,9 @@ PYBIND11_MODULE(core, m)
                                     kw::c_radius = std::forward<decltype(cr_val)>(cr_val), kw::d_radius = d_radius,
                                     kw::pars = std::move(pars_vec), kw::tol = tol, kw::high_accuracy = ha, kw::n_par_ct = n_par_ct, kw::conj_thresh = conj_thresh);
                      },
-                     std::move(c_radius));
+                     std::move(reentry_radius));
              }),
-             "state"_a, "ct"_a, "dyn"_a = py::none{}, "c_radius"_a = py::none{}, "d_radius"_a = py::none{},
+             "state"_a, "ct"_a, "dyn"_a = py::none{}, "reentry_radius"_a = py::none{}, "d_radius"_a = py::none{},
              "pars"_a = py::none{}, "tol"_a = py::none{}, "high_accuracy"_a = false, "n_par_ct"_a = 1, "conj_thresh"_a = 0.)
         .def_property_readonly("interrupt_info", &sim::get_interrupt_info)
         .def_property("time", &sim::get_time, &sim::set_time)
@@ -162,7 +162,7 @@ PYBIND11_MODULE(core, m)
         .def_property_readonly("npars", &sim::get_npars)
         .def_property_readonly("tol", &sim::get_tol)
         .def_property_readonly("high_accuracy", &sim::get_high_accuracy)
-        .def_property_readonly("c_radius", &sim::get_c_radius)
+        .def_property_readonly("reentry_radius", &sim::get_c_radius)
         .def_property_readonly("d_radius", &sim::get_d_radius)
         .def(
             "step",
