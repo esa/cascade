@@ -96,6 +96,10 @@ public:
 
         // Conjunction distance.
         double dist = 0;
+
+        // State of the two particles.
+        std::array<double, 6> state_i = {};
+        std::array<double, 6> state_j = {};
     };
 
     // The whitelist type.

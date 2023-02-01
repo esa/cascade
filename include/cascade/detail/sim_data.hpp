@@ -258,10 +258,9 @@ struct sim::sim_data {
         // The type used to store the list of isolating intervals.
         using isol_t = std::vector<std::tuple<double, double>>;
 
-        // Polynomial buffers used in the construction
-        // of the dist square polynomial and its time
-        // derivative.
-        std::array<std::vector<double>, 8> dist2;
+        // Buffers used as temporary storage for the results
+        // of operations on polynomials.
+        std::array<std::vector<double>, 14> dist2;
         // Vector to store the input for the cfunc used to compute
         // the distance square polynomial.
         std::vector<double> diff_input;

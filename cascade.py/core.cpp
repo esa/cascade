@@ -71,7 +71,7 @@ PYBIND11_MODULE(core, m)
         .value("err_nf_state", outcome::err_nf_state);
 
     // Conjunction structure.
-    PYBIND11_NUMPY_DTYPE(sim::conjunction, i, j, time, dist);
+    PYBIND11_NUMPY_DTYPE(sim::conjunction, i, j, time, dist, state_i, state_j);
 
     // sim class.
     using whitelist_t = sim::whitelist_t;
