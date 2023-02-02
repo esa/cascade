@@ -352,12 +352,12 @@
     "        v1 = v_sgp4[idx1,i,:]\n",
     "        v2 = v_sgp4[idx2,i,:]\n",
     "        # we get the collision radiu from debris (indexed differently hence to_satcat is used)\n",
-    "        reentry_radius1 = satcat[to_satcat_index[idx1]][\"RADIUS\"]\n",
-    "        reentry_radius2 = satcat[to_satcat_index[idx2]][\"RADIUS\"]\n",
+    "        radius1 = satcat[to_satcat_index[idx1]][\"RADIUS\"]\n",
+    "        radius2 = satcat[to_satcat_index[idx2]][\"RADIUS\"]\n",
     "        # Relative velocity \n",
     "        Vrel = np.linalg.norm(v1-v2)\n",
     "        # Collisional area of the couple (in km^2)\n",
-    "        sigma = np.pi*((reentry_radius1+reentry_radius2)/1000)**2 \n",
+    "        sigma = np.pi*((radius1+radius2)/1000)**2 \n",
     "        # Volume of the cube (km^3)\n",
     "        U = (Lcube)**3\n",
     "        # We compute the spatial densities\n",
@@ -404,7 +404,7 @@
    "name": "python",
    "nbconvert_exporter": "python",
    "pygments_lexer": "ipython3",
-   "version": "3.10.8"
+   "version": "3.10.8 | packaged by conda-forge | (main, Nov 22 2022, 08:26:04) [GCC 10.4.0]"
   },
   "vscode": {
    "interpreter": {

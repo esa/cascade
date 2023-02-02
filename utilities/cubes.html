@@ -99,8 +99,13 @@
 </p>
 <ul class="nav sidenav_l1">
  <li class="toctree-l1">
-  <a class="reference internal" href="../examples/20yearsofLEO.html">
-   20 years of LEO
+  <a class="reference internal" href="../examples/20yearsofLEO_coll.html">
+   20 years of LEO - (collisions)
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../examples/oneweekofLEO_conj.html">
+   One week of LEO - (conjunctions)
   </a>
  </li>
 </ul>
@@ -483,12 +488,12 @@ We start precomputing all the positions and velocities of the orbiting objects i
         <span class="n">v1</span> <span class="o">=</span> <span class="n">v_sgp4</span><span class="p">[</span><span class="n">idx1</span><span class="p">,</span><span class="n">i</span><span class="p">,:]</span>
         <span class="n">v2</span> <span class="o">=</span> <span class="n">v_sgp4</span><span class="p">[</span><span class="n">idx2</span><span class="p">,</span><span class="n">i</span><span class="p">,:]</span>
         <span class="c1"># we get the collision radiu from debris (indexed differently hence to_satcat is used)</span>
-        <span class="n">reentry_radius1</span> <span class="o">=</span> <span class="n">satcat</span><span class="p">[</span><span class="n">to_satcat_index</span><span class="p">[</span><span class="n">idx1</span><span class="p">]][</span><span class="s2">&quot;RADIUS&quot;</span><span class="p">]</span>
-        <span class="n">reentry_radius2</span> <span class="o">=</span> <span class="n">satcat</span><span class="p">[</span><span class="n">to_satcat_index</span><span class="p">[</span><span class="n">idx2</span><span class="p">]][</span><span class="s2">&quot;RADIUS&quot;</span><span class="p">]</span>
+        <span class="n">radius1</span> <span class="o">=</span> <span class="n">satcat</span><span class="p">[</span><span class="n">to_satcat_index</span><span class="p">[</span><span class="n">idx1</span><span class="p">]][</span><span class="s2">&quot;RADIUS&quot;</span><span class="p">]</span>
+        <span class="n">radius2</span> <span class="o">=</span> <span class="n">satcat</span><span class="p">[</span><span class="n">to_satcat_index</span><span class="p">[</span><span class="n">idx2</span><span class="p">]][</span><span class="s2">&quot;RADIUS&quot;</span><span class="p">]</span>
         <span class="c1"># Relative velocity </span>
         <span class="n">Vrel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v1</span><span class="o">-</span><span class="n">v2</span><span class="p">)</span>
         <span class="c1"># Collisional area of the couple (in km^2)</span>
-        <span class="n">sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="p">((</span><span class="n">reentry_radius1</span><span class="o">+</span><span class="n">reentry_radius2</span><span class="p">)</span><span class="o">/</span><span class="mi">1000</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> 
+        <span class="n">sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="p">((</span><span class="n">radius1</span><span class="o">+</span><span class="n">radius2</span><span class="p">)</span><span class="o">/</span><span class="mi">1000</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> 
         <span class="c1"># Volume of the cube (km^3)</span>
         <span class="n">U</span> <span class="o">=</span> <span class="p">(</span><span class="n">Lcube</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span>
         <span class="c1"># We compute the spatial densities</span>
