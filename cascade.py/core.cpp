@@ -105,10 +105,10 @@ PYBIND11_MODULE(core, m)
                  // Init the dynamics.
                  auto dyn = dyn_ ? std::move(*dyn_) : std::vector<std::pair<hy::expression, hy::expression>>{};
 
-                 // Init reentry_radius_. When zero is not defined anf the corresponding event will not be instantiated.
+                 // Init reentry_radius_. When zero is not defined and the corresponding event will not be instantiated.
                  auto reentry_radius = reentry_radius_ ? std::move(*reentry_radius_) : 0.;
 
-                 // Init exit_radius. When zero is not defined anf the corresponding event will not be instantiated.
+                 // Init exit_radius. When zero is not defined and the corresponding event will not be instantiated.
                  auto exit_radius = exit_radius_ ? *exit_radius_ : 0.;
 
                  // Prepare the pars vector.
