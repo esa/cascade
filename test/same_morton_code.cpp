@@ -54,7 +54,7 @@ TEST_CASE("same morton code")
             state.push_back(v[1]);
             state.push_back(v[2]);
 
-            state.push_back(0.);
+            state.push_back(1e-6);
         }
 
         // Add a couple of particles very close to other particles in the simulation.

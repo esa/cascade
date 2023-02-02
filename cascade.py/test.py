@@ -8,42 +8,94 @@
 
 import unittest as _ut
 
+
 class dynamics_test_case(_ut.TestCase):
     def runTest(self):
-            self.test_simple_earth_api()
-            self.test_kepler_equivalence()
+        self.test_simple_earth_api()
+        self.test_kepler_equivalence()
 
     def test_simple_earth_api(self):
         from .dynamics import simple_earth
-        simple_earth(J2=True, J3=False, C22S22=False,sun=False,moon=False,SRP=False,drag=False)
-        simple_earth(J2=True, J3=True, C22S22=False,sun=False,moon=False,SRP=False,drag=False)
-        simple_earth(J2=True, J3=True, C22S22=True,sun=False,moon=False,SRP=False,drag=False)
-        simple_earth(J2=True, J3=True, C22S22=True,sun=True,moon=False,SRP=False,drag=False)
-        simple_earth(J2=True, J3=True, C22S22=True,sun=True,moon=True,SRP=False,drag=False)
-        simple_earth(J2=True, J3=True, C22S22=True,sun=True,moon=True,SRP=True,drag=False)
-        simple_earth(J2=True, J3=True, C22S22=True,sun=True,moon=True,SRP=False,drag=True)
-        simple_earth(J2=True, J3=True, C22S22=True,sun=True,moon=True,SRP=True,drag=True)
+
+        simple_earth(
+            J2=True,
+            J3=False,
+            C22S22=False,
+            sun=False,
+            moon=False,
+            SRP=False,
+            drag=False,
+        )
+        simple_earth(
+            J2=True, J3=True, C22S22=False, sun=False, moon=False, SRP=False, drag=False
+        )
+        simple_earth(
+            J2=True, J3=True, C22S22=True, sun=False, moon=False, SRP=False, drag=False
+        )
+        simple_earth(
+            J2=True, J3=True, C22S22=True, sun=True, moon=False, SRP=False, drag=False
+        )
+        simple_earth(
+            J2=True, J3=True, C22S22=True, sun=True, moon=True, SRP=False, drag=False
+        )
+        simple_earth(
+            J2=True, J3=True, C22S22=True, sun=True, moon=True, SRP=True, drag=False
+        )
+        simple_earth(
+            J2=True, J3=True, C22S22=True, sun=True, moon=True, SRP=False, drag=True
+        )
+        simple_earth(
+            J2=True, J3=True, C22S22=True, sun=True, moon=True, SRP=True, drag=True
+        )
 
     def test_kepler_equivalence(self):
         from .dynamics import simple_earth, kepler
-        dyn1 = simple_earth(J2=False, C22S22=False,sun=False,moon=False,SRP=False,drag=False)
-        dyn2 = kepler(mu = 3.986004407799724e+5 * 1E9)
+
+        dyn1 = simple_earth(
+            J2=False, C22S22=False, sun=False, moon=False, SRP=False, drag=False
+        )
+        dyn2 = kepler(mu=3.986004407799724e5 * 1e9)
         self.assertEqual(dyn1, dyn2)
 
     def test_perturbation_magnitudes(self):
         from .dynamics import simple_earth, kepler
         import numpy as np
         from heyoka import make_cfunc
-        dynkep = simple_earth(J2=False, J3=False, C22S22=False,sun=False,moon=False,SRP=False,drag=False)
-        dynJ2 = simple_earth(J2=True, J3=False, C22S22=False,sun=False,moon=False,SRP=False,drag=False)
-        dynJ3 = simple_earth(J2=False, J3=True, C22S22=False,sun=False,moon=False,SRP=False,drag=False)
 
-        dynkep_c = make_cfunc([dynkep[i][1] for i in [3,4,5]])
-        dynJ2_c = make_cfunc([dynJ2[i][1] for i in [3,4,5]])
-        dynJ3_c = make_cfunc([dynJ3[i][1] for i in [3,4,5]])
+        dynkep = simple_earth(
+            J2=False,
+            J3=False,
+            C22S22=False,
+            sun=False,
+            moon=False,
+            SRP=False,
+            drag=False,
+        )
+        dynJ2 = simple_earth(
+            J2=True,
+            J3=False,
+            C22S22=False,
+            sun=False,
+            moon=False,
+            SRP=False,
+            drag=False,
+        )
+        dynJ3 = simple_earth(
+            J2=False,
+            J3=True,
+            C22S22=False,
+            sun=False,
+            moon=False,
+            SRP=False,
+            drag=False,
+        )
+
+        dynkep_c = make_cfunc([dynkep[i][1] for i in [3, 4, 5]])
+        dynJ2_c = make_cfunc([dynJ2[i][1] for i in [3, 4, 5]])
+        dynJ3_c = make_cfunc([dynJ3[i][1] for i in [3, 4, 5]])
 
         # We compute the various acceleration magnitudes at 7000 km
-        pos = np.array([7000000., 0., 0.])
+        pos = np.array([7000000.0, 0.0, 0.0])
         acckep = dynkep_c(pos)
         accJ2 = dynJ2_c(pos) - dynkep_c(pos)
         accJ3 = dynJ3_c(pos) - dynkep_c(pos)
@@ -55,14 +107,6 @@ class dynamics_test_case(_ut.TestCase):
         self.assertTrue(np.linalg.norm(acckep) < 10)
         self.assertTrue(np.linalg.norm(accJ2) < 0.1)
         self.assertTrue(np.linalg.norm(accJ3) < 0.0001)
-
-
-
-
-
-
-
-
 
 
 class sim_test_case(_ut.TestCase):
@@ -161,9 +205,12 @@ class sim_test_case(_ut.TestCase):
         self.assertFalse(s.high_accuracy)
         self.assertEqual(s.npars, 0)
         self.assertEqual(s.reentry_radius, 0.0)
-        self.assertEqual(s.d_radius, 0.0)
+        self.assertEqual(s.exit_radius, 0.0)
         self.assertEqual(s.n_par_ct, 1)
         self.assertEqual(s.conj_thresh, 0)
+        self.assertEqual(s.min_coll_radius, 0)
+        self.assertEqual(len(s.coll_whitelist), 0)
+        self.assertEqual(len(s.conj_whitelist), 0)
 
         with self.assertRaises(ValueError) as cm:
             s.conj_thresh = -1
@@ -181,11 +228,14 @@ class sim_test_case(_ut.TestCase):
             dyn=dyn,
             pars=[[0.002, 0.001]],
             reentry_radius=[0.1, 0.2, 0.3],
-            d_radius=100.0,
+            exit_radius=100.0,
             tol=1e-12,
             high_accuracy=True,
             n_par_ct=2,
             conj_thresh=0.1,
+            min_coll_radius=0.2,
+            coll_whitelist={1, 2},
+            conj_whitelist={3, 4},
         )
 
         self.assertTrue(
@@ -198,10 +248,32 @@ class sim_test_case(_ut.TestCase):
         self.assertTrue(s.high_accuracy)
         self.assertEqual(s.npars, 2)
         self.assertEqual(s.reentry_radius, [0.1, 0.2, 0.3])
-        self.assertEqual(s.d_radius, 100.0)
+        self.assertEqual(s.exit_radius, 100.0)
         self.assertEqual(s.tol, 1e-12)
         self.assertEqual(s.n_par_ct, 2)
         self.assertEqual(s.conj_thresh, 0.1)
+        self.assertEqual(s.min_coll_radius, 0.2)
+        self.assertEqual(s.coll_whitelist, {1, 2})
+        self.assertEqual(s.conj_whitelist, {3, 4})
+
+        s.min_coll_radius = 4
+        self.assertEqual(s.min_coll_radius, 4)
+
+        s.min_coll_radius = float("inf")
+        self.assertEqual(s.min_coll_radius, float("inf"))
+
+        with self.assertRaises(ValueError) as cm:
+            s.min_coll_radius = -1
+        self.assertTrue(
+            "The minimum collisional radius cannot be NaN or negative, but the invalid value -1 was provided"
+            in str(cm.exception)
+        )
+
+        s.coll_whitelist = {10, 20}
+        self.assertEqual(s.coll_whitelist, {10, 20})
+
+        s.conj_whitelist = {30, 40}
+        self.assertEqual(s.conj_whitelist, {30, 40})
 
         self.assertEqual(s.step(), outcome.success)
 
@@ -215,7 +287,7 @@ class sim_test_case(_ut.TestCase):
         self.assertTrue(s.high_accuracy)
         self.assertEqual(s.npars, 2)
         self.assertEqual(s.reentry_radius, [0.1, 0.2, 0.3])
-        self.assertEqual(s.d_radius, 100.0)
+        self.assertEqual(s.exit_radius, 100.0)
         self.assertEqual(s.tol, 1e-12)
 
         s = sim(
@@ -224,7 +296,7 @@ class sim_test_case(_ut.TestCase):
             dyn=dyn,
             pars=[[0.002, 0.001]],
             reentry_radius=0.1,
-            d_radius=100.0,
+            exit_radius=100.0,
             tol=1e-12,
             high_accuracy=True,
         )
@@ -346,7 +418,6 @@ def run_test_suite():
 
     suite = _ut.TestLoader().loadTestsFromTestCase(dynamics_test_case)
     suite.addTests(_ut.makeSuite(sim_test_case))
-
 
     test_result = _ut.TextTestRunner(verbosity=2).run(suite)
 

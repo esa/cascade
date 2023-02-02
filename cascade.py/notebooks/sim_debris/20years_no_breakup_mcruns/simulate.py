@@ -40,7 +40,7 @@ np.random.seed(seed)
 # In[3]:
 print("Data load", flush=True)
 with open("../../data/debris_simulation_ic.pk", "rb") as file:
-    r_ic, v_ic, c_radius, to_satcat, satcat, debris = pkl.load(file)
+    r_ic, v_ic, reentry_radius, to_satcat, satcat, debris = pkl.load(file)
 # We perturb randomly the position components on average by 1km (roughly the SGP4 error in 1 day)
 r_ic = r_ic + (np.random.random(size=r_ic.shape) * 2000 - 1000)
 
@@ -177,13 +177,13 @@ dyn[5] = (dyn[5][0], dyn[5][1] + fdragz)
 #csc.set_logger_level_info()
 
 # In[12]:
-def remove_particle(idx, r_ic, v_ic, BSTARS, to_satcat, c_radius):
+def remove_particle(idx, r_ic, v_ic, BSTARS, to_satcat, reentry_radius):
     r_ic = np.delete(r_ic, idx, axis=0)
     BSTARS = np.delete(BSTARS, idx, axis=0)
     v_ic = np.delete(v_ic, idx, axis=0)
     to_satcat = np.delete(to_satcat, idx, axis=0)
-    c_radius = np.delete(c_radius, idx, axis=0)
-    return r_ic, v_ic, BSTARS, to_satcat, c_radius
+    reentry_radius = np.delete(reentry_radius, idx, axis=0)
+    return r_ic, v_ic, BSTARS, to_satcat, reentry_radius
 
 
 # In[13]:
@@ -194,14 +194,14 @@ print("Removing orbiting objects:", flush=True)
 for idx in inside_the_radius:
     print(satcat[to_satcat[idx]]["OBJECT_NAME"],
           "-", satcat[to_satcat[idx]]["OBJECT_ID"])
-r_ic, v_ic, BSTARS, to_satcat, c_radius = remove_particle(
-    inside_the_radius, r_ic, v_ic, BSTARS, to_satcat, c_radius)
+r_ic, v_ic, BSTARS, to_satcat, reentry_radius = remove_particle(
+    inside_the_radius, r_ic, v_ic, BSTARS, to_satcat, reentry_radius)
 
 
 #----------------------------- We setup the simulation--------------------------------
 print("Building the simulation:", flush=True)
 sim = csc.sim(r_ic[:, 0], r_ic[:, 1], r_ic[:, 2], v_ic[:, 0], v_ic[:, 1], v_ic[:, 2],
-              c_radius, 0.23 * 806.81, dyn=dyn, pars=[BSTARS], c_radius=min_radius)
+              reentry_radius, 0.23 * 806.81, dyn=dyn, pars=[BSTARS], reentry_radius=min_radius)
 #final_t = 365.25 * pk.DAY2SEC * 20
 final_t = 1
 
@@ -216,7 +216,7 @@ csc.set_logger_level_trace()
 # In[15]:
 new_r_ic = deepcopy(r_ic)
 new_v_ic = deepcopy(v_ic)
-new_c_radius = deepcopy(c_radius)
+new_reentry_radius = deepcopy(reentry_radius)
 new_BSTARS = deepcopy(BSTARS)
 new_to_satcat = deepcopy(to_satcat)
 
@@ -232,7 +232,7 @@ while sim.time < final_t:
     years_elapsed = sim.time * pk.SEC2DAY // 365.25
     if years_elapsed == current_year:
         with open(folder_name+"/year_"+str(current_year)+".pk", "wb") as file:
-            pkl.dump((new_r_ic, new_v_ic, new_c_radius,
+            pkl.dump((new_r_ic, new_v_ic, new_reentry_radius,
                      new_BSTARS, new_to_satcat), file)
         current_year += 1
 
@@ -254,10 +254,10 @@ while sim.time < final_t:
         # We remove the objects and restart the simulation
         new_r_ic = np.vstack((sim.x, sim.y, sim.z)).transpose()
         new_v_ic = np.vstack((sim.vx, sim.vy, sim.vz)).transpose()
-        new_r_ic, new_v_ic, new_BSTARS, new_to_satcat, new_c_radius = remove_particle(
-            [pi, pj], new_r_ic, new_v_ic, new_BSTARS, new_to_satcat, new_c_radius)
+        new_r_ic, new_v_ic, new_BSTARS, new_to_satcat, new_reentry_radius = remove_particle(
+            [pi, pj], new_r_ic, new_v_ic, new_BSTARS, new_to_satcat, new_reentry_radius)
         sim.set_new_state(new_r_ic[:, 0], new_r_ic[:, 1], new_r_ic[:, 2], new_v_ic[:, 0],
-                          new_v_ic[:, 1], new_v_ic[:, 2], new_c_radius, pars=[new_BSTARS])
+                          new_v_ic[:, 1], new_v_ic[:, 2], new_reentry_radius, pars=[new_BSTARS])
 
     elif oc == csc.outcome.reentry:
         pi = sim.interrupt_info
@@ -272,7 +272,7 @@ while sim.time < final_t:
         # We remove the re-entered object and restart the simulation
         new_r_ic = np.vstack((sim.x, sim.y, sim.z)).transpose()
         new_v_ic = np.vstack((sim.vx, sim.vy, sim.vz)).transpose()
-        new_r_ic, new_v_ic, new_BSTARS, new_to_satcat, new_c_radius = remove_particle(
-            pi, new_r_ic, new_v_ic, new_BSTARS, new_to_satcat, new_c_radius)
+        new_r_ic, new_v_ic, new_BSTARS, new_to_satcat, new_reentry_radius = remove_particle(
+            pi, new_r_ic, new_v_ic, new_BSTARS, new_to_satcat, new_reentry_radius)
         sim.set_new_state(new_r_ic[:, 0], new_r_ic[:, 1], new_r_ic[:, 2], new_v_ic[:, 0],
-                          new_v_ic[:, 1], new_v_ic[:, 2], new_c_radius, pars=[new_BSTARS])
+                          new_v_ic[:, 1], new_v_ic[:, 2], new_reentry_radius, pars=[new_BSTARS])

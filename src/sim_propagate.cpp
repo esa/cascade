@@ -552,10 +552,7 @@ outcome sim::step()
     // the superstep.
     const auto init_time = m_data->time;
 
-    // Are we detecting conjunctions in this timestep?
-    const auto with_conj = m_conj_thresh != 0;
-
-    // Prepare the s_data buffers with the correct sizes.
+    // Prepare the data in m_data with the correct sizes.
 
     // NOTE: this is a helper that resizes vec to new_size
     // only if vec is currently smaller than new_size.
@@ -607,6 +604,9 @@ outcome sim::step()
     // Broad phase data.
     resize_if_needed(nchunks, m_data->bp_coll, m_data->bp_data_caches);
 
+    // Activity flags.
+    resize_if_needed(nparts, m_data->coll_active, m_data->conj_active);
+
     // Narrow phase data.
     resize_if_needed(nchunks, m_data->np_caches, m_data->conj_vecs);
 
@@ -620,6 +620,31 @@ outcome sim::step()
                       stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
     stdex::mdspan ubs(m_data->ubs.data(),
                       stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
+
+    // Fetch a view on the state vector in order to
+    // access the particles' sizes.
+    stdex::mdspan sv(std::as_const(m_state)->data(), stdex::extents<size_type, stdex::dynamic_extent, 7u>(nparts));
+
+    // Cache the minimum collisional radius.
+    const auto min_coll_radius = m_min_coll_radius;
+    // Is the collision whitelist empty?
+    const auto coll_wl_empty = m_coll_whitelist.empty();
+
+    // Is conjunction detection enabled globally?
+    const auto with_conj = (m_conj_thresh != 0);
+    // Is the conjunction whitelist empty?
+    const auto conj_wl_empty = m_conj_whitelist.empty();
+
+    // Helper to set the coll/conj active flags for particle idx.
+    auto setup_cc_active_flags = [&](size_type idx) {
+        const auto coll_active_idx
+            = (sv(idx, 6u) > min_coll_radius) && (coll_wl_empty || m_coll_whitelist.count(idx) == 1u);
+
+        const auto conj_active_idx = with_conj && (conj_wl_empty || m_conj_whitelist.count(idx) == 1u);
+
+        m_data->coll_active[idx] = static_cast<char>(coll_active_idx);
+        m_data->conj_active[idx] = static_cast<char>(conj_active_idx);
+    };
 
     // Numerical integration and computation of the AABBs in batch mode.
     auto batch_int_aabb = [&](const auto &range) {
@@ -666,13 +691,16 @@ outcome sim::step()
             const auto pidx_end = pidx_begin + batch_size;
 
             // Clear up the Taylor coefficients and the time
-            // coordinates, and fill in the pfor_ts vector.
+            // coordinates, fill in the pfor_ts vector, and setup
+            // the coll/conj active flags.
             for (auto i = pidx_begin; i < pidx_end; ++i) {
                 s_data[i].tcs.clear();
 
                 s_data[i].tcoords.clear();
 
                 pfor_ts[i - pidx_begin] = delta_t;
+
+                setup_cc_active_flags(i);
             }
 
             // Setup the integrator.
@@ -930,6 +958,9 @@ outcome sim::step()
             // Clear up the Taylor coefficients and the time coordinates.
             cur_sd.tcs.clear();
             tcoords.clear();
+
+            // Setup the coll/conj active flags.
+            setup_cc_active_flags(pidx);
 
             // Setup the integrator.
             init_scalar_ta(ta, pidx);

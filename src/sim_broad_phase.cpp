@@ -109,7 +109,17 @@ void sim::broad_phase_parallel()
                 // of the traversal for each particle.
                 auto &stack = local_bp_data->stack;
 
+                // NOTE: the particle indices in this for loop refer to the
+                // Morton-ordered data.
                 for (auto pidx = r2.begin(); pidx != r2.end(); ++pidx) {
+                    // Load the original particle index corresponding to
+                    // particle pidx.
+                    const auto orig_pidx = vidx(chunk_idx, pidx);
+
+                    // Check if pidx is active for collisions and conjunctions.
+                    const auto coll_active_pidx = m_data->coll_active[orig_pidx];
+                    const auto conj_active_pidx = m_data->conj_active[orig_pidx];
+
                     // Reset the stack, and add the root node to it.
                     stack.clear();
                     stack.push_back(0);
@@ -142,11 +152,12 @@ void sim::broad_phase_parallel()
 
                         if (overlap) {
                             if (cur_node.left == -1) {
-                                // Leaf node: mark pidx as colliding with
-                                // all particles in the node, unless either:
+                                // Leaf node: mark pidx as a collision/conjunction
+                                // candidate with all particles in the node, unless either:
                                 // - pidx is colliding with itself (pidx == i), or
                                 // - pidx > i, in order to avoid counting twice
-                                //   the collisions (pidx, i) and (i, pidx).
+                                //   the collisions (pidx, i) and (i, pidx), or
+                                // - pidx and i are both inactive.
                                 // NOTE: in case of a multi-particle leaf,
                                 // the node's AABB is the composition of the AABBs
                                 // of all particles in the node, and thus, in general,
@@ -155,12 +166,22 @@ void sim::broad_phase_parallel()
                                 // be detecting AABB overlaps which are not actually there.
                                 // This is ok, as they will be filtered out in the
                                 // next stages of collision detection.
-                                // NOTE: we want to store the particle indices
-                                // in the *original* order, not in the Morton order,
-                                // hence the indirection via vidx_ptr.
+                                // NOTE: like in the outer loop, the index i here refers
+                                // to the Morton-ordered data.
                                 for (auto i = cur_node.begin; i != cur_node.end; ++i) {
-                                    if (vidx(chunk_idx, pidx) < vidx(chunk_idx, i)) {
-                                        local_bp.emplace_back(vidx(chunk_idx, pidx), vidx(chunk_idx, i));
+                                    // Fetch index i in the original order.
+                                    const auto orig_i = vidx(chunk_idx, i);
+
+                                    if (orig_pidx >= orig_i) {
+                                        continue;
+                                    }
+
+                                    // Check if i is active for collisions and conjunctions.
+                                    const auto coll_active_i = m_data->coll_active[orig_i];
+                                    const auto conj_active_i = m_data->conj_active[orig_i];
+
+                                    if (coll_active_pidx || conj_active_pidx || coll_active_i || conj_active_i) {
+                                        local_bp.emplace_back(orig_pidx, orig_i);
                                     }
                                 }
                             } else {
@@ -243,42 +264,50 @@ void sim::verify_broad_phase_parallel() const
                     const auto zi_ub = ubs(chunk_idx, i, 2);
                     const auto ri_ub = ubs(chunk_idx, i, 3);
 
-                    oneapi::tbb::parallel_for(oneapi::tbb::blocked_range<size_type>(i + 1u, nparts),
-                                              [&](const auto &rj) {
-                                                  decltype(coll_tree.size()) loc_ncoll = 0;
+                    // Check if i is active for collisions and conjunctions.
+                    const auto coll_active_i = m_data->coll_active[i];
+                    const auto conj_active_i = m_data->conj_active[i];
 
-                                                  for (auto j = rj.begin(); j != rj.end(); ++j) {
-                                                      const auto xj_lb = lbs(chunk_idx, j, 0);
-                                                      const auto yj_lb = lbs(chunk_idx, j, 1);
-                                                      const auto zj_lb = lbs(chunk_idx, j, 2);
-                                                      const auto rj_lb = lbs(chunk_idx, j, 3);
+                    oneapi::tbb::parallel_for(
+                        oneapi::tbb::blocked_range<size_type>(i + 1u, nparts), [&](const auto &rj) {
+                            decltype(coll_tree.size()) loc_ncoll = 0;
 
-                                                      const auto xj_ub = ubs(chunk_idx, j, 0);
-                                                      const auto yj_ub = ubs(chunk_idx, j, 1);
-                                                      const auto zj_ub = ubs(chunk_idx, j, 2);
-                                                      const auto rj_ub = ubs(chunk_idx, j, 3);
+                            for (auto j = rj.begin(); j != rj.end(); ++j) {
+                                const auto xj_lb = lbs(chunk_idx, j, 0);
+                                const auto yj_lb = lbs(chunk_idx, j, 1);
+                                const auto zj_lb = lbs(chunk_idx, j, 2);
+                                const auto rj_lb = lbs(chunk_idx, j, 3);
 
-                                                      const bool overlap = (xi_ub >= xj_lb && xi_lb <= xj_ub)
-                                                                           && (yi_ub >= yj_lb && yi_lb <= yj_ub)
-                                                                           && (zi_ub >= zj_lb && zi_lb <= zj_ub)
-                                                                           && (ri_ub >= rj_lb && ri_lb <= rj_ub);
+                                const auto xj_ub = ubs(chunk_idx, j, 0);
+                                const auto yj_ub = ubs(chunk_idx, j, 1);
+                                const auto zj_ub = ubs(chunk_idx, j, 2);
+                                const auto rj_ub = ubs(chunk_idx, j, 3);
 
-                                                      if (overlap) {
-                                                          // Overlap detected in the simple algorithm:
-                                                          // the collision must be present also
-                                                          // in the tree code.
-                                                          assert(coll_tree.find({i, j}) != coll_tree.end());
-                                                      } else {
-                                                          // NOTE: the contrary is not necessarily
-                                                          // true: for multi-particle leaves, we
-                                                          // may detect overlaps that do not actually exist.
-                                                      }
+                                // Check if j is active for collisions and conjunctions.
+                                const auto coll_active_j = m_data->coll_active[j];
+                                const auto conj_active_j = m_data->conj_active[j];
 
-                                                      loc_ncoll += overlap;
-                                                  }
+                                const bool overlap
+                                    = (xi_ub >= xj_lb && xi_lb <= xj_ub) && (yi_ub >= yj_lb && yi_lb <= yj_ub)
+                                      && (zi_ub >= zj_lb && zi_lb <= zj_ub) && (ri_ub >= rj_lb && ri_lb <= rj_ub)
+                                      && (coll_active_i || conj_active_i || coll_active_j || conj_active_j);
 
-                                                  coll_counter.fetch_add(loc_ncoll, std::memory_order::relaxed);
-                                              });
+                                if (overlap) {
+                                    // Overlap detected in the simple algorithm:
+                                    // the collision must be present also
+                                    // in the tree code.
+                                    assert(coll_tree.find({i, j}) != coll_tree.end());
+                                } else {
+                                    // NOTE: the contrary is not necessarily
+                                    // true: for multi-particle leaves, we
+                                    // may detect overlaps that do not actually exist.
+                                }
+
+                                loc_ncoll += overlap;
+                            }
+
+                            coll_counter.fetch_add(loc_ncoll, std::memory_order::relaxed);
+                        });
                 }
             });
 

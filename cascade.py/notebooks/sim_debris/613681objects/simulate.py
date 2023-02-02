@@ -191,7 +191,7 @@ pars = bstar.reshape((-1, 1))
 # # We setup the simulation
 #----------------------------- We setup the simulation--------------------------------
 print("Building the simulation:", flush=True)
-sim = csc.sim(ic_state, 0.08 * 806.81, dyn=dyn, pars=pars*0., c_radius=min_radius/2.)
+sim = csc.sim(ic_state, 0.08 * 806.81, dyn=dyn, pars=pars*0., reentry_radius=min_radius/2.)
 
 # csc.set_logger_level_info()
 csc.set_logger_level_trace()

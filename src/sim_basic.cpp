@@ -113,8 +113,11 @@ sim::sim(ptag_t, std::vector<double> state, double ct)
 sim::sim(const sim &other)
     : m_state(std::make_shared<std::vector<double>>(*other.m_state)),
       m_pars(std::make_shared<std::vector<double>>(*other.m_pars)), m_ct(other.m_ct), m_n_par_ct(other.m_n_par_ct),
-      m_int_info(other.m_int_info), m_c_radius(other.m_c_radius), m_d_radius(other.m_d_radius), m_npars(other.m_npars),
-      m_conj_thresh(other.m_conj_thresh), m_det_conj(std::make_shared<std::vector<conjunction>>(*other.m_det_conj))
+      m_int_info(other.m_int_info), m_reentry_radius(other.m_reentry_radius), m_exit_radius(other.m_exit_radius),
+      m_npars(other.m_npars), m_conj_thresh(other.m_conj_thresh),
+      m_det_conj(std::make_shared<std::vector<conjunction>>(*other.m_det_conj)),
+      m_min_coll_radius(other.m_min_coll_radius), m_coll_whitelist(other.m_coll_whitelist),
+      m_conj_whitelist(other.m_conj_whitelist)
 {
     // For m_data, we will be copying only:
     // - the integrator templates,
@@ -220,9 +223,9 @@ double sim::get_tol() const
     return m_data->s_ta.get_tol();
 }
 
-std::variant<double, std::vector<double>> sim::get_c_radius() const
+std::variant<double, std::vector<double>> sim::get_reentry_radius() const
 {
-    return m_c_radius;
+    return m_reentry_radius;
 }
 
 bool sim::get_high_accuracy() const
@@ -348,9 +351,11 @@ void sim::set_new_state_pars(std::vector<double> new_state, std::vector<double> 
 
 void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>> dyn, std::vector<double> pars,
                         // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-                        std::variant<double, std::vector<double>> c_radius, double d_radius, double tol, bool ha,
+                        std::variant<double, std::vector<double>> reentry_radius, double exit_radius, double tol,
+                        bool ha,
                         // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-                        std::uint32_t n_par_ct, double conj_thresh)
+                        std::uint32_t n_par_ct, double conj_thresh, double min_coll_radius, whitelist_t coll_whitelist,
+                        whitelist_t conj_whitelist)
 {
     namespace hy = heyoka;
 
@@ -382,6 +387,13 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
 
     // Set the conjunction threshold.
     set_conj_thresh(conj_thresh);
+
+    // Set the minimum collisional radius.
+    set_min_coll_radius(min_coll_radius);
+
+    // Set the whitelists.
+    set_coll_whitelist(std::move(coll_whitelist));
+    set_conj_whitelist(std::move(conj_whitelist));
 
     if (dyn.empty()) {
         // Default is Keplerian dynamics with unitary mu.
@@ -449,11 +461,11 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
     const auto &r = sym_vars[6];
     dyn.push_back(hy::prime(r) = hy::sum({x * vx, y * vy, z * vz}) / r);
 
-    // Check and assign c_radius.
-    if (const auto *vcr_ptr = std::get_if<std::vector<double>>(&c_radius)) {
+    // Check and assign reentry_radius.
+    if (const auto *vcr_ptr = std::get_if<std::vector<double>>(&reentry_radius)) {
         if (vcr_ptr->size() != 3u) {
             throw std::invalid_argument(fmt::format(
-                "The c_radius argument must be either a scalar (for a spherical central body) "
+                "The reentry_radius argument must be either a scalar (for a spherical central body) "
                 "or a vector of 3 elements (for a triaxial ellipsoid), but instead it is a vector of {} element(s)",
                 vcr_ptr->size()));
         }
@@ -465,21 +477,21 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                 *vcr_ptr));
         }
     } else {
-        const auto cr_val = std::get<double>(c_radius);
+        const auto cr_val = std::get<double>(reentry_radius);
 
         if (!std::isfinite(cr_val) || cr_val < 0) {
-            throw std::invalid_argument(fmt::format(
-                "The radius of the central body must be finite and non-negative, but it is {} instead", cr_val));
+            throw std::invalid_argument(
+                fmt::format("The reentry radius must be finite and non-negative, but it is {} instead", cr_val));
         }
     }
-    m_c_radius = std::move(c_radius);
+    m_reentry_radius = std::move(reentry_radius);
 
-    // Check and assign d_radius.
-    if (!std::isfinite(d_radius) || d_radius < 0) {
+    // Check and assign exit_radius.
+    if (!std::isfinite(exit_radius) || exit_radius < 0) {
         throw std::invalid_argument(
-            fmt::format("The domain radius must be finite and non-negative, but it is {} instead", d_radius));
+            fmt::format("The exit radius must be finite and non-negative, but it is {} instead", exit_radius));
     }
-    m_d_radius = d_radius;
+    m_exit_radius = exit_radius;
 
     // Machinery to construct the integrators.
     std::optional<hy::taylor_adaptive<double>> s_ta;
@@ -488,18 +500,18 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
     auto integrators_setup = [&]() {
         // Helpers to create the exit/reentry event equations.
         auto make_exit_eq = [&]() {
-            assert(m_d_radius > 0);
+            assert(m_exit_radius > 0);
 
-            return hy::sum_sq({x, y, z}) - m_d_radius * m_d_radius;
+            return hy::sum_sq({x, y, z}) - m_exit_radius * m_exit_radius;
         };
 
         auto make_reentry_eq = [&]() {
-            if (auto *dbl_ptr = std::get_if<double>(&m_c_radius)) {
+            if (auto *dbl_ptr = std::get_if<double>(&m_reentry_radius)) {
                 assert(*dbl_ptr > 0);
 
                 return hy::sum_sq({x, y, z}) - *dbl_ptr * *dbl_ptr;
             } else {
-                const auto &ax_vec = std::get<std::vector<double>>(m_c_radius);
+                const auto &ax_vec = std::get<std::vector<double>>(m_reentry_radius);
 
                 assert(ax_vec.size() == 3u);
 
@@ -610,14 +622,14 @@ void sim::set_time(double t)
 
 bool sim::with_reentry_event() const
 {
-    if (const auto *dbl_ptr = std::get_if<double>(&m_c_radius)) {
+    if (const auto *dbl_ptr = std::get_if<double>(&m_reentry_radius)) {
         assert(std::isfinite(*dbl_ptr));
         assert(*dbl_ptr >= 0);
 
         return *dbl_ptr > 0;
     } else {
 #if !defined(NDEBUG)
-        const auto &vec = std::get<std::vector<double>>(m_c_radius);
+        const auto &vec = std::get<std::vector<double>>(m_reentry_radius);
         assert(vec.size() == 3u);
         assert(std::all_of(vec.cbegin(), vec.cend(), [](double val) { return std::isfinite(val) && val > 0; }));
 #endif
@@ -628,10 +640,10 @@ bool sim::with_reentry_event() const
 
 bool sim::with_exit_event() const
 {
-    assert(std::isfinite(m_d_radius));
-    assert(m_d_radius >= 0);
+    assert(std::isfinite(m_exit_radius));
+    assert(m_exit_radius >= 0);
 
-    return m_d_radius > 0;
+    return m_exit_radius > 0;
 }
 
 // Helpers to compute the indices of the reentry/exit events.
@@ -659,7 +671,7 @@ std::uint32_t sim::exit_event_idx() const
 // is compatible with the simulation setup. Specifically,
 // verify that:
 // - all values are finite,
-// - if central and/or domain radius are defined in the
+// - if reentry and/or exit radiuses are defined in the
 //   simulation, no position falls within the central body
 //   or outside the domain,
 // - no particle size is negative.
@@ -699,13 +711,13 @@ void sim::verify_state_vector(const std::vector<double> &st) const
                 }
 
                 if (with_reentry) {
-                    if (const auto *dbl_ptr = std::get_if<double>(&m_c_radius)) {
+                    if (const auto *dbl_ptr = std::get_if<double>(&m_reentry_radius)) {
                         if (x * x + y * y + z * z < *dbl_ptr * *dbl_ptr) {
                             throw std::invalid_argument(
                                 fmt::format("The particle at index {} is inside the spherical central body", pidx));
                         }
                     } else {
-                        const auto &ax_vec = std::get<std::vector<double>>(m_c_radius);
+                        const auto &ax_vec = std::get<std::vector<double>>(m_reentry_radius);
                         const auto ax_a = ax_vec[0];
                         const auto ax_b = ax_vec[1];
                         const auto ax_c = ax_vec[2];
@@ -718,9 +730,9 @@ void sim::verify_state_vector(const std::vector<double> &st) const
                 }
 
                 if (with_exit) {
-                    if (x * x + y * y + z * z >= m_d_radius * m_d_radius) {
+                    if (x * x + y * y + z * z >= m_exit_radius * m_exit_radius) {
                         throw std::invalid_argument(
-                            fmt::format("The particle at index {} is outside the domain radius {}", pidx, m_d_radius));
+                            fmt::format("The particle at index {} is outside the exit radius {}", pidx, m_exit_radius));
                     }
                 }
 
@@ -756,6 +768,27 @@ std::ostream &operator<<(std::ostream &os, const sim::conjunction &c)
 {
     return os << "{" << c.i << ", " << c.j << ", " << fmt::format("{}", c.time) << ", " << fmt::format("{}", c.dist)
               << "}";
+}
+
+void sim::set_min_coll_radius(double min_coll_radius)
+{
+    if (std::isnan(min_coll_radius) || min_coll_radius < 0) {
+        throw std::invalid_argument(fmt::format(
+            "The minimum collisional radius cannot be NaN or negative, but the invalid value {} was provided",
+            min_coll_radius));
+    }
+
+    m_min_coll_radius = min_coll_radius;
+}
+
+void sim::set_coll_whitelist(whitelist_t wl)
+{
+    m_coll_whitelist = std::move(wl);
+}
+
+void sim::set_conj_whitelist(whitelist_t wl)
+{
+    m_conj_whitelist = std::move(wl);
 }
 
 } // namespace cascade
