@@ -69,32 +69,6 @@ void sim::broad_phase_parallel()
     stdex::mdspan vidx(std::as_const(m_data->vidx).data(),
                        stdex::extents<idx_size_t, stdex::dynamic_extent, stdex::dynamic_extent>(nchunks, nparts));
 
-    // Fetch a view on the state vector in order to
-    // access the particles' sizes.
-    // NOTE: this view accesses the particles in the
-    // original order, *NOT* the Morton-ordered one.
-    stdex::mdspan sv(std::as_const(m_state)->data(),
-                     stdex::extents<size_type, stdex::dynamic_extent, 7u>(get_nparts()));
-
-    // Fetch views on the activity flag vectors.
-    // NOTE: these views access the particles in the
-    // original order, *NOT* the Morton-ordered one.
-    using flag_size_t = decltype(m_data->coll_active.size());
-    stdex::mdspan coll_a_view(m_data->coll_active.data(), static_cast<flag_size_t>(nchunks),
-                              static_cast<flag_size_t>(nparts));
-    stdex::mdspan conj_a_view(m_data->conj_active.data(), static_cast<flag_size_t>(nchunks),
-                              static_cast<flag_size_t>(nparts));
-
-    // Cache the minimum collisional radius.
-    const auto min_coll_radius = m_min_coll_radius;
-    // Is the collision whitelist empty?
-    const auto coll_wl_empty = m_coll_whitelist.empty();
-
-    // Is conjunction detection enabled globally?
-    const auto with_conj = (m_conj_thresh != 0);
-    // Is the conjunction whitelist empty?
-    const auto conj_wl_empty = m_conj_whitelist.empty();
-
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
             // Fetch a reference to the tree.
@@ -142,15 +116,9 @@ void sim::broad_phase_parallel()
                     // particle pidx.
                     const auto orig_pidx = vidx(chunk_idx, pidx);
 
-                    // Determine if pidx is active for collisions and conjunctions.
-                    const auto coll_active_pidx = (sv(orig_pidx, 6u) > min_coll_radius)
-                                                  && (coll_wl_empty || m_coll_whitelist.count(orig_pidx) == 1u);
-                    const auto conj_active_pidx
-                        = with_conj && (conj_wl_empty || m_conj_whitelist.count(orig_pidx) == 1u);
-
-                    // Write the activity flags for the current particle.
-                    coll_a_view(chunk_idx, orig_pidx) = coll_active_pidx;
-                    conj_a_view(chunk_idx, orig_pidx) = conj_active_pidx;
+                    // Check if pidx is active for collisions and conjunctions.
+                    const auto coll_active_pidx = m_data->coll_active[orig_pidx];
+                    const auto conj_active_pidx = m_data->conj_active[orig_pidx];
 
                     // Reset the stack, and add the root node to it.
                     stack.clear();
@@ -208,18 +176,9 @@ void sim::broad_phase_parallel()
                                         continue;
                                     }
 
-                                    // Determine if i is active for collisions and conjunctions.
-                                    // NOTE: these computations will be performed multiple times,
-                                    // e.g., when pidx == i in the outer loop or when another particle
-                                    // has potential collisions/conjunctions with the particles in
-                                    // this node. We cannot however safely store the results of these
-                                    // computations in coll/conj_active due to data races, hence we
-                                    // live with the overhead duplication.
-                                    const auto coll_active_i
-                                        = (sv(orig_i, 6u) > min_coll_radius)
-                                          && (coll_wl_empty || m_coll_whitelist.count(orig_i) == 1u);
-                                    const auto conj_active_i
-                                        = with_conj && (conj_wl_empty || m_conj_whitelist.count(orig_i) == 1u);
+                                    // Check if i is active for collisions and conjunctions.
+                                    const auto coll_active_i = m_data->coll_active[orig_i];
+                                    const auto conj_active_i = m_data->conj_active[orig_i];
 
                                     if (coll_active_pidx || conj_active_pidx || coll_active_i || conj_active_i) {
                                         local_bp.emplace_back(orig_pidx, orig_i);
@@ -278,27 +237,6 @@ void sim::verify_broad_phase_parallel() const
     stdex::mdspan ubs(std::as_const(m_data->ubs).data(),
                       stdex::extents<b_size_t, stdex::dynamic_extent, stdex::dynamic_extent, 4u>(nchunks, nparts));
 
-    // Fetch a view on the state vector in order to
-    // access the particles' sizes.
-    stdex::mdspan sv(m_state->data(), stdex::extents<size_type, stdex::dynamic_extent, 7u>(get_nparts()));
-
-    // Cache the minimum collisional radius.
-    const auto min_coll_radius = m_min_coll_radius;
-    // Is the collision whitelist empty?
-    const auto coll_wl_empty = m_coll_whitelist.empty();
-
-    // Is conjunction detection enabled globally?
-    const auto with_conj = (m_conj_thresh != 0);
-    // Is the conjunction whitelist empty?
-    const auto conj_wl_empty = m_conj_whitelist.empty();
-
-    // Fetch views on the activity flag vectors.
-    using flag_size_t = decltype(m_data->coll_active.size());
-    stdex::mdspan coll_a_view(m_data->coll_active.data(), static_cast<flag_size_t>(nchunks),
-                              static_cast<flag_size_t>(nparts));
-    stdex::mdspan conj_a_view(m_data->conj_active.data(), static_cast<flag_size_t>(nchunks),
-                              static_cast<flag_size_t>(nparts));
-
     oneapi::tbb::parallel_for(oneapi::tbb::blocked_range(0u, nchunks), [&](const auto &range) {
         for (auto chunk_idx = range.begin(); chunk_idx != range.end(); ++chunk_idx) {
             // Build a set version of the collision list
@@ -326,13 +264,9 @@ void sim::verify_broad_phase_parallel() const
                     const auto zi_ub = ubs(chunk_idx, i, 2);
                     const auto ri_ub = ubs(chunk_idx, i, 3);
 
-                    // Determine if i is active for collisions and conjunctions.
-                    const auto coll_active_i
-                        = (sv(i, 6u) > min_coll_radius) && (coll_wl_empty || m_coll_whitelist.count(i) == 1u);
-                    const auto conj_active_i = with_conj && (conj_wl_empty || m_conj_whitelist.count(i) == 1u);
-
-                    assert(coll_active_i == coll_a_view(chunk_idx, i));
-                    assert(conj_active_i == conj_a_view(chunk_idx, i));
+                    // Check if i is active for collisions and conjunctions.
+                    const auto coll_active_i = m_data->coll_active[i];
+                    const auto conj_active_i = m_data->conj_active[i];
 
                     oneapi::tbb::parallel_for(
                         oneapi::tbb::blocked_range<size_type>(i + 1u, nparts), [&](const auto &rj) {
@@ -349,11 +283,9 @@ void sim::verify_broad_phase_parallel() const
                                 const auto zj_ub = ubs(chunk_idx, j, 2);
                                 const auto rj_ub = ubs(chunk_idx, j, 3);
 
-                                // Determine if j is active for collisions and conjunctions.
-                                const auto coll_active_j = (sv(j, 6u) > min_coll_radius)
-                                                           && (coll_wl_empty || m_coll_whitelist.count(j) == 1u);
-                                const auto conj_active_j
-                                    = with_conj && (conj_wl_empty || m_conj_whitelist.count(j) == 1u);
+                                // Check if j is active for collisions and conjunctions.
+                                const auto coll_active_j = m_data->coll_active[j];
+                                const auto conj_active_j = m_data->conj_active[j];
 
                                 const bool overlap
                                     = (xi_ub >= xj_lb && xi_lb <= xj_ub) && (yi_ub >= yj_lb && yi_lb <= yj_ub)
