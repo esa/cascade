@@ -205,7 +205,7 @@ class sim_test_case(_ut.TestCase):
         self.assertFalse(s.high_accuracy)
         self.assertEqual(s.npars, 0)
         self.assertEqual(s.reentry_radius, 0.0)
-        self.assertEqual(s.d_radius, 0.0)
+        self.assertEqual(s.exit_radius, 0.0)
         self.assertEqual(s.n_par_ct, 1)
         self.assertEqual(s.conj_thresh, 0)
         self.assertEqual(s.min_coll_radius, 0)
@@ -228,7 +228,7 @@ class sim_test_case(_ut.TestCase):
             dyn=dyn,
             pars=[[0.002, 0.001]],
             reentry_radius=[0.1, 0.2, 0.3],
-            d_radius=100.0,
+            exit_radius=100.0,
             tol=1e-12,
             high_accuracy=True,
             n_par_ct=2,
@@ -248,7 +248,7 @@ class sim_test_case(_ut.TestCase):
         self.assertTrue(s.high_accuracy)
         self.assertEqual(s.npars, 2)
         self.assertEqual(s.reentry_radius, [0.1, 0.2, 0.3])
-        self.assertEqual(s.d_radius, 100.0)
+        self.assertEqual(s.exit_radius, 100.0)
         self.assertEqual(s.tol, 1e-12)
         self.assertEqual(s.n_par_ct, 2)
         self.assertEqual(s.conj_thresh, 0.1)
@@ -287,7 +287,7 @@ class sim_test_case(_ut.TestCase):
         self.assertTrue(s.high_accuracy)
         self.assertEqual(s.npars, 2)
         self.assertEqual(s.reentry_radius, [0.1, 0.2, 0.3])
-        self.assertEqual(s.d_radius, 100.0)
+        self.assertEqual(s.exit_radius, 100.0)
         self.assertEqual(s.tol, 1e-12)
 
         s = sim(
@@ -296,7 +296,7 @@ class sim_test_case(_ut.TestCase):
             dyn=dyn,
             pars=[[0.002, 0.001]],
             reentry_radius=0.1,
-            d_radius=100.0,
+            exit_radius=100.0,
             tol=1e-12,
             high_accuracy=True,
         )

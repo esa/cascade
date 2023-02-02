@@ -40,8 +40,8 @@ TEST_CASE("basic")
         REQUIRE(s.get_tol() == std::numeric_limits<double>::epsilon());
         REQUIRE(!s.get_high_accuracy());
         REQUIRE(s.get_npars() == 0u);
-        REQUIRE(std::get<0>(s.get_c_radius()) == 0.);
-        REQUIRE(s.get_d_radius() == 0.);
+        REQUIRE(std::get<0>(s.get_reentry_radius()) == 0.);
+        REQUIRE(s.get_exit_radius() == 0.);
         REQUIRE(s.get_n_par_ct() == 1u);
         REQUIRE(s.get_conj_thresh() == 0.);
         REQUIRE(s.get_min_coll_radius() == 0.);
@@ -57,7 +57,7 @@ TEST_CASE("basic")
         using whitelist_t = sim::whitelist_t;
 
         sim s({1., .001, .001, .001, 1., .001, .001}, .5, kw::dyn = dyn, kw::pars = {.002, .001},
-              kw::c_radius = {.1, .2, .3}, kw::d_radius = 100., kw::tol = 1e-12, kw::high_accuracy = true,
+              kw::reentry_radius = {.1, .2, .3}, kw::exit_radius = 100., kw::tol = 1e-12, kw::high_accuracy = true,
               kw::n_par_ct = 5, kw::conj_thresh = 42., kw::min_coll_radius = .1, kw::coll_whitelist = whitelist_t{1, 2},
               kw::conj_whitelist = whitelist_t{3, 4});
 
@@ -71,8 +71,8 @@ TEST_CASE("basic")
         REQUIRE(s.get_tol() == 1e-12);
         REQUIRE(s.get_high_accuracy());
         REQUIRE(s.get_npars() == 2u);
-        REQUIRE(std::get<1>(s.get_c_radius()) == std::vector{.1, .2, .3});
-        REQUIRE(s.get_d_radius() == 100.);
+        REQUIRE(std::get<1>(s.get_reentry_radius()) == std::vector{.1, .2, .3});
+        REQUIRE(s.get_exit_radius() == 100.);
         REQUIRE(s.get_time() == 0.);
         REQUIRE(s.get_n_par_ct() == 5u);
         REQUIRE(s.get_conj_thresh() == 42.);
@@ -94,8 +94,8 @@ TEST_CASE("basic")
         REQUIRE(s2.get_tol() == 1e-12);
         REQUIRE(s2.get_high_accuracy());
         REQUIRE(s2.get_npars() == 2u);
-        REQUIRE(std::get<1>(s2.get_c_radius()) == std::vector{.1, .2, .3});
-        REQUIRE(s2.get_d_radius() == 100.);
+        REQUIRE(std::get<1>(s2.get_reentry_radius()) == std::vector{.1, .2, .3});
+        REQUIRE(s2.get_exit_radius() == 100.);
         REQUIRE(s2.get_n_par_ct() == 5u);
         REQUIRE(s2.get_conj_thresh() == 42.);
         REQUIRE(s2.get_min_coll_radius() == .1);
@@ -113,8 +113,8 @@ TEST_CASE("basic")
         REQUIRE(s3.get_tol() == 1e-12);
         REQUIRE(s3.get_high_accuracy());
         REQUIRE(s3.get_npars() == 2u);
-        REQUIRE(std::get<1>(s3.get_c_radius()) == std::vector{.1, .2, .3});
-        REQUIRE(s3.get_d_radius() == 100.);
+        REQUIRE(std::get<1>(s3.get_reentry_radius()) == std::vector{.1, .2, .3});
+        REQUIRE(s3.get_exit_radius() == 100.);
         REQUIRE(s3.get_n_par_ct() == 5u);
         REQUIRE(s3.get_conj_thresh() == 42.);
         REQUIRE(s3.get_min_coll_radius() == .1);
@@ -132,8 +132,8 @@ TEST_CASE("basic")
         REQUIRE(s2.get_tol() == 1e-12);
         REQUIRE(s2.get_high_accuracy());
         REQUIRE(s2.get_npars() == 2u);
-        REQUIRE(std::get<1>(s2.get_c_radius()) == std::vector{.1, .2, .3});
-        REQUIRE(s2.get_d_radius() == 100.);
+        REQUIRE(std::get<1>(s2.get_reentry_radius()) == std::vector{.1, .2, .3});
+        REQUIRE(s2.get_exit_radius() == 100.);
         REQUIRE(s2.get_n_par_ct() == 5u);
         REQUIRE(s2.get_conj_thresh() == 42.);
         REQUIRE(s2.get_min_coll_radius() == .1);
@@ -151,8 +151,8 @@ TEST_CASE("basic")
         REQUIRE(s3.get_tol() == 1e-12);
         REQUIRE(s3.get_high_accuracy());
         REQUIRE(s3.get_npars() == 2u);
-        REQUIRE(std::get<1>(s3.get_c_radius()) == std::vector{.1, .2, .3});
-        REQUIRE(s3.get_d_radius() == 100.);
+        REQUIRE(std::get<1>(s3.get_reentry_radius()) == std::vector{.1, .2, .3});
+        REQUIRE(s3.get_exit_radius() == 100.);
         REQUIRE(s3.get_n_par_ct() == 5u);
         REQUIRE(s3.get_conj_thresh() == 42.);
         REQUIRE(s3.get_min_coll_radius() == .1);
@@ -171,8 +171,8 @@ TEST_CASE("basic")
         REQUIRE(s3.get_tol() == 1e-12);
         REQUIRE(s3.get_high_accuracy());
         REQUIRE(s3.get_npars() == 2u);
-        REQUIRE(std::get<1>(s3.get_c_radius()) == std::vector{.1, .2, .3});
-        REQUIRE(s3.get_d_radius() == 100.);
+        REQUIRE(std::get<1>(s3.get_reentry_radius()) == std::vector{.1, .2, .3});
+        REQUIRE(s3.get_exit_radius() == 100.);
         REQUIRE(s3.get_n_par_ct() == 5u);
         REQUIRE(s3.get_conj_thresh() == 42.);
         REQUIRE(s3.get_min_coll_radius() == .1);
@@ -205,18 +205,17 @@ TEST_CASE("basic")
                 "(the allowed variables are [\"x\", \"y\", \"z\", \"vx\", \"vy\", \"vz\"])"));
 
     REQUIRE_THROWS_MATCHES(
-        sim({}, .5, kw::c_radius = std::vector{.1}), std::invalid_argument,
-        Message("The c_radius argument must be either a scalar (for a spherical central body) or a vector of 3 "
+        sim({}, .5, kw::reentry_radius = std::vector{.1}), std::invalid_argument,
+        Message("The reentry_radius argument must be either a scalar (for a spherical central body) or a vector of 3 "
                 "elements (for a triaxial ellipsoid), but instead it is a vector of 1 element(s)"));
     REQUIRE_THROWS_MATCHES(
-        sim({}, .5, kw::c_radius = std::vector{1., 2., 0.}), std::invalid_argument,
+        sim({}, .5, kw::reentry_radius = std::vector{1., 2., 0.}), std::invalid_argument,
         Message("A non-finite or non-positive value was detected among the 3 semiaxes of the central body: [1, 2, 0]"));
-    REQUIRE_THROWS_MATCHES(
-        sim({}, .5, kw::c_radius = -1), std::invalid_argument,
-        Message("The radius of the central body must be finite and non-negative, but it is -1 instead"));
+    REQUIRE_THROWS_MATCHES(sim({}, .5, kw::reentry_radius = -1), std::invalid_argument,
+                           Message("The reentry radius must be finite and non-negative, but it is -1 instead"));
 
-    REQUIRE_THROWS_MATCHES(sim({}, .5, kw::d_radius = -1), std::invalid_argument,
-                           Message("The domain radius must be finite and non-negative, but it is -1 instead"));
+    REQUIRE_THROWS_MATCHES(sim({}, .5, kw::exit_radius = -1), std::invalid_argument,
+                           Message("The exit radius must be finite and non-negative, but it is -1 instead"));
 
     REQUIRE_THROWS_MATCHES(sim({}, .5, kw::n_par_ct = 0), std::invalid_argument,
                            Message("The number of collisional timesteps to be processed in parallel cannot be zero"));

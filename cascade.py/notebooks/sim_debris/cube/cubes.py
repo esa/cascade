@@ -123,12 +123,12 @@ def simulate(debris, to_satcat, q, seed, sim_time=20, time_grid=5, t0=8073.60399
             v1 = v[idx1, i, :]
             v2 = v[idx2, i, :]
             # we get the collision radiu from debris (indexed differently hence to_satcat is used)
-            c_radius1 = debris[to_satcat[idx1]].collision_radius
-            c_radius2 = debris[to_satcat[idx2]].collision_radius
+            reentry_radius1 = debris[to_satcat[idx1]].collision_radius
+            reentry_radius2 = debris[to_satcat[idx2]].collision_radius
             # Relative velocity
             Vrel = np.linalg.norm(v1-v2)
             # Collisional area of the couple (in km^2)
-            sigma = np.pi*((c_radius1+c_radius2)/1000)**2
+            sigma = np.pi*((reentry_radius1+reentry_radius2)/1000)**2
             # Volume of the cube (km^3)
             U = Lcube**3
             # We compute the spatial densities
@@ -158,7 +158,7 @@ if __name__ == '__main__':
 
     # We read the initial conditions used by the deterministic simulation
     with open("../../data/debris_simulation_ic.pk", "rb") as file:
-        r_ic, v_ic, c_radius, to_satcat, satcat, debris = pkl.load(file)
+        r_ic, v_ic, reentry_radius, to_satcat, satcat, debris = pkl.load(file)
 
     q = mp.Queue()
     keywords = {'time_grid': 5, 'Lcube': 10, 'sim_time': 20}

@@ -25,7 +25,7 @@ TEST_CASE("domain exit")
     using Catch::Detail::Approx;
 
     for (auto n_par_ct : {1u, 3u}) {
-        sim s({1., 0, 0, 150., 0., 0., 0}, 0.23, kw::d_radius = 10., kw::n_par_ct = n_par_ct);
+        sim s({1., 0, 0, 150., 0., 0., 0}, 0.23, kw::exit_radius = 10., kw::n_par_ct = n_par_ct);
 
         auto sv = xt::adapt(s.get_state_data(), {1, 7});
         auto pos = xt::view(sv, xt::all(), xt::range(0, 3));

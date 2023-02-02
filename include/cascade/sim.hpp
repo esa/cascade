@@ -58,8 +58,8 @@ namespace kw
 
 IGOR_MAKE_NAMED_ARGUMENT(dyn);
 IGOR_MAKE_NAMED_ARGUMENT(pars);
-IGOR_MAKE_NAMED_ARGUMENT(c_radius);
-IGOR_MAKE_NAMED_ARGUMENT(d_radius);
+IGOR_MAKE_NAMED_ARGUMENT(reentry_radius);
+IGOR_MAKE_NAMED_ARGUMENT(exit_radius);
 IGOR_MAKE_NAMED_ARGUMENT(tol);
 IGOR_MAKE_NAMED_ARGUMENT(high_accuracy);
 IGOR_MAKE_NAMED_ARGUMENT(n_par_ct);
@@ -134,10 +134,10 @@ private:
     //   in which the non-finite step was generated, measured relative to the beginning
     //   of the superstep).
     std::optional<std::variant<std::array<size_type, 2>, size_type, std::tuple<size_type, double>>> m_int_info;
-    // Central body radius(es).
-    std::variant<double, std::vector<double>> m_c_radius;
-    // Domain radius.
-    double m_d_radius = 0;
+    // Reentry radius(es).
+    std::variant<double, std::vector<double>> m_reentry_radius;
+    // Exit radius.
+    double m_exit_radius = 0;
     // Number of params in the dynamics.
     std::uint32_t m_npars = 0;
     // Conjunction threshold
@@ -233,40 +233,41 @@ public:
             }
         }
 
-        // Radius of the central body (defaults to zero scalar, which
-        // means the central body is point like and thus no collisions are
-        // possible with it).
-        std::variant<double, std::vector<double>> c_radius(0.);
-        if constexpr (p.has(kw::c_radius)) {
-            if constexpr (std::convertible_to<decltype(p(kw::c_radius)), double>) {
-                c_radius = static_cast<double>(std::forward<decltype(p(kw::c_radius))>(p(kw::c_radius)));
-            } else if constexpr (di_range<decltype(p(kw::c_radius))>) {
+        // Reentry radius (defaults to zero scalar, which
+        // means the central body is point-like and thus no
+        // reentry events are possible).
+        std::variant<double, std::vector<double>> reentry_radius(0.);
+        if constexpr (p.has(kw::reentry_radius)) {
+            if constexpr (std::convertible_to<decltype(p(kw::reentry_radius)), double>) {
+                reentry_radius
+                    = static_cast<double>(std::forward<decltype(p(kw::reentry_radius))>(p(kw::reentry_radius)));
+            } else if constexpr (di_range<decltype(p(kw::reentry_radius))>) {
                 // NOTE: turn it into an lvalue.
-                auto &&tmp_range = p(kw::c_radius);
+                auto &&tmp_range = p(kw::reentry_radius);
 
                 std::vector<double> vd;
                 for (auto &&val : tmp_range) {
                     vd.push_back(static_cast<double>(val));
                 }
 
-                c_radius = std::move(vd);
+                reentry_radius = std::move(vd);
             } else {
                 // LCOV_EXCL_START
                 static_assert(detail::always_false_v<KwArgs...>,
-                              "The 'c_radius' keyword argument is of the wrong type.");
+                              "The 'reentry_radius' keyword argument is of the wrong type.");
                 // LCOV_EXCL_STOP
             }
         }
 
-        // Domain radius (defaults to zero, which means no domain boundary).
-        double d_radius = 0;
-        if constexpr (p.has(kw::d_radius)) {
-            if constexpr (std::convertible_to<decltype(p(kw::d_radius)), double>) {
-                d_radius = static_cast<double>(std::forward<decltype(p(kw::d_radius))>(p(kw::d_radius)));
+        // Exit radius (defaults to zero, which means no boundary).
+        double exit_radius = 0;
+        if constexpr (p.has(kw::exit_radius)) {
+            if constexpr (std::convertible_to<decltype(p(kw::exit_radius)), double>) {
+                exit_radius = static_cast<double>(std::forward<decltype(p(kw::exit_radius))>(p(kw::exit_radius)));
             } else {
                 // LCOV_EXCL_START
                 static_assert(detail::always_false_v<KwArgs...>,
-                              "The 'd_radius' keyword argument is of the wrong type.");
+                              "The 'exit_radius' keyword argument is of the wrong type.");
                 // LCOV_EXCL_STOP
             }
         }
@@ -363,8 +364,8 @@ public:
             }
         }
 
-        finalise_ctor(std::move(dyn), std::move(pars), std::move(c_radius), d_radius, tol, ha, n_par_ct, conj_thresh,
-                      min_coll_radius, std::move(coll_whitelist), std::move(conj_whitelist));
+        finalise_ctor(std::move(dyn), std::move(pars), std::move(reentry_radius), exit_radius, tol, ha, n_par_ct,
+                      conj_thresh, min_coll_radius, std::move(coll_whitelist), std::move(conj_whitelist));
     }
     sim(const sim &);
     sim(sim &&) noexcept;
@@ -423,11 +424,11 @@ public:
     [[nodiscard]] bool get_high_accuracy() const;
     [[nodiscard]] std::uint32_t get_npars() const;
 
-    [[nodiscard]] std::variant<double, std::vector<double>> get_c_radius() const;
+    [[nodiscard]] std::variant<double, std::vector<double>> get_reentry_radius() const;
 
-    [[nodiscard]] double get_d_radius() const
+    [[nodiscard]] double get_exit_radius() const
     {
-        return m_d_radius;
+        return m_exit_radius;
     }
 
     [[nodiscard]] double get_conj_thresh() const
