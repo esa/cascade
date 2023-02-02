@@ -119,8 +119,8 @@ TEST_CASE("haumea bug 00")
         state.push_back(radius);
     }
 
-    sim s(state, ct, kw::dyn = dynamics, kw::reentry_radius = std::vector<double>{ra, rb, rc}, kw::d_radius = a_s * 10,
-          kw::n_par_ct = boost::numeric_cast<std::uint32_t>(dt / ct));
+    sim s(state, ct, kw::dyn = dynamics, kw::reentry_radius = std::vector<double>{ra, rb, rc},
+          kw::exit_radius = a_s * 10, kw::n_par_ct = boost::numeric_cast<std::uint32_t>(dt / ct));
 
     s.set_time(13401085490.242563);
 

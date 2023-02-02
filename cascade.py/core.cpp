@@ -80,7 +80,7 @@ PYBIND11_MODULE(core, m)
         .def(py::init([](const py::array_t<double> &state, double ct,
                          std::optional<std::vector<std::pair<hy::expression, hy::expression>>> dyn_,
                          std::optional<std::variant<double, std::vector<double>>> reentry_radius_,
-                         std::optional<double> d_radius_, const std::optional<py::array_t<double>> &pars_,
+                         std::optional<double> exit_radius_, const std::optional<py::array_t<double>> &pars_,
                          std::optional<double> tol_, bool ha, std::uint32_t n_par_ct, double conj_thresh, double min_coll_radius,
                          whitelist_t coll_whitelist, whitelist_t conj_whitelist) {
                  // Check the input state.
@@ -108,8 +108,8 @@ PYBIND11_MODULE(core, m)
                  // Init reentry_radius_. When zero is not defined anf the corresponding event will not be instantiated.
                  auto reentry_radius = reentry_radius_ ? std::move(*reentry_radius_) : 0.;
 
-                 // Init d_radius. When zero is not defined anf the corresponding event will not be instantiated.
-                 auto d_radius = d_radius_ ? *d_radius_ : 0.;
+                 // Init exit_radius. When zero is not defined anf the corresponding event will not be instantiated.
+                 auto exit_radius = exit_radius_ ? *exit_radius_ : 0.;
 
                  // Prepare the pars vector.
                  std::vector<double> pars_vec;
@@ -145,13 +145,13 @@ PYBIND11_MODULE(core, m)
                  return std::visit(
                      [&](auto &&cr_val) {
                          return sim(std::move(state_vec), ct, kw::dyn = std::move(dyn),
-                                    kw::reentry_radius = std::forward<decltype(cr_val)>(cr_val), kw::d_radius = d_radius,
+                                    kw::reentry_radius = std::forward<decltype(cr_val)>(cr_val), kw::exit_radius = exit_radius,
                                     kw::pars = std::move(pars_vec), kw::tol = tol, kw::high_accuracy = ha, kw::n_par_ct = n_par_ct, kw::conj_thresh = conj_thresh,
                                     kw::min_coll_radius = min_coll_radius, kw::coll_whitelist = std::move(coll_whitelist), kw::conj_whitelist = std::move(conj_whitelist));
                      },
                      std::move(reentry_radius));
              }),
-             "state"_a, "ct"_a, "dyn"_a = py::none{}, "reentry_radius"_a = py::none{}, "d_radius"_a = py::none{},
+             "state"_a, "ct"_a, "dyn"_a = py::none{}, "reentry_radius"_a = py::none{}, "exit_radius"_a = py::none{},
              "pars"_a = py::none{}, "tol"_a = py::none{}, "high_accuracy"_a = false, "n_par_ct"_a = 1, "conj_thresh"_a = 0.,
              "min_coll_radius"_a = 0., "coll_whitelist"_a = whitelist_t{}, "conj_whitelist"_a = whitelist_t{})
         .def_property_readonly("interrupt_info", &sim::get_interrupt_info)
@@ -167,7 +167,7 @@ PYBIND11_MODULE(core, m)
         .def_property_readonly("tol", &sim::get_tol)
         .def_property_readonly("high_accuracy", &sim::get_high_accuracy)
         .def_property_readonly("reentry_radius", &sim::get_reentry_radius)
-        .def_property_readonly("d_radius", &sim::get_d_radius)
+        .def_property_readonly("exit_radius", &sim::get_exit_radius)
         .def(
             "step",
             [](sim &s) {

@@ -113,7 +113,7 @@ sim::sim(ptag_t, std::vector<double> state, double ct)
 sim::sim(const sim &other)
     : m_state(std::make_shared<std::vector<double>>(*other.m_state)),
       m_pars(std::make_shared<std::vector<double>>(*other.m_pars)), m_ct(other.m_ct), m_n_par_ct(other.m_n_par_ct),
-      m_int_info(other.m_int_info), m_reentry_radius(other.m_reentry_radius), m_d_radius(other.m_d_radius),
+      m_int_info(other.m_int_info), m_reentry_radius(other.m_reentry_radius), m_exit_radius(other.m_exit_radius),
       m_npars(other.m_npars), m_conj_thresh(other.m_conj_thresh),
       m_det_conj(std::make_shared<std::vector<conjunction>>(*other.m_det_conj)),
       m_min_coll_radius(other.m_min_coll_radius), m_coll_whitelist(other.m_coll_whitelist),
@@ -351,7 +351,8 @@ void sim::set_new_state_pars(std::vector<double> new_state, std::vector<double> 
 
 void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>> dyn, std::vector<double> pars,
                         // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-                        std::variant<double, std::vector<double>> reentry_radius, double d_radius, double tol, bool ha,
+                        std::variant<double, std::vector<double>> reentry_radius, double exit_radius, double tol,
+                        bool ha,
                         // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
                         std::uint32_t n_par_ct, double conj_thresh, double min_coll_radius, whitelist_t coll_whitelist,
                         whitelist_t conj_whitelist)
@@ -479,18 +480,18 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
         const auto cr_val = std::get<double>(reentry_radius);
 
         if (!std::isfinite(cr_val) || cr_val < 0) {
-            throw std::invalid_argument(fmt::format(
-                "The radius of the central body must be finite and non-negative, but it is {} instead", cr_val));
+            throw std::invalid_argument(
+                fmt::format("The reentry radius must be finite and non-negative, but it is {} instead", cr_val));
         }
     }
     m_reentry_radius = std::move(reentry_radius);
 
-    // Check and assign d_radius.
-    if (!std::isfinite(d_radius) || d_radius < 0) {
+    // Check and assign exit_radius.
+    if (!std::isfinite(exit_radius) || exit_radius < 0) {
         throw std::invalid_argument(
-            fmt::format("The domain radius must be finite and non-negative, but it is {} instead", d_radius));
+            fmt::format("The exit radius must be finite and non-negative, but it is {} instead", exit_radius));
     }
-    m_d_radius = d_radius;
+    m_exit_radius = exit_radius;
 
     // Machinery to construct the integrators.
     std::optional<hy::taylor_adaptive<double>> s_ta;
@@ -499,9 +500,9 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
     auto integrators_setup = [&]() {
         // Helpers to create the exit/reentry event equations.
         auto make_exit_eq = [&]() {
-            assert(m_d_radius > 0);
+            assert(m_exit_radius > 0);
 
-            return hy::sum_sq({x, y, z}) - m_d_radius * m_d_radius;
+            return hy::sum_sq({x, y, z}) - m_exit_radius * m_exit_radius;
         };
 
         auto make_reentry_eq = [&]() {
@@ -639,10 +640,10 @@ bool sim::with_reentry_event() const
 
 bool sim::with_exit_event() const
 {
-    assert(std::isfinite(m_d_radius));
-    assert(m_d_radius >= 0);
+    assert(std::isfinite(m_exit_radius));
+    assert(m_exit_radius >= 0);
 
-    return m_d_radius > 0;
+    return m_exit_radius > 0;
 }
 
 // Helpers to compute the indices of the reentry/exit events.
@@ -670,7 +671,7 @@ std::uint32_t sim::exit_event_idx() const
 // is compatible with the simulation setup. Specifically,
 // verify that:
 // - all values are finite,
-// - if central and/or domain radius are defined in the
+// - if reentry and/or exit radiuses are defined in the
 //   simulation, no position falls within the central body
 //   or outside the domain,
 // - no particle size is negative.
@@ -729,9 +730,9 @@ void sim::verify_state_vector(const std::vector<double> &st) const
                 }
 
                 if (with_exit) {
-                    if (x * x + y * y + z * z >= m_d_radius * m_d_radius) {
+                    if (x * x + y * y + z * z >= m_exit_radius * m_exit_radius) {
                         throw std::invalid_argument(
-                            fmt::format("The particle at index {} is outside the domain radius {}", pidx, m_d_radius));
+                            fmt::format("The particle at index {} is outside the exit radius {}", pidx, m_exit_radius));
                     }
                 }
 
