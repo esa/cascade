@@ -69,7 +69,8 @@ nb_execution_mode = "force"
 nb_execution_excludepatterns = [
     "simple_atmosphere.ipynb",
     "cubes.ipynb",
-    "20yearsofLEO.ipynb",
+    "20yearsofLEO_coll.ipynb",
+    "oneweekofLEO_conj.ipynb"
 
 ]
 
