@@ -33,7 +33,9 @@ cascade is released under the MPL-2.0 license. The authors are Francesco Biscani
    :maxdepth: 1
    :caption: Examples:
 
-   examples/20yearsofLEO
+   examples/20yearsofLEO_coll
+   examples/20yearsofLEO_conj
+
 
 .. toctree::
    :maxdepth: 1
