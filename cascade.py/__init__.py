@@ -21,6 +21,6 @@ import heyoka as _hy
 from .core import *
 
 # We import the sub-modules.
-import cascade.dynamics 
+import cascade.dynamics
 
-del _hy 
+del _hy
