@@ -30,7 +30,7 @@ TEST_CASE("reentry sphere")
     using Catch::Detail::Approx;
 
     for (auto n_par_ct : {1u, 3u}) {
-        sim s({1.5, 0, 0, 0, 0.01, 0., 0}, 0.23, kw::c_radius = 1., kw::n_par_ct = n_par_ct);
+        sim s({1.5, 0, 0, 0, 0.01, 0., 0}, 0.23, kw::reentry_radius = 1., kw::n_par_ct = n_par_ct);
 
         auto sv = xt::adapt(s.get_state_data(), {1, 7});
         auto pos = xt::view(sv, xt::all(), xt::range(0, 3));
@@ -101,7 +101,7 @@ TEST_CASE("reentry ellipsoid")
     using Catch::Detail::Approx;
 
     for (auto n_par_ct : {1u, 3u}) {
-        sim s({1.5, 0, 0, 0, 0., 0., 0}, 0.23, kw::c_radius = std::vector<double>{1., 1.1, 1.2},
+        sim s({1.5, 0, 0, 0, 0., 0., 0}, 0.23, kw::reentry_radius = std::vector<double>{1., 1.1, 1.2},
               kw::n_par_ct = n_par_ct);
 
         auto sv = xt::adapt(s.get_state_data(), {1, 7});

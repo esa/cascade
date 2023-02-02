@@ -168,7 +168,7 @@ int main()
     }
 
     // Create the simulation.
-    sim s(state, ct, kw::dyn = dynamics, kw::c_radius = std::vector<double>{ra, rb, rc}, kw::d_radius = a_s * 10,
+    sim s(state, ct, kw::dyn = dynamics, kw::reentry_radius = std::vector<double>{ra, rb, rc}, kw::d_radius = a_s * 10,
           kw::n_par_ct = static_cast<std::uint32_t>(dt / ct));
 
     while (true) {

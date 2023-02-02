@@ -30,7 +30,7 @@ TEST_CASE("interrupt order")
     for (auto n_par_ct : {1u, 3u}) {
         // Test 1: 2 particles colliding right before one exits the domain.
         sim s({0.99, 0, 0, 1, 0, 0, 1e-6, 1.01, 0, 0, -1, 0, 0, 1e-6, 4.9, 0, 0, 1, 0, 0, 1e-6}, .23, kw::d_radius = 5.,
-              kw::c_radius = 0.75, kw::n_par_ct = n_par_ct);
+              kw::reentry_radius = 0.75, kw::n_par_ct = n_par_ct);
 
         auto sv = xt::adapt(s.get_state_data(), {3, 7});
         auto pos = xt::view(sv, xt::all(), xt::range(0, 3));

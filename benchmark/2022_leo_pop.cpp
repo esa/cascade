@@ -194,7 +194,7 @@ int main(int ac, char *av[])
         H5Easy::File par_file("test_par_612813.hdf5", H5Easy::File::ReadOnly);
         par_file.getDataSet("/par").read(pars);
 
-        // We switch off drag as to avoid to see too many reentries (in connection to the event c_radius being halved)
+        // We switch off drag as to avoid to see too many reentries (in connection to the event reentry_radius being halved)
         drag_factor = 0.;
     } else {
         state = read_file("test_ic_19647.txt");
@@ -299,7 +299,7 @@ int main(int ac, char *av[])
     } else {
         c_rad = min_radius;
     }
-    sim s(state, c_timestep, kw::dyn = dyn, kw::pars = pars, kw::c_radius = c_rad, kw::n_par_ct = n_par_ct,
+    sim s(state, c_timestep, kw::dyn = dyn, kw::pars = pars, kw::reentry_radius = c_rad, kw::n_par_ct = n_par_ct,
           kw::conj_thresh = conj_thresh);
     // Perform steps of the simulation.
     // ------------------------------------------------------------------------------------------------------
