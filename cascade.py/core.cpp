@@ -31,6 +31,7 @@
 
 #include <cascade/sim.hpp>
 
+#include "docstrings.hpp"
 #include "logging.hpp"
 
 namespace cascade_py::detail
@@ -54,6 +55,7 @@ PYBIND11_MODULE(core, m)
 
     using namespace cascade;
     namespace cpy = cascade_py;
+    namespace docstrings = cpy::docstrings;
 
     // Dynamics submodule (exposed in cores with underscores and imported via python in the correct namespace)
     m.def("_kepler", &dynamics::kepler, "mu"_a = 1.);
@@ -75,8 +77,7 @@ PYBIND11_MODULE(core, m)
 
     // sim class.
     using whitelist_t = sim::whitelist_t;
-    py::class_<sim>(m, "sim", py::dynamic_attr{})
-        .def(py::init<>())
+    py::class_<sim>(m, "sim", docstrings::sim_docstring().c_str(), py::dynamic_attr{})
         .def(py::init([](const py::array_t<double> &state, double ct,
                          std::optional<std::vector<std::pair<hy::expression, hy::expression>>> dyn_,
                          std::optional<std::variant<double, std::vector<double>>> reentry_radius_,
@@ -151,7 +152,7 @@ PYBIND11_MODULE(core, m)
                      },
                      std::move(reentry_radius));
              }),
-             "state"_a, "ct"_a, "dyn"_a = py::none{}, "reentry_radius"_a = py::none{}, "exit_radius"_a = py::none{},
+             "state"_a = py::array_t<double>{py::array::ShapeContainer{0, 7}}, "ct"_a = 1., "dyn"_a = py::none{}, "reentry_radius"_a = py::none{}, "exit_radius"_a = py::none{},
              "pars"_a = py::none{}, "tol"_a = py::none{}, "high_accuracy"_a = false, "n_par_ct"_a = 1, "conj_thresh"_a = 0.,
              "min_coll_radius"_a = 0., "coll_whitelist"_a = whitelist_t{}, "conj_whitelist"_a = whitelist_t{})
         .def_property_readonly("interrupt_info", &sim::get_interrupt_info)
