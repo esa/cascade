@@ -93,6 +93,23 @@
 </ul>
 <p class="caption collapsible-parent" role="heading">
  <span class="caption-text">
+  Tutorials:
+ </span>
+</p>
+<ul class="nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="../tutorials/quickstart.html">
+   Quickstart
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../tutorials/conjandcoll.html">
+   Conjunctions
+  </a>
+ </li>
+</ul>
+<p class="caption collapsible-parent" role="heading">
+ <span class="caption-text">
   Examples:
  </span>
 </p>
@@ -531,7 +548,7 @@ FREGAT DEB, 2011-037BC,  5.8669000372529645 REMOVED
 COSMOS 1408 DEB, 1982-092QH,  6.127241167303482 REMOVED
 FENGYUN 1C DEB, 1999-025CVY,  6.792275514753205 REMOVED
 Total number of conjunction events:  284340
-Elapsed [s]:  25.204343795776367
+Elapsed [s]:  25.159433603286743
 </pre></div>
 </div>
 </div>
@@ -545,8 +562,8 @@ Elapsed [s]:  25.204343795776367
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">conj</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">conjunctions</span>
 <span class="n">conj_n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">conj</span><span class="p">)</span>
-<span class="n">conj_d</span> <span class="o">=</span> <span class="p">[</span><span class="n">conj</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">conj_n</span><span class="p">)]</span>
-<span class="n">v_rel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">conj</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">4</span><span class="p">]</span> <span class="o">-</span> <span class="n">conj</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">5</span><span class="p">])[</span><span class="mi">3</span><span class="p">:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">conj</span><span class="p">))])</span> <span class="o">/</span> <span class="mi">1000</span>
+<span class="n">conj_d</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">conjunctions</span><span class="p">[</span><span class="s1">&#39;dist&#39;</span><span class="p">]</span>
+<span class="n">v_rel</span> <span class="o">=</span> <span class="p">(</span><span class="n">conj</span><span class="p">[</span><span class="s2">&quot;state_i&quot;</span><span class="p">][:,</span><span class="mi">3</span><span class="p">:]</span>  <span class="o">-</span> <span class="n">conj</span><span class="p">[</span><span class="s2">&quot;state_j&quot;</span><span class="p">][:,</span><span class="mi">3</span><span class="p">:])</span> <span class="o">/</span> <span class="mi">1000</span>
 <span class="n">pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">conj</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">4</span><span class="p">])[:</span><span class="mi">3</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">conj</span><span class="p">))])</span> <span class="o">/</span> <span class="n">pk</span><span class="o">.</span><span class="n">EARTH_RADIUS</span>
 </pre></div>
 </div>
