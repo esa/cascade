@@ -34,6 +34,7 @@ cascade is released under the MPL-2.0 license. The authors are Francesco Biscani
    :caption: Tutorials:
    
    tutorials/quickstart
+   tutorials/conjandcoll
 
 .. toctree::
    :maxdepth: 1
