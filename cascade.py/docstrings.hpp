@@ -15,6 +15,7 @@ namespace cascade_py::docstrings
 {
 
 std::string sim_docstring();
+std::string sim_init_docstring();
 
 } // namespace cascade_py::docstrings
 

@@ -2,3 +2,5 @@
 
 API reference
 =============
+
+.. automodule:: cascade

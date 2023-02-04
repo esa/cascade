@@ -1,7 +1,10 @@
 # Build dirs.
 build*
+
+# Docs.
 doc/_build
 doc/examples/out
+doc/generated
 
 # Notebooks bits.
 .ipynb_checkpoints
@@ -11,4 +14,3 @@ doc/examples/out
 
 # vscode bits.
 .vscode
-

@@ -20,7 +20,14 @@ release = csc.__version__
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["myst_nb", "sphinx.ext.intersphinx", "sphinx_design"]
+extensions = [
+    "myst_nb",
+    "sphinx.ext.intersphinx",
+    "sphinx_design",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",
+]
 
 intersphinx_mapping = {
     "hy": ("https://bluescarni.github.io/heyoka.py", None),

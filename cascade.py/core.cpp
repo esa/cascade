@@ -57,6 +57,9 @@ PYBIND11_MODULE(core, m)
     namespace cpy = cascade_py;
     namespace docstrings = cpy::docstrings;
 
+    py::options options;
+    options.disable_function_signatures();
+
     // Dynamics submodule (exposed in cores with underscores and imported via python in the correct namespace)
     m.def("_kepler", &dynamics::kepler, "mu"_a = 1.);
 
@@ -154,7 +157,7 @@ PYBIND11_MODULE(core, m)
              }),
              "state"_a = py::array_t<double>{py::array::ShapeContainer{0, 7}}, "ct"_a = 1., "dyn"_a = py::none{}, "reentry_radius"_a = py::none{}, "exit_radius"_a = py::none{},
              "pars"_a = py::none{}, "tol"_a = py::none{}, "high_accuracy"_a = false, "n_par_ct"_a = 1, "conj_thresh"_a = 0.,
-             "min_coll_radius"_a = 0., "coll_whitelist"_a = whitelist_t{}, "conj_whitelist"_a = whitelist_t{})
+             "min_coll_radius"_a = 0., "coll_whitelist"_a = whitelist_t{}, "conj_whitelist"_a = whitelist_t{}, docstrings::sim_init_docstring().c_str())
         .def_property_readonly("interrupt_info", &sim::get_interrupt_info)
         .def_property("time", &sim::get_time, &sim::set_time)
         .def_property("ct", &sim::get_ct, &sim::set_ct)
@@ -162,7 +165,7 @@ PYBIND11_MODULE(core, m)
         .def_property("conj_thresh", &sim::get_conj_thresh, &sim::set_conj_thresh)
         .def_property("min_coll_radius", &sim::get_min_coll_radius, &sim::set_min_coll_radius)
         .def_property("coll_whitelist", &sim::get_coll_whitelist, &sim::set_coll_whitelist)
-        .def_property("conj_whitelist", &sim::get_conj_whitelist, &sim::set_conj_whitelist)
+        .def_property("conj_whitelist", &sim::get_conj_whitelist, &sim::set_conj_whitelist, "dsa whitelist")
         .def_property_readonly("nparts", &sim::get_nparts)
         .def_property_readonly("npars", &sim::get_npars)
         .def_property_readonly("tol", &sim::get_tol)
