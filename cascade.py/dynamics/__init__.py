@@ -11,3 +11,4 @@ from ..core import _kepler as kepler
 
 # Import the pure python symbols
 from ._simple_earth import simple_earth
+from ._rotating_mascon import rotating_mascon
