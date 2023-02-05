@@ -158,14 +158,14 @@ PYBIND11_MODULE(core, m)
              "state"_a = py::array_t<double>{py::array::ShapeContainer{0, 7}}, "ct"_a = 1., "dyn"_a = py::none{}, "reentry_radius"_a = py::none{}, "exit_radius"_a = py::none{},
              "pars"_a = py::none{}, "tol"_a = py::none{}, "high_accuracy"_a = false, "n_par_ct"_a = 1, "conj_thresh"_a = 0.,
              "min_coll_radius"_a = 0., "coll_whitelist"_a = whitelist_t{}, "conj_whitelist"_a = whitelist_t{}, docstrings::sim_init_docstring().c_str())
-        .def_property_readonly("interrupt_info", &sim::get_interrupt_info)
+        .def_property_readonly("interrupt_info", &sim::get_interrupt_info, docstrings::sim_interrupt_info_docstring().c_str())
         .def_property("time", &sim::get_time, &sim::set_time)
         .def_property("ct", &sim::get_ct, &sim::set_ct)
         .def_property("n_par_ct", &sim::get_n_par_ct, &sim::set_n_par_ct)
         .def_property("conj_thresh", &sim::get_conj_thresh, &sim::set_conj_thresh)
         .def_property("min_coll_radius", &sim::get_min_coll_radius, &sim::set_min_coll_radius)
         .def_property("coll_whitelist", &sim::get_coll_whitelist, &sim::set_coll_whitelist)
-        .def_property("conj_whitelist", &sim::get_conj_whitelist, &sim::set_conj_whitelist, "dsa whitelist")
+        .def_property("conj_whitelist", &sim::get_conj_whitelist, &sim::set_conj_whitelist, docstrings::sim_conj_whitelist_docstring().c_str())
         .def_property_readonly("nparts", &sim::get_nparts)
         .def_property_readonly("npars", &sim::get_npars)
         .def_property_readonly("tol", &sim::get_tol)
@@ -243,7 +243,7 @@ PYBIND11_MODULE(core, m)
                                        (**ptr).data(), std::move(pars_caps));
 
                                    return ret;
-                               })
+                               }, docstrings::sim_pars_docstring().c_str())
         .def(
             "set_new_state_pars",
             [](sim &s, const py::array_t<double> &new_state, const std::optional<py::array_t<double>> &new_pars_) {

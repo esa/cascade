@@ -13,13 +13,6 @@
 namespace cascade_py::docstrings
 {
 
-// __init__(state: numpy.ndarray[numpy.double] = numpy.array([], shape=(0, 7), dtype=float64), ct: float = 1.0, dyn:
-// typing.Optional[typing.List[typing.Tuple[heyoka.core.expression, heyoka.core.expression]]] = None, reentry_radius:
-// typing.Optional[float | typing.List[float]] = None, exit_radius: Optional[float] = None, pars:
-// Optional[numpy.ndarray[numpy.float64]] = None, tol: Optional[float] = None, high_accuracy: bool = False, n_par_ct:
-// int = 1, conj_thresh: float = 0.0, min_coll_radius: float = 0.0, coll_whitelist: Set[int] = set(), conj_whitelist:
-// typing.Set[int] = set())
-
 std::string sim_docstring()
 {
     return R"(The simulation class
@@ -31,7 +24,7 @@ This is the class that....
 
 std::string sim_init_docstring()
 {
-    return R"(__init__(state: numpy.ndarray[numpy.double], ct: float, **kwargs)
+    return R"(__init__(state: numpy.ndarray[numpy.double], ct: float, dyn: typing.Optional[typing.List[typing.Tuple[heyoka.expression, heyoka.expression]]] = None, reentry_radius: typing.Optional[float | typing.List[float]] = None, exit_radius: typing.Optional[float] = None, pars: typing.Optional[numpy.ndarray[numpy.double]] = None, tol: typing.Optional[float] = None, high_accuracy: bool = False, n_par_ct: int = 1, conj_thresh: float = 0.0, min_coll_radius: float = 0.0, coll_whitelist: typing.Set[int] = set(), conj_whitelist: typing.Set[int] = set())
 
 Constructor
 
@@ -41,19 +34,101 @@ Parameters
 ----------
 
 state: numpy.ndarray[numpy.double]
-    The initial state vector for the simulation
+    The initial state vector for the simulation. Must be a two-dimensional array of shape
+    :math:`n\times 7`, where the number of rows :math:`n` is the number of particles in the simulation,
+    the first 6 columns contain the cartesian state variables :math:`\left( x,y,z,v_x,v_y,v_z \right)`
+    of each particle, and the seventh column contains the particle sizes.
+
+    After construction, the state vector can be accessed via the ``state`` attribute.
 ct: float
-    The number of digits for printing fraction of seconds
-
-Other Parameters
-----------------
-
-dyn: typing.Optional[typing.List[typing.Tuple[heyoka.core.expression, heyoka.core.expression]]] = None
-    sadas
+    The length in time units of the collisional timestep. Must be positive and finite.
+    After construction, the collisional timestep can be changed at any time via the
+    ``ct`` attribute.
+dyn: typing.Optional[typing.List[typing.Tuple[heyoka.expression, heyoka.expression]]] = None
+    The particles' dynamical equations. By default, the dynamics is purely Keplerian.
 reentry_radius: typing.Optional[float | typing.List[float]] = None
-    asdd
+    The radius of the central body. If a single scalar is provided, the central body
+    is assumed to be a sphere of the given radius. If a list of 3 values is provided,
+    the central body is assumed to be a triaxial ellipsoid whose three semi-axes lengths
+    :math:`\left( a,b,c \right)` are given by the values in the array.
+
+    The reentry radius is used to detect when a particle impacts on the central body,
+    which results in a reentry event that stops the simulation. If no reentry radius is
+    provided (the default), then no reentry events are possible.
+
+    Note that the central body's orientation is assumed to be fixed. Thus, if an
+    asymmetric ellipsoidal shape is provided (e.g., :math:`a \neq b \neq c`) and
+    the central body is rotating, then the dynamical equations should be formulated in a
+    rotating reference frame.
+exit_radius: typing.Optional[float] = None
+    Exit radius. If provided, the simulation will track the distance of all particles
+    from the origin, and when a particle's distance from the origin exceeds the provided limit,
+    the simulation will stop with an exit event. By default, no exit radius is defined.
+pars: typing.Optional[numpy.ndarray[numpy.double]] = None
+    Values of the dynamical parameters. If the particles' dynamical equations contain
+    runtime parameters, their values can be provided via this argument, which must
+    be a two-dimensional array of shape :math:`n\times N_p`, where :math:`n` is the
+    number of particles in the simulation and :math:`N_p` is the number of runtime
+    parameters appearing in the dynamical equations. Each row in the array contains
+    the values of the runtime parameters for the dynamics of the corresponding
+    particle.
+
+    If this argument is not provided (the default), then all runtime parameters for
+    all particles are initialised to zero. Note that the value of the runtime parameters
+    can be changed at any time via the ``pars`` attribute.
+tol: typing.Optional[float] = None
+    The tolerance used when numerically solving the dynamical equations. If not provided,
+    it defaults to the double-precision epsilon (:math:`\sim 2.2\times 10^{-16}`).
+high_accuracy: bool = False
+    High-accuracy mode. If enabled, the numerical integrator will employ techniques
+    to minimise the accumulation of floating-point truncation errors, at the price
+    of a small performance penalty. This can be useful to maintain high accuracy
+    in long-running simulations.
+n_par_ct: int = 1
+    Number of collisional timesteps to be processed in parallel. This is a
+    tuning parameter that, while not affecting the correctness of the simulation,
+    can greatly influence its performance. The optimal value of this parameter
+    depends heavily on the specifics of the simulation, and thus users are advised
+    to experiment with different values to determine which one works best.
+conj_thresh: float = 0.0
+    Conjunction threshold. Conjunctions are tracked only if the conjunction distance
+    is less than this threshold. By default, this value is set to zero, which means
+    that conjunction tracking is disabled. The conjunction threshold can be changed
+    at any time via the ``conj_thresh`` attribute.
+min_coll_radius: float = 0.0
+    Minimum collisional radius. A collision between two particles is detected
+    only if the radius of at least one particle is greater than this value. By default,
+    this value is zero, which means that only collisions between point-like particles
+    are skipped. If this value is set to :math:`+\infty`, then collision detection
+    is disabled for all particles. The minimum collisional radius can be changed
+    at any time via the ``min_coll_radius`` attribute.
+coll_whitelist: typing.Set[int] = set()
+    Collision whitelist. If **not** empty, then a collision between two particles is
+    detected only if at least one particle is in the whitelist. By default, the collision
+    whitelist is empty, which means that the whitelisting mechanism is disabled. The
+    collision whitelist can be changed at any time via the ``coll_whitelist`` attribute.
+conj_whitelist: typing.Set[int] = set()
+    Conjunction whitelist. If **not** empty, then a conjunction between two particles is
+    detected only if at least one particle is in the whitelist. By default, the conjunction
+    whitelist is empty, which means that the whitelisting mechanism is disabled. The
+    conjunction whitelist can be changed at any time via the ``conj_whitelist`` attribute.
 
 )";
+}
+
+std::string sim_pars_docstring()
+{
+    return "Values of the runtime parameters";
+}
+
+std::string sim_conj_whitelist_docstring()
+{
+    return "Conjunction whitelist";
+}
+
+std::string sim_interrupt_info_docstring()
+{
+    return "Interrupt info";
 }
 
 } // namespace cascade_py::docstrings
