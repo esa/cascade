@@ -14,8 +14,10 @@ Classes
 
 .. autosummary::
     :toctree: generated/
+    :template: custom-class-template.rst
 
     sim
+    outcome
 
 """
 

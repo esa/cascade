@@ -75,7 +75,7 @@ pars: typing.Optional[numpy.ndarray[numpy.double]] = None
 
     If this argument is not provided (the default), then all runtime parameters for
     all particles are initialised to zero. Note that the value of the runtime parameters
-    can be changed at any time via the ``pars`` attribute.
+    can be changed at any time via the :attr:`pars` attribute.
 tol: typing.Optional[float] = None
     The tolerance used when numerically solving the dynamical equations. If not provided,
     it defaults to the double-precision epsilon (:math:`\sim 2.2\times 10^{-16}`).
@@ -123,7 +123,10 @@ std::string sim_pars_docstring()
 
 std::string sim_conj_whitelist_docstring()
 {
-    return "Conjunction whitelist";
+    return R"(Conjunction whitelist
+
+
+)";
 }
 
 std::string sim_interrupt_info_docstring()

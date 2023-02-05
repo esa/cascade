@@ -59,6 +59,7 @@ PYBIND11_MODULE(core, m)
 
     py::options options;
     options.disable_function_signatures();
+    options.disable_enum_members_docstring();
 
     // Dynamics submodule (exposed in cores with underscores and imported via python in the correct namespace)
     m.def("_kepler", &dynamics::kepler, "mu"_a = 1.);
@@ -67,7 +68,7 @@ PYBIND11_MODULE(core, m)
     cpy::expose_logging_setters(m);
 
     // outcome enum.
-    py::enum_<outcome>(m, "outcome")
+    py::enum_<outcome>(m, "outcome", "sdasdsadas\n\nd asdssdsa das sa d\n")
         .value("success", outcome::success)
         .value("time_limit", outcome::time_limit)
         .value("collision", outcome::collision)
