@@ -19,7 +19,7 @@ mamba env create -f cascade_devel.yml -q -p $deps_dir
 source activate $deps_dir
 # NOTE: do some explicit version pinning here, as the interdeps
 # between several sphinx packages are **very** fragile.
-mamba install sphinx=4.5.0 myst-nb=0.17.1 sphinx-book-theme=0.3.3 sphinx-design matplotlib pykep sgp4
+mamba install sphinx='4.5.*' myst-nb='0.17.*' sphinx-book-theme='0.3.*' sphinx-design matplotlib pykep sgp4
 
 # Create the build dir and cd into it.
 mkdir build
