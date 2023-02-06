@@ -6,8 +6,20 @@
 # Public License v. 2.0. If a copy of the MPL was not distributed
 # with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-# Explicitly import the test submodule
-from . import test
+""":mod:`cascade`
+=================
+
+Classes
+-------
+
+.. autosummary::
+    :toctree: generated/
+    :template: custom-class-template.rst
+
+    sim
+    outcome
+
+"""
 
 # Version setup.
 from ._version import __version__
@@ -20,7 +32,8 @@ import heyoka as _hy
 # We import core into the root namespace.
 from .core import *
 
+del _hy
+
 # We import the sub-modules.
 import cascade.dynamics
-
-del _hy
+import cascade.test

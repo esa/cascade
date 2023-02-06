@@ -6,9 +6,9 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'cascade'
-copyright = '2023, Francesco Biscani and Dario Izzo'
-author = 'Francesco Biscani and Dario Izzo'
+project = "cascade"
+copyright = "2023, Francesco Biscani and Dario Izzo"
+author = "Francesco Biscani and Dario Izzo"
 
 # The full version, including alpha/beta/rc tags
 import cascade as csc
@@ -20,7 +20,14 @@ release = csc.__version__
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["myst_nb", "sphinx.ext.intersphinx"]
+extensions = [
+    "myst_nb",
+    "sphinx.ext.intersphinx",
+    "sphinx_design",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",
+]
 
 intersphinx_mapping = {
     "hy": ("https://bluescarni.github.io/heyoka.py", None),
@@ -35,7 +42,6 @@ templates_path = ["_templates"]
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
-
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -53,7 +59,7 @@ html_logo = "_static/images/logo.png"
 
 html_theme_options = {
     "home_page_in_toc": True,
-    "repository_url": "https://github.com/bluescarni/heyoka.py",
+    "repository_url": "https://github.com/esa/cascade",
     "repository_branch": "main",
     "path_to_docs": "doc",
     "use_repository_button": True,
@@ -70,8 +76,7 @@ nb_execution_excludepatterns = [
     "simple_atmosphere.ipynb",
     "cubes.ipynb",
     "20yearsofLEO_coll.ipynb",
-    "oneweekofLEO_conj.ipynb"
-
+    "oneweekofLEO_conj.ipynb",
 ]
 
 latex_engine = "xelatex"

@@ -1,3 +1,5 @@
+.. _installation:
+
 Installation
 ============
 
@@ -20,7 +22,7 @@ to the channels. Assuming a working installation of conda:
    $ conda install cascade
 
 .. note::
-    It is useful to check the scripts we use to build and test cascade since they use conda. You can find the ones for OSX and linux in
+    It is useful to check the scripts we use to build and test cascade since they use conda. You can find the ones for Linux and OSX in
     `the tools folder <https://github.com/esa/cascade/tree/main/tools>`__ of our github repository.
 
 The conda packages for cascade are maintained by the core development team,
@@ -38,11 +40,11 @@ cascade is written in modern C++, and it requires a compiler able to understand
 many new idioms introduced in C++20. The library is regularly tested on
 a continuous integration pipeline which currently includes:
 
-* GCC 12 on Linux,
+* GCC 11 on Linux,
 * Clang 14 on OSX,
 * MSVC 2019 on Windows.
 
-Its a good idea to check the scripts used to build cascade on these architectures, you can find the ones for OSX and linux in
+Its a good idea to check the scripts used to build cascade on these architectures, you can find the ones for Linux and OSX in
 `the tool folder <https://github.com/esa/cascade/tree/main/tools>`__ of our github repository.
 
 cascade has several Python and C++ dependencies. On the C++ side, cascade depends on:
@@ -104,8 +106,7 @@ Please consult `CMake's documentation <https://cmake.org/cmake/help/latest/>`_
 for more details about CMake's variables and options.
 
 In order for the python module to be built the corresponding option will need to be activated,
-else cascade build system will only build the dynamic library, which you can still use from the C++ side
-as done, for example, by the various benchmarks you can also build and find in the corresponding directory.
+otherwise the build system will only build the dynamic library (which you can still use from C++):
 
 * ``CASCADE_BUILD_PYTHON_BINDINGS``: builds also the python module.
 
