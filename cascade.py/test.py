@@ -203,6 +203,7 @@ class sim_test_case(_ut.TestCase):
         self.assertEqual(s.time, 0.0)
         self.assertEqual(s.ct, 1.0)
         self.assertFalse(s.high_accuracy)
+        self.assertFalse(s.compact_mode)
         self.assertEqual(s.npars, 0)
         self.assertEqual(s.reentry_radius, 0.0)
         self.assertEqual(s.exit_radius, 0.0)
@@ -231,6 +232,7 @@ class sim_test_case(_ut.TestCase):
             exit_radius=100.0,
             tol=1e-12,
             high_accuracy=True,
+            compact_mode=True,
             n_par_ct=2,
             conj_thresh=0.1,
             min_coll_radius=0.2,
@@ -246,6 +248,7 @@ class sim_test_case(_ut.TestCase):
         self.assertEqual(s.time, 0.0)
         self.assertEqual(s.ct, 0.5)
         self.assertTrue(s.high_accuracy)
+        self.assertTrue(s.compact_mode)
         self.assertEqual(s.npars, 2)
         self.assertEqual(s.reentry_radius, [0.1, 0.2, 0.3])
         self.assertEqual(s.exit_radius, 100.0)
@@ -281,14 +284,6 @@ class sim_test_case(_ut.TestCase):
             np.all(s.state == [[1.0, 0.001, 0.001, 0.001, 1.0, 0.001, 0.001]])
         )
         self.assertTrue(np.all(s.pars == [[0.002, 0.001]]))
-        self.assertEqual(s.nparts, 1)
-        self.assertGreater(s.time, 0.0)
-        self.assertEqual(s.ct, 0.5)
-        self.assertTrue(s.high_accuracy)
-        self.assertEqual(s.npars, 2)
-        self.assertEqual(s.reentry_radius, [0.1, 0.2, 0.3])
-        self.assertEqual(s.exit_radius, 100.0)
-        self.assertEqual(s.tol, 1e-12)
 
         s = sim(
             ct=0.5,
@@ -299,6 +294,7 @@ class sim_test_case(_ut.TestCase):
             exit_radius=100.0,
             tol=1e-12,
             high_accuracy=True,
+            compact_mode=True
         )
 
         self.assertEqual(s.reentry_radius, 0.1)

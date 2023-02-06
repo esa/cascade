@@ -87,7 +87,7 @@ PYBIND11_MODULE(core, m)
                          std::optional<std::vector<std::pair<hy::expression, hy::expression>>> dyn_,
                          std::optional<std::variant<double, std::vector<double>>> reentry_radius_,
                          std::optional<double> exit_radius_, const std::optional<py::array_t<double>> &pars_,
-                         std::optional<double> tol_, bool ha, std::uint32_t n_par_ct, double conj_thresh, double min_coll_radius,
+                         std::optional<double> tol_, bool ha, bool cm, std::uint32_t n_par_ct, double conj_thresh, double min_coll_radius,
                          whitelist_t coll_whitelist, whitelist_t conj_whitelist) {
                  // Check the input state.
                  if (state.ndim() != 2) {
@@ -152,13 +152,13 @@ PYBIND11_MODULE(core, m)
                      [&](auto &&cr_val) {
                          return sim(std::move(state_vec), ct, kw::dyn = std::move(dyn),
                                     kw::reentry_radius = std::forward<decltype(cr_val)>(cr_val), kw::exit_radius = exit_radius,
-                                    kw::pars = std::move(pars_vec), kw::tol = tol, kw::high_accuracy = ha, kw::n_par_ct = n_par_ct, kw::conj_thresh = conj_thresh,
+                                    kw::pars = std::move(pars_vec), kw::tol = tol, kw::high_accuracy = ha, kw::compact_mode = cm, kw::n_par_ct = n_par_ct, kw::conj_thresh = conj_thresh,
                                     kw::min_coll_radius = min_coll_radius, kw::coll_whitelist = std::move(coll_whitelist), kw::conj_whitelist = std::move(conj_whitelist));
                      },
                      std::move(reentry_radius));
              }),
              "state"_a, "ct"_a, "dyn"_a = py::none{}, "reentry_radius"_a = py::none{}, "exit_radius"_a = py::none{},
-             "pars"_a = py::none{}, "tol"_a = py::none{}, "high_accuracy"_a = false, "n_par_ct"_a = 1, "conj_thresh"_a = 0.,
+             "pars"_a = py::none{}, "tol"_a = py::none{}, "high_accuracy"_a = false, "compact_mode"_a = false, "n_par_ct"_a = 1, "conj_thresh"_a = 0.,
              "min_coll_radius"_a = 0., "coll_whitelist"_a = whitelist_t{}, "conj_whitelist"_a = whitelist_t{}, docstrings::sim_init_docstring().c_str())
         .def_property_readonly("interrupt_info", &sim::get_interrupt_info, docstrings::sim_interrupt_info_docstring().c_str())
         .def_property("time", &sim::get_time, &sim::set_time)
@@ -172,6 +172,7 @@ PYBIND11_MODULE(core, m)
         .def_property_readonly("npars", &sim::get_npars)
         .def_property_readonly("tol", &sim::get_tol)
         .def_property_readonly("high_accuracy", &sim::get_high_accuracy)
+        .def_property_readonly("compact_mode", &sim::get_compact_mode)
         .def_property_readonly("reentry_radius", &sim::get_reentry_radius)
         .def_property_readonly("exit_radius", &sim::get_exit_radius)
         .def(

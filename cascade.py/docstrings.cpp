@@ -24,7 +24,7 @@ This is the class that....
 
 std::string sim_init_docstring()
 {
-    return R"(__init__(state: numpy.ndarray[numpy.double], ct: float, dyn: typing.Optional[typing.List[typing.Tuple[heyoka.expression, heyoka.expression]]] = None, reentry_radius: typing.Optional[float | typing.List[float]] = None, exit_radius: typing.Optional[float] = None, pars: typing.Optional[numpy.ndarray[numpy.double]] = None, tol: typing.Optional[float] = None, high_accuracy: bool = False, n_par_ct: int = 1, conj_thresh: float = 0.0, min_coll_radius: float = 0.0, coll_whitelist: typing.Set[int] = set(), conj_whitelist: typing.Set[int] = set())
+    return R"(__init__(state: numpy.ndarray[numpy.double], ct: float, dyn: typing.Optional[typing.List[typing.Tuple[heyoka.expression, heyoka.expression]]] = None, reentry_radius: typing.Optional[float | typing.List[float]] = None, exit_radius: typing.Optional[float] = None, pars: typing.Optional[numpy.ndarray[numpy.double]] = None, tol: typing.Optional[float] = None, high_accuracy: bool = False, compact_mode: bool = False, n_par_ct: int = 1, conj_thresh: float = 0.0, min_coll_radius: float = 0.0, coll_whitelist: typing.Set[int] = set(), conj_whitelist: typing.Set[int] = set())
 
 Constructor
 
@@ -84,6 +84,11 @@ high_accuracy: bool = False
     to minimise the accumulation of floating-point truncation errors, at the price
     of a small performance penalty. This can be useful to maintain high accuracy
     in long-running simulations.
+compact_mode: bool = False
+    Compact mode. If enabled, the just-in-time compilation process will manipulate efficiently
+    also very long expression for the dynamics. This is useful, for example, when using long expansions
+    to model distrubances, or when gravity is modelled via mascon models. This comes at the price
+    of a performance penalty (~<x2) in the resulting numerical integrtor.
 n_par_ct: int = 1
     Number of collisional timesteps to be processed in parallel. This is a
     tuning parameter that, while not affecting the correctness of the simulation,
