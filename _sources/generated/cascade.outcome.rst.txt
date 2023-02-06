@@ -1,0 +1,15 @@
+﻿cascade.outcome
+===============
+
+.. currentmodule:: cascade
+
+.. autoclass:: outcome
+   :members:
+
+   
+   
+   
+
+   
+   
+   
