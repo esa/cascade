@@ -14,6 +14,7 @@ set(CASCADE_PY_PYTHON_FILES
 Python3_add_library(core MODULE WITH_SOABI
     core.cpp
     logging.cpp
+    docstrings.cpp
 )
 
 target_link_libraries(core PRIVATE cascade Boost::boost fmt::fmt TBB::tbb heyoka::heyoka)

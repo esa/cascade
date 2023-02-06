@@ -31,6 +31,7 @@
 
 #include <cascade/sim.hpp>
 
+#include "docstrings.hpp"
 #include "logging.hpp"
 
 namespace cascade_py::detail
@@ -54,6 +55,11 @@ PYBIND11_MODULE(core, m)
 
     using namespace cascade;
     namespace cpy = cascade_py;
+    namespace docstrings = cpy::docstrings;
+
+    py::options options;
+    options.disable_function_signatures();
+    options.disable_enum_members_docstring();
 
     // Dynamics submodule (exposed in cores with underscores and imported via python in the correct namespace)
     m.def("_kepler", &dynamics::kepler, "mu"_a = 1.);
@@ -62,7 +68,7 @@ PYBIND11_MODULE(core, m)
     cpy::expose_logging_setters(m);
 
     // outcome enum.
-    py::enum_<outcome>(m, "outcome")
+    py::enum_<outcome>(m, "outcome", "sdasdsadas\n\nd asdssdsa das sa d\n")
         .value("success", outcome::success)
         .value("time_limit", outcome::time_limit)
         .value("collision", outcome::collision)
@@ -75,7 +81,7 @@ PYBIND11_MODULE(core, m)
 
     // sim class.
     using whitelist_t = sim::whitelist_t;
-    py::class_<sim>(m, "sim", py::dynamic_attr{})
+    py::class_<sim>(m, "sim", docstrings::sim_docstring().c_str(), py::dynamic_attr{})
         .def(py::init<>())
         .def(py::init([](const py::array_t<double> &state, double ct,
                          std::optional<std::vector<std::pair<hy::expression, hy::expression>>> dyn_,
@@ -105,10 +111,10 @@ PYBIND11_MODULE(core, m)
                  // Init the dynamics.
                  auto dyn = dyn_ ? std::move(*dyn_) : std::vector<std::pair<hy::expression, hy::expression>>{};
 
-                 // Init reentry_radius_. When zero is not defined anf the corresponding event will not be instantiated.
+                 // Init reentry_radius_. When zero is not defined and the corresponding event will not be instantiated.
                  auto reentry_radius = reentry_radius_ ? std::move(*reentry_radius_) : 0.;
 
-                 // Init exit_radius. When zero is not defined anf the corresponding event will not be instantiated.
+                 // Init exit_radius. When zero is not defined and the corresponding event will not be instantiated.
                  auto exit_radius = exit_radius_ ? *exit_radius_ : 0.;
 
                  // Prepare the pars vector.
@@ -153,15 +159,15 @@ PYBIND11_MODULE(core, m)
              }),
              "state"_a, "ct"_a, "dyn"_a = py::none{}, "reentry_radius"_a = py::none{}, "exit_radius"_a = py::none{},
              "pars"_a = py::none{}, "tol"_a = py::none{}, "high_accuracy"_a = false, "n_par_ct"_a = 1, "conj_thresh"_a = 0.,
-             "min_coll_radius"_a = 0., "coll_whitelist"_a = whitelist_t{}, "conj_whitelist"_a = whitelist_t{})
-        .def_property_readonly("interrupt_info", &sim::get_interrupt_info)
+             "min_coll_radius"_a = 0., "coll_whitelist"_a = whitelist_t{}, "conj_whitelist"_a = whitelist_t{}, docstrings::sim_init_docstring().c_str())
+        .def_property_readonly("interrupt_info", &sim::get_interrupt_info, docstrings::sim_interrupt_info_docstring().c_str())
         .def_property("time", &sim::get_time, &sim::set_time)
         .def_property("ct", &sim::get_ct, &sim::set_ct)
         .def_property("n_par_ct", &sim::get_n_par_ct, &sim::set_n_par_ct)
         .def_property("conj_thresh", &sim::get_conj_thresh, &sim::set_conj_thresh)
         .def_property("min_coll_radius", &sim::get_min_coll_radius, &sim::set_min_coll_radius)
         .def_property("coll_whitelist", &sim::get_coll_whitelist, &sim::set_coll_whitelist)
-        .def_property("conj_whitelist", &sim::get_conj_whitelist, &sim::set_conj_whitelist)
+        .def_property("conj_whitelist", &sim::get_conj_whitelist, &sim::set_conj_whitelist, docstrings::sim_conj_whitelist_docstring().c_str())
         .def_property_readonly("nparts", &sim::get_nparts)
         .def_property_readonly("npars", &sim::get_npars)
         .def_property_readonly("tol", &sim::get_tol)
@@ -239,7 +245,7 @@ PYBIND11_MODULE(core, m)
                                        (**ptr).data(), std::move(pars_caps));
 
                                    return ret;
-                               })
+                               }, docstrings::sim_pars_docstring().c_str())
         .def(
             "set_new_state_pars",
             [](sim &s, const py::array_t<double> &new_state, const std::optional<py::array_t<double>> &new_pars_) {
