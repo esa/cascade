@@ -62,6 +62,7 @@ IGOR_MAKE_NAMED_ARGUMENT(reentry_radius);
 IGOR_MAKE_NAMED_ARGUMENT(exit_radius);
 IGOR_MAKE_NAMED_ARGUMENT(tol);
 IGOR_MAKE_NAMED_ARGUMENT(high_accuracy);
+IGOR_MAKE_NAMED_ARGUMENT(compact_mode);
 IGOR_MAKE_NAMED_ARGUMENT(n_par_ct);
 IGOR_MAKE_NAMED_ARGUMENT(conj_thresh);
 IGOR_MAKE_NAMED_ARGUMENT(min_coll_radius);
@@ -154,8 +155,8 @@ private:
     std::unique_ptr<sim_data> m_data;
 
     void finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>>, std::vector<double>,
-                       std::variant<double, std::vector<double>>, double, double, bool, std::uint32_t, double, double,
-                       whitelist_t, whitelist_t);
+                       std::variant<double, std::vector<double>>, double, double, bool, bool, std::uint32_t, double,
+                       double, whitelist_t, whitelist_t);
     CASCADE_DLL_LOCAL void add_jit_functions();
     CASCADE_DLL_LOCAL void morton_encode_sort_parallel();
     CASCADE_DLL_LOCAL void construct_bvh_trees_parallel();
@@ -298,6 +299,19 @@ public:
             }
         }
 
+        // Compact mode (defaults to false).
+        bool cm = false;
+        if constexpr (p.has(kw::compact_mode)) {
+            if constexpr (std::convertible_to<decltype(p(kw::compact_mode)), bool>) {
+                cm = static_cast<bool>(std::forward<decltype(p(kw::compact_mode))>(p(kw::compact_mode)));
+            } else {
+                // LCOV_EXCL_START
+                static_assert(detail::always_false_v<KwArgs...>,
+                              "The 'compact_mode' keyword argument is of the wrong type.");
+                // LCOV_EXCL_STOP
+            }
+        }
+
         // Number of collisional timesteps to be processed in parallel
         // (defaults to 1).
         std::uint32_t n_par_ct = 1;
@@ -364,7 +378,7 @@ public:
             }
         }
 
-        finalise_ctor(std::move(dyn), std::move(pars), std::move(reentry_radius), exit_radius, tol, ha, n_par_ct,
+        finalise_ctor(std::move(dyn), std::move(pars), std::move(reentry_radius), exit_radius, tol, ha, cm, n_par_ct,
                       conj_thresh, min_coll_radius, std::move(coll_whitelist), std::move(conj_whitelist));
     }
     sim(const sim &);
@@ -422,6 +436,7 @@ public:
 
     [[nodiscard]] double get_tol() const;
     [[nodiscard]] bool get_high_accuracy() const;
+    [[nodiscard]] bool get_compact_mode() const;
     [[nodiscard]] std::uint32_t get_npars() const;
 
     [[nodiscard]] std::variant<double, std::vector<double>> get_reentry_radius() const;

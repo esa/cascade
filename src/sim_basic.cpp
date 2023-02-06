@@ -235,6 +235,13 @@ bool sim::get_high_accuracy() const
     return m_data->s_ta.get_high_accuracy();
 }
 
+bool sim::get_compact_mode() const
+{
+    assert(m_data->s_ta.get_compact_mode() == m_data->b_ta.get_compact_mode());
+
+    return m_data->s_ta.get_compact_mode();
+}
+
 // A helper that validates (and possibly modifies in-place) the input
 // array of parameters pars. The validation checks that pars is consistent
 // both with m_npars (the number of parameters in the dynamics) and with
@@ -352,7 +359,7 @@ void sim::set_new_state_pars(std::vector<double> new_state, std::vector<double> 
 void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expression>> dyn, std::vector<double> pars,
                         // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
                         std::variant<double, std::vector<double>> reentry_radius, double exit_radius, double tol,
-                        bool ha,
+                        bool ha, bool cm,
                         // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
                         std::uint32_t n_par_ct, double conj_thresh, double min_coll_radius, whitelist_t coll_whitelist,
                         whitelist_t conj_whitelist)
@@ -543,7 +550,7 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                 }
 
                 s_ta.emplace(dyn, std::vector<double>(7u), hy::kw::t_events = std::move(t_events), hy::kw::tol = tol,
-                             hy::kw::high_accuracy = ha);
+                             hy::kw::high_accuracy = ha, hy::kw::compact_mode = cm);
             },
             [&]() {
                 const std::uint32_t batch_size = hy::recommended_simd_size<double>();
@@ -566,7 +573,7 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
 
                 const std::vector<double>::size_type state_size = safe_size_t(7) * batch_size;
                 b_ta.emplace(dyn, std::vector<double>(state_size), batch_size, hy::kw::t_events = std::move(t_events),
-                             hy::kw::tol = tol, hy::kw::high_accuracy = ha);
+                             hy::kw::tol = tol, hy::kw::high_accuracy = ha, hy::kw::compact_mode = cm);
             });
     };
 
