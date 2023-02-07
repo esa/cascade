@@ -61,14 +61,15 @@ PYBIND11_MODULE(core, m)
     options.disable_function_signatures();
     options.disable_enum_members_docstring();
 
-    // Dynamics submodule (exposed in cores with underscores and imported via python in the correct namespace)
-    m.def("_kepler", &dynamics::kepler, "mu"_a = 1.);
+    // Keplerian dynamics is exposed here with an underscore and then
+    // imported in the dynamics submodule.
+    m.def("_kepler", &dynamics::kepler, "mu"_a = 1., docstrings::dynamics_kepler_docstring().c_str());
 
     // Expose the logging setter functions.
     cpy::expose_logging_setters(m);
 
     // outcome enum.
-    py::enum_<outcome>(m, "outcome", "sdasdsadas\n\nd asdssdsa das sa d\n")
+    py::enum_<outcome>(m, "outcome", docstrings::outcome_docstring().c_str())
         .value("success", outcome::success)
         .value("time_limit", outcome::time_limit)
         .value("collision", outcome::collision)
@@ -182,7 +183,7 @@ PYBIND11_MODULE(core, m)
                 py::gil_scoped_release release;
 
                 return s.step();
-            })
+            }, docstrings::sim_step_docstring().c_str())
         .def(
             "propagate_until",
             [](sim &s, double t) {
