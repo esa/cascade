@@ -3,6 +3,11 @@
 API reference
 =============
 
-.. automodule:: cascade
+:Release: |version|
+:Date: |today|
 
-.. automodule:: cascade.dynamics
+.. toctree::
+   :maxdepth: 1
+
+   mod_cascade
+   mod_cascade_dynamics

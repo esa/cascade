@@ -14,6 +14,7 @@ author = "Francesco Biscani and Dario Izzo"
 import cascade as csc
 
 release = csc.__version__
+version = csc.__version__
 
 # -- General configuration ---------------------------------------------------
 
