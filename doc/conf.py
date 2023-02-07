@@ -76,9 +76,8 @@ nb_execution_excludepatterns = [
     "simple_atmosphere.ipynb",
     "cubes.ipynb",
     "20yearsofLEO_coll.ipynb",
-    "oneweekofLEO_conj.ipynb",
-    "itokawa_cubesats.ipynb"
-]
+    "oneweekofLEO_conj.ipynb"
+    ]
 
 latex_engine = "xelatex"
 
