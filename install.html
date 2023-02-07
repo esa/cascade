@@ -123,15 +123,57 @@
    </i>
   </label>
   <ul>
-   <li class="toctree-l2">
-    <a class="reference internal" href="generated/cascade.sim.html">
-     cascade.sim
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="mod_cascade.html">
+     <code class="xref py py-mod docutils literal notranslate">
+      <span class="pre">
+       cascade
+      </span>
+     </code>
     </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+    <label for="toctree-checkbox-2">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="generated/cascade.sim.html">
+       cascade.sim
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="generated/cascade.outcome.html">
+       cascade.outcome
+      </a>
+     </li>
+    </ul>
    </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="generated/cascade.outcome.html">
-     cascade.outcome
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="mod_cascade_dynamics.html">
+     <code class="xref py py-mod docutils literal notranslate">
+      <span class="pre">
+       cascade.dynamics
+      </span>
+     </code>
     </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+    <label for="toctree-checkbox-3">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="generated/cascade.dynamics.kepler.html">
+       cascade.dynamics.kepler
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="generated/cascade.dynamics.simple_earth.html">
+       cascade.dynamics.simple_earth
+      </a>
+     </li>
+    </ul>
    </li>
   </ul>
  </li>
@@ -508,6 +550,8 @@ version 0.20.1 or later (<strong>mandatory</strong>),</p></li>
 (Python 2.x is <strong>not</strong> supported) and depends on:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://numpy.org/">NumPy</a> (<strong>mandatory</strong>),</p></li>
+<li><p>the <a class="reference external" href="https://github.com/bluescarni/heyoka.py">heyoka.py</a> Python bindings for
+the heyoka library (<strong>mandatory</strong>).</p></li>
 </ul>
 <p>The tested and supported CPU architectures at this time are x86-64.</p>
 <p>In addition to the C++ dependencies enumerated <a class="reference external" href="https://bluescarni.github.io/heyoka.py/install.html#installation-deps" title="(in heyoka.py)"><span class="xref std std-ref">earlier</span></a>,

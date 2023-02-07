@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>cascade.outcome &#8212; cascade 0.1 documentation</title>
+    <title>cascade.dynamics.simple_earth &#8212; cascade 0.1 documentation</title>
     
   <!-- Loaded before other Sphinx assets -->
   <link href="../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
@@ -36,8 +36,8 @@
     <script src="../_static/design-tabs.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="cascade.dynamics" href="../mod_cascade_dynamics.html" />
-    <link rel="prev" title="cascade.sim" href="cascade.sim.html" />
+    <link rel="next" title="Quickstart" href="../tutorials/quickstart.html" />
+    <link rel="prev" title="cascade.dynamics.kepler" href="cascade.dynamics.kepler.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
     
@@ -123,7 +123,7 @@
    </i>
   </label>
   <ul class="current">
-   <li class="toctree-l2 current active has-children">
+   <li class="toctree-l2 has-children">
     <a class="reference internal" href="../mod_cascade.html">
      <code class="xref py py-mod docutils literal notranslate">
       <span class="pre">
@@ -131,25 +131,25 @@
       </span>
      </code>
     </a>
-    <input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+    <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
     <label for="toctree-checkbox-2">
      <i class="fas fa-chevron-down">
      </i>
     </label>
-    <ul class="current">
+    <ul>
      <li class="toctree-l3">
       <a class="reference internal" href="cascade.sim.html">
        cascade.sim
       </a>
      </li>
-     <li class="toctree-l3 current active">
-      <a class="current reference internal" href="#">
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.outcome.html">
        cascade.outcome
       </a>
      </li>
     </ul>
    </li>
-   <li class="toctree-l2 has-children">
+   <li class="toctree-l2 current active has-children">
     <a class="reference internal" href="../mod_cascade_dynamics.html">
      <code class="xref py py-mod docutils literal notranslate">
       <span class="pre">
@@ -157,19 +157,19 @@
       </span>
      </code>
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
     <label for="toctree-checkbox-3">
      <i class="fas fa-chevron-down">
      </i>
     </label>
-    <ul>
+    <ul class="current">
      <li class="toctree-l3">
       <a class="reference internal" href="cascade.dynamics.kepler.html">
        cascade.dynamics.kepler
       </a>
      </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="cascade.dynamics.simple_earth.html">
+     <li class="toctree-l3 current active">
+      <a class="current reference internal" href="#">
        cascade.dynamics.simple_earth
       </a>
      </li>
@@ -327,7 +327,7 @@ title="Source repository"
       </li>
       
       <li>
-        <a href="https://github.com/esa/cascade/issues/new?title=Issue%20on%20page%20%2Fgenerated/cascade.outcome.html&body=Your%20issue%20content%20here."
+        <a href="https://github.com/esa/cascade/issues/new?title=Issue%20on%20page%20%2Fgenerated/cascade.dynamics.simple_earth.html&body=Your%20issue%20content%20here."
    class="headerbtn"
    data-toggle="tooltip"
 data-placement="left"
@@ -355,7 +355,7 @@ title="Open an issue"
   <div class="menu-dropdown__content">
     <ul>
       <li>
-        <a href="../_sources/generated/cascade.outcome.rst.txt"
+        <a href="../_sources/generated/cascade.dynamics.simple_earth.rst.txt"
    class="headerbtn"
    data-toggle="tooltip"
 data-placement="left"
@@ -404,7 +404,7 @@ title="Print to PDF"
         <div class="col pl-md-3 pl-lg-5 content-container">
             <!-- Table of contents that is only displayed when printing the page -->
             <div id="jb-print-docs-body" class="onlyprint">
-                <h1>cascade.outcome</h1>
+                <h1>cascade.dynamics.simple_earth</h1>
                 <!-- Table of contents -->
                 <div id="print-main-content">
                     <div id="jb-print-toc">
@@ -416,24 +416,48 @@ title="Print to PDF"
                 
               <div>
                 
-  <section id="cascade-outcome">
-<h1>cascade.outcome<a class="headerlink" href="#cascade-outcome" title="Permalink to this headline">#</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="cascade.outcome">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cascade.</span></span><span class="sig-name descname"><span class="pre">outcome</span></span><a class="headerlink" href="#cascade.outcome" title="Permalink to this definition">#</a></dt>
-<dd><p>The simulation outcome enum</p>
-<p>This enum is used as the return value for the propagation methods of the <a class="reference internal" href="cascade.sim.html#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">sim</span></code></a>
-class (such as <a class="reference internal" href="cascade.sim.html#cascade.sim.step" title="cascade.sim.step"><code class="xref py py-meth docutils literal notranslate"><span class="pre">cascade.sim.step()</span></code></a> and <code class="xref py py-meth docutils literal notranslate"><span class="pre">cascade.sim.propagate_until()</span></code>).</p>
-<p>The possible values for the enum are:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">success</span></code>, indicating the successful completion of a single step,</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">time_limit</span></code>, indicating that a time limit was reached,</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">collision</span></code>, indicating that a particle-particle collision occurred,</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">reentry</span></code>, indicating that a particle entered the reentry domain,</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">exit</span></code>, indicating that a particle exited the simulation domain,</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">err_nf_state</span></code>, indicating that one or more non-finite values were
-detected in the state of the simulation.</p></li>
+  <section id="cascade-dynamics-simple-earth">
+<h1>cascade.dynamics.simple_earth<a class="headerlink" href="#cascade-dynamics-simple-earth" title="Permalink to this headline">#</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="cascade.dynamics.simple_earth">
+<span class="sig-prename descclassname"><span class="pre">cascade.dynamics.</span></span><span class="sig-name descname"><span class="pre">simple_earth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">J2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">J3</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C22S22</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">moon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SRP</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cascade.dynamics.simple_earth" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns heyoka expressions to be used as dynamics in <a class="reference internal" href="cascade.sim.html#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">sim</span></code></a> and corresponding
+to the Earth orbital environment as perturbed by selectable terms.</p>
+<p>The equations are taken from those used during the ESA Kelvins competition
+“Space Debris: the Origin” adding a drag term.</p>
+<p>Note that at simulation time t=0 the Moon and Sun phase as well as the Earth rotation phase
+refers to a specific (albeit unknown) epoch.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The equations are largely derived from:
+Celletti, Alessandra, et al. “Dynamical models and the onset of chaos in space debris.”
+International Journal of Non-Linear Mechanics 90 (2017): 147-163. (<a class="reference external" href="https://arxiv.org/pdf/1612.08849.pdf">arxiv</a>)</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <em>drag</em> is active, the BSTAR coefficient (SI units) of the object must be passed as a first
+simulation parameter in <a class="reference internal" href="cascade.sim.html#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">sim</span></code></a>, if <em>SRP</em> is active, the object area (SI units) must be also passed as a
+simulation parameter (after BSTAR if present).</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>J2</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a><em>, </em><em>optional</em>) – adds the Earth J2 spherical harmonic (C20 Stokes’ coefficient). Defaults to True.</p></li>
+<li><p><strong>J3</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a><em>, </em><em>optional</em>) – adds the Earth J3 spherical harmonic (C30 Stokes’ coefficient). Defaults to False.</p></li>
+<li><p><strong>C22S22</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a><em>, </em><em>optional</em>) – adds the Earth C22 and S22 Stokes’ coefficients. Defaults to True.</p></li>
+<li><p><strong>sun</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a><em>, </em><em>optional</em>) – adds the Sun gravity. Defaults to False.</p></li>
+<li><p><strong>moon</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a><em>, </em><em>optional</em>) – adds the Moon gravity. Defaults to False.</p></li>
+<li><p><strong>SRP</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a><em>, </em><em>optional</em>) – adds the solar radiation pressure. Defaults to False.</p></li>
+<li><p><strong>drag</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><em>bool</em></a><em>, </em><em>optional</em>) – adds the drag acceleration (atmosphere is modelled via a fitted isotropic NRLMSISE00). Defaults to True.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The dynamics in SI units. Can be used to instantiate a <a class="reference internal" href="cascade.sim.html#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">sim</span></code></a>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list of tuples (<code class="xref py py-class docutils literal notranslate"><span class="pre">heyoka.expression</span></code>,:class:<cite>heyoka.expression</cite>)</p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
@@ -446,17 +470,17 @@ detected in the state of the simulation.</p></li>
                 
     <!-- Previous / next buttons -->
 <div class='prev-next-area'>
-    <a class='left-prev' id="prev-link" href="cascade.sim.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="cascade.dynamics.kepler.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">cascade.sim</p>
+            <p class="prev-next-title">cascade.dynamics.kepler</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="../mod_cascade_dynamics.html" title="next page">
+    <a class='right-next' id="next-link" href="../tutorials/quickstart.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">cascade.dynamics</span></code></p>
+        <p class="prev-next-title">Quickstart</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

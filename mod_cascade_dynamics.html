@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>User guide &#8212; cascade 0.1 documentation</title>
+    <title>cascade.dynamics &#8212; cascade 0.1 documentation</title>
     
   <!-- Loaded before other Sphinx assets -->
   <link href="_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
@@ -36,8 +36,8 @@
     <script src="_static/design-tabs.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="API reference" href="api_reference.html" />
-    <link rel="prev" title="Installation" href="install.html" />
+    <link rel="next" title="cascade.dynamics.kepler" href="generated/cascade.dynamics.kepler.html" />
+    <link rel="prev" title="cascade.outcome" href="generated/cascade.outcome.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
     
@@ -108,21 +108,21 @@
    Installation
   </a>
  </li>
- <li class="toctree-l1 current active">
-  <a class="current reference internal" href="#">
+ <li class="toctree-l1">
+  <a class="reference internal" href="user_guide.html">
    User guide
   </a>
  </li>
- <li class="toctree-l1 has-children">
+ <li class="toctree-l1 current active has-children">
   <a class="reference internal" href="api_reference.html">
    API reference
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
   <label for="toctree-checkbox-1">
    <i class="fas fa-chevron-down">
    </i>
   </label>
-  <ul>
+  <ul class="current">
    <li class="toctree-l2 has-children">
     <a class="reference internal" href="mod_cascade.html">
      <code class="xref py py-mod docutils literal notranslate">
@@ -149,15 +149,15 @@
      </li>
     </ul>
    </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="mod_cascade_dynamics.html">
+   <li class="toctree-l2 current active has-children">
+    <a class="current reference internal" href="#">
      <code class="xref py py-mod docutils literal notranslate">
       <span class="pre">
        cascade.dynamics
       </span>
      </code>
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
     <label for="toctree-checkbox-3">
      <i class="fas fa-chevron-down">
      </i>
@@ -327,7 +327,7 @@ title="Source repository"
       </li>
       
       <li>
-        <a href="https://github.com/esa/cascade/issues/new?title=Issue%20on%20page%20%2Fuser_guide.html&body=Your%20issue%20content%20here."
+        <a href="https://github.com/esa/cascade/issues/new?title=Issue%20on%20page%20%2Fmod_cascade_dynamics.html&body=Your%20issue%20content%20here."
    class="headerbtn"
    data-toggle="tooltip"
 data-placement="left"
@@ -355,7 +355,7 @@ title="Open an issue"
   <div class="menu-dropdown__content">
     <ul>
       <li>
-        <a href="_sources/user_guide.rst.txt"
+        <a href="_sources/mod_cascade_dynamics.rst.txt"
    class="headerbtn"
    data-toggle="tooltip"
 data-placement="left"
@@ -392,23 +392,60 @@ title="Print to PDF"
     </ul>
   </div>
 </div>
+<label for="__page-toc"
+  class="headerbtn headerbtn-page-toc"
+  
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-list"></i>
+  </span>
+
+</label>
 
     </div>
 </div>
 
 <!-- Table of contents -->
 <div class="col-md-3 bd-toc show noprint">
+    <div class="tocsection onthispage pt-5 pb-3">
+        <i class="fas fa-list"></i> Contents
+    </div>
+    <nav id="bd-toc-nav" aria-label="Page">
+        <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#functions">
+   Functions
+  </a>
+ </li>
+</ul>
+
+    </nav>
 </div>
     </div>
     <div class="article row">
         <div class="col pl-md-3 pl-lg-5 content-container">
             <!-- Table of contents that is only displayed when printing the page -->
             <div id="jb-print-docs-body" class="onlyprint">
-                <h1>User guide</h1>
+                <h1>cascade.dynamics</h1>
                 <!-- Table of contents -->
                 <div id="print-main-content">
                     <div id="jb-print-toc">
                         
+                        <div>
+                            <h2> Contents </h2>
+                        </div>
+                        <nav aria-label="Page">
+                            <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#functions">
+   Functions
+  </a>
+ </li>
+</ul>
+
+                        </nav>
                     </div>
                 </div>
             </div>
@@ -416,8 +453,25 @@ title="Print to PDF"
                 
               <div>
                 
-  <section id="user-guide">
-<span id="id1"></span><h1>User guide<a class="headerlink" href="#user-guide" title="Permalink to this headline">#</a></h1>
+  <span class="target" id="module-cascade.dynamics"></span><section id="cascade-dynamics">
+<h1><a class="reference internal" href="#module-cascade.dynamics" title="cascade.dynamics"><code class="xref py py-mod docutils literal notranslate"><span class="pre">cascade.dynamics</span></code></a><a class="headerlink" href="#cascade-dynamics" title="Permalink to this headline">#</a></h1>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">#</a></h2>
+<table class="autosummary longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cascade.dynamics.kepler.html#cascade.dynamics.kepler" title="cascade.dynamics.kepler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kepler</span></code></a>([mu])</p></td>
+<td><p>Keplerian dynamics</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cascade.dynamics.simple_earth.html#cascade.dynamics.simple_earth" title="cascade.dynamics.simple_earth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simple_earth</span></code></a>([J2, J3, C22S22, sun, moon, ...])</p></td>
+<td><p>Returns heyoka expressions to be used as dynamics in <a class="reference internal" href="generated/cascade.sim.html#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">sim</span></code></a> and corresponding to the Earth orbital environment as perturbed by selectable terms.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
 </section>
 
 
@@ -428,17 +482,17 @@ title="Print to PDF"
                 
     <!-- Previous / next buttons -->
 <div class='prev-next-area'>
-    <a class='left-prev' id="prev-link" href="install.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="generated/cascade.outcome.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Installation</p>
+            <p class="prev-next-title">cascade.outcome</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="api_reference.html" title="next page">
+    <a class='right-next' id="next-link" href="generated/cascade.dynamics.kepler.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">API reference</p>
+        <p class="prev-next-title">cascade.dynamics.kepler</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

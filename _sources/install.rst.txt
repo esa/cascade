@@ -60,6 +60,8 @@ On the Python side, cascade requires at least Python 3.5
 (Python 2.x is **not** supported) and depends on:
 
 * `NumPy <https://numpy.org/>`__ (**mandatory**),
+* the `heyoka.py <https://github.com/bluescarni/heyoka.py>`__ Python bindings for
+  the heyoka library (**mandatory**).
 
 The tested and supported CPU architectures at this time are x86-64.
 
