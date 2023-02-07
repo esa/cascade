@@ -13,6 +13,41 @@
 namespace cascade_py::docstrings
 {
 
+std::string dynamics_kepler_docstring()
+{
+    return R"(kepler(mu: float = 1.) -> typing.List[typing.Tuple[heyoka.expression, heyoka.expression]]
+
+Keplerian dynamics
+
+This function generates the dynamical equations of purely-Keplerian dynamics. Specifically,
+the returned system of differential equations will be:
+
+.. math::
+
+   \begin{cases}
+     \frac{dx}{dt} & = v_x\\
+     \frac{dy}{dt} & = v_y\\
+     \frac{dz}{dt} & = v_z\\
+     \frac{dv_x}{dt} & = -\frac{\mu x}{\left( x^2+y^2+z^2 \right)^{\frac{3}{2}}}\\
+     \frac{dv_y}{dt} & = -\frac{\mu y}{\left( x^2+y^2+z^2 \right)^{\frac{3}{2}}}\\
+     \frac{dv_z}{dt} & = -\frac{\mu z}{\left( x^2+y^2+z^2 \right)^{\frac{3}{2}}}
+   \end{cases}.
+
+Parameters
+----------
+
+mu: float = 1.
+    The gravitational parameter.
+
+Returns
+-------
+
+typing.List[typing.Tuple[heyoka.expression, heyoka.expression]]
+    The system of differential equations corresponding to Keplerian dynamics.
+
+)";
+}
+
 std::string outcome_docstring()
 {
     return R"(The simulation outcome enum
@@ -80,7 +115,8 @@ ct: float
     After construction, the collisional timestep can be changed at any time via the
     :attr:`ct` attribute.
 dyn: typing.Optional[typing.List[typing.Tuple[heyoka.expression, heyoka.expression]]] = None
-    The particles' dynamical equations. By default, the dynamics is purely Keplerian.
+    The particles' dynamical equations. By default, the dynamics is purely Keplerian (see
+    :func:`cascade.dynamics.kepler()`).
 
     Note that the dynamical equations **cannot** be changed after construction.
 reentry_radius: typing.Optional[float | typing.List[float]] = None

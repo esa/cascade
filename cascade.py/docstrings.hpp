@@ -14,6 +14,8 @@
 namespace cascade_py::docstrings
 {
 
+std::string dynamics_kepler_docstring();
+
 std::string outcome_docstring();
 
 std::string sim_docstring();
