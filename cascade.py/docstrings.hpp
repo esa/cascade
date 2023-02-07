@@ -14,11 +14,14 @@
 namespace cascade_py::docstrings
 {
 
+std::string outcome_docstring();
+
 std::string sim_docstring();
 std::string sim_init_docstring();
 std::string sim_pars_docstring();
 std::string sim_conj_whitelist_docstring();
 std::string sim_interrupt_info_docstring();
+std::string sim_step_docstring();
 
 } // namespace cascade_py::docstrings
 

@@ -68,7 +68,7 @@ PYBIND11_MODULE(core, m)
     cpy::expose_logging_setters(m);
 
     // outcome enum.
-    py::enum_<outcome>(m, "outcome", "sdasdsadas\n\nd asdssdsa das sa d\n")
+    py::enum_<outcome>(m, "outcome", docstrings::outcome_docstring().c_str())
         .value("success", outcome::success)
         .value("time_limit", outcome::time_limit)
         .value("collision", outcome::collision)
@@ -182,7 +182,7 @@ PYBIND11_MODULE(core, m)
                 py::gil_scoped_release release;
 
                 return s.step();
-            })
+            }, docstrings::sim_step_docstring().c_str())
         .def(
             "propagate_until",
             [](sim &s, double t) {
