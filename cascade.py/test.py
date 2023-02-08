@@ -284,6 +284,8 @@ class sim_test_case(_ut.TestCase):
             np.all(s.state == [[1.0, 0.001, 0.001, 0.001, 1.0, 0.001, 0.001]])
         )
         self.assertTrue(np.all(s.pars == [[0.002, 0.001]]))
+        self.assertGreater(s.time, 0.0)
+
 
         s = sim(
             ct=0.5,
