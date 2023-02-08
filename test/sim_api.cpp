@@ -39,6 +39,7 @@ TEST_CASE("basic")
         REQUIRE(s.get_ct() == 1);
         REQUIRE(s.get_tol() == std::numeric_limits<double>::epsilon());
         REQUIRE(!s.get_high_accuracy());
+        REQUIRE(!s.get_compact_mode());
         REQUIRE(s.get_npars() == 0u);
         REQUIRE(std::get<0>(s.get_reentry_radius()) == 0.);
         REQUIRE(s.get_exit_radius() == 0.);
@@ -58,8 +59,8 @@ TEST_CASE("basic")
 
         sim s({1., .001, .001, .001, 1., .001, .001}, .5, kw::dyn = dyn, kw::pars = {.002, .001},
               kw::reentry_radius = {.1, .2, .3}, kw::exit_radius = 100., kw::tol = 1e-12, kw::high_accuracy = true,
-              kw::n_par_ct = 5, kw::conj_thresh = 42., kw::min_coll_radius = .1, kw::coll_whitelist = whitelist_t{1, 2},
-              kw::conj_whitelist = whitelist_t{3, 4});
+              kw::compact_mode = true, kw::n_par_ct = 5, kw::conj_thresh = 42., kw::min_coll_radius = .1,
+              kw::coll_whitelist = whitelist_t{1, 2}, kw::conj_whitelist = whitelist_t{3, 4});
 
         REQUIRE(!s.get_state().empty());
         REQUIRE(s.get_state() == std::vector{1., .001, .001, .001, 1., .001, .001});
@@ -70,6 +71,7 @@ TEST_CASE("basic")
         REQUIRE(s.get_ct() == .5);
         REQUIRE(s.get_tol() == 1e-12);
         REQUIRE(s.get_high_accuracy());
+        REQUIRE(s.get_compact_mode());
         REQUIRE(s.get_npars() == 2u);
         REQUIRE(std::get<1>(s.get_reentry_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s.get_exit_radius() == 100.);
@@ -93,6 +95,7 @@ TEST_CASE("basic")
         REQUIRE(s2.get_ct() == .5);
         REQUIRE(s2.get_tol() == 1e-12);
         REQUIRE(s2.get_high_accuracy());
+        REQUIRE(s2.get_compact_mode());
         REQUIRE(s2.get_npars() == 2u);
         REQUIRE(std::get<1>(s2.get_reentry_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s2.get_exit_radius() == 100.);
@@ -112,6 +115,7 @@ TEST_CASE("basic")
         REQUIRE(s3.get_ct() == .5);
         REQUIRE(s3.get_tol() == 1e-12);
         REQUIRE(s3.get_high_accuracy());
+        REQUIRE(s3.get_compact_mode());
         REQUIRE(s3.get_npars() == 2u);
         REQUIRE(std::get<1>(s3.get_reentry_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s3.get_exit_radius() == 100.);
@@ -131,6 +135,7 @@ TEST_CASE("basic")
         REQUIRE(s2.get_ct() == .5);
         REQUIRE(s2.get_tol() == 1e-12);
         REQUIRE(s2.get_high_accuracy());
+        REQUIRE(s2.get_compact_mode());
         REQUIRE(s2.get_npars() == 2u);
         REQUIRE(std::get<1>(s2.get_reentry_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s2.get_exit_radius() == 100.);
@@ -150,6 +155,7 @@ TEST_CASE("basic")
         REQUIRE(s3.get_ct() == .5);
         REQUIRE(s3.get_tol() == 1e-12);
         REQUIRE(s3.get_high_accuracy());
+        REQUIRE(s3.get_compact_mode());
         REQUIRE(s3.get_npars() == 2u);
         REQUIRE(std::get<1>(s3.get_reentry_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s3.get_exit_radius() == 100.);
@@ -170,6 +176,7 @@ TEST_CASE("basic")
         REQUIRE(s3.get_ct() == .5);
         REQUIRE(s3.get_tol() == 1e-12);
         REQUIRE(s3.get_high_accuracy());
+        REQUIRE(s3.get_compact_mode());
         REQUIRE(s3.get_npars() == 2u);
         REQUIRE(std::get<1>(s3.get_reentry_radius()) == std::vector{.1, .2, .3});
         REQUIRE(s3.get_exit_radius() == 100.);
