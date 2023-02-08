@@ -13,11 +13,79 @@
 namespace cascade_py::docstrings
 {
 
+std::string dynamics_kepler_docstring()
+{
+    return R"(kepler(mu: float = 1.) -> typing.List[typing.Tuple[heyoka.expression, heyoka.expression]]
+
+Keplerian dynamics
+
+This function generates the dynamical equations of purely-Keplerian dynamics. Specifically,
+the returned system of differential equations will be:
+
+.. math::
+
+   \begin{cases}
+     \frac{dx}{dt} & = v_x\\
+     \frac{dy}{dt} & = v_y\\
+     \frac{dz}{dt} & = v_z\\
+     \frac{dv_x}{dt} & = -\frac{\mu x}{\left( x^2+y^2+z^2 \right)^{\frac{3}{2}}}\\
+     \frac{dv_y}{dt} & = -\frac{\mu y}{\left( x^2+y^2+z^2 \right)^{\frac{3}{2}}}\\
+     \frac{dv_z}{dt} & = -\frac{\mu z}{\left( x^2+y^2+z^2 \right)^{\frac{3}{2}}}
+   \end{cases}.
+
+Parameters
+----------
+
+mu: float = 1.
+    The gravitational parameter.
+
+Returns
+-------
+
+typing.List[typing.Tuple[heyoka.expression, heyoka.expression]]
+    The system of differential equations corresponding to Keplerian dynamics.
+
+)";
+}
+
+std::string outcome_docstring()
+{
+    return R"(The simulation outcome enum
+
+This enum is used as the return value for the propagation methods of the :class:`~cascade.sim`
+class (such as :meth:`cascade.sim.step()` and :meth:`cascade.sim.propagate_until()`).
+
+The possible values for the enum are:
+
+- ``success``, indicating the successful completion of a single step,
+- ``time_limit``, indicating that a time limit was reached,
+- ``collision``, indicating that a particle-particle collision occurred,
+- ``reentry``, indicating that a particle entered the reentry domain,
+- ``exit``, indicating that a particle exited the simulation domain,
+- ``err_nf_state``, indicating that one or more non-finite values were
+  detected in the state of the simulation.
+
+)";
+}
+
 std::string sim_docstring()
 {
     return R"(The simulation class
 
-This is the class that....
+This class acts as a container for a collection of spherical particles, propagating their
+states in time according to user-defined dynamical equations and accounting for
+collisions and/or conjunctions.
+
+The state of each particle is described by the following quantities:
+
+- the three Cartesian positions :math:`x`, :math:`y` and :math:`z`,
+- the three Cartesian velocities :math:`v_x`, :math:`v_y` and :math:`v_z`,
+- the particle radius :math:`s`.
+
+The dynamical equations describing the evolution in time of :math:`\left( x,y,z,v_x,v_y,v_z \right)`
+can be formulated via the `heyoka.py <https://github.com/bluescarni/heyoka.py>`__ expression system.
+Alternatively, ready-made dynamical equations for a variety of use cases are available in the
+:mod:`cascade.dynamics` module.
 
 )";
 }
@@ -28,7 +96,9 @@ std::string sim_init_docstring()
 
 Constructor
 
-More details here...
+The only two mandatory arguments for the constructor are the initial state and the collisional
+timestep. Several additional configuration options for the simulation can be specified either at
+or after construction.
 
 Parameters
 ----------
@@ -39,27 +109,24 @@ state: numpy.ndarray[numpy.double]
     the first 6 columns contain the cartesian state variables :math:`\left( x,y,z,v_x,v_y,v_z \right)`
     of each particle, and the seventh column contains the particle sizes.
 
-    After construction, the state vector can be accessed via the ``state`` attribute.
+    After construction, the state vector can be accessed via the :attr:`state` attribute.
 ct: float
     The length in time units of the collisional timestep. Must be positive and finite.
     After construction, the collisional timestep can be changed at any time via the
-    ``ct`` attribute.
+    :attr:`ct` attribute.
 dyn: typing.Optional[typing.List[typing.Tuple[heyoka.expression, heyoka.expression]]] = None
-    The particles' dynamical equations. By default, the dynamics is purely Keplerian.
+    The particles' dynamical equations. By default, the dynamics is purely Keplerian (see
+    :func:`cascade.dynamics.kepler()`).
+
+    Note that the dynamical equations **cannot** be changed after construction.
 reentry_radius: typing.Optional[float | typing.List[float]] = None
-    The radius of the central body. If a single scalar is provided, the central body
-    is assumed to be a sphere of the given radius. If a list of 3 values is provided,
-    the central body is assumed to be a triaxial ellipsoid whose three semi-axes lengths
-    :math:`\left( a,b,c \right)` are given by the values in the array.
+    The radius of the reentry domain. If a single scalar is provided, then the reentry
+    domain is a sphere of the given radius centred in the origin. If a list of 3 values is
+    provided, then the reentry domain is a triaxial ellipsoid centred in the origin whose
+    three semi-axes lengths :math:`\left( a,b,c \right)` are given by the values in the list.
 
-    The reentry radius is used to detect when a particle impacts on the central body,
-    which results in a reentry event that stops the simulation. If no reentry radius is
-    provided (the default), then no reentry events are possible.
-
-    Note that the central body's orientation is assumed to be fixed. Thus, if an
-    asymmetric ellipsoidal shape is provided (e.g., :math:`a \neq b \neq c`) and
-    the central body is rotating, then the dynamical equations should be formulated in a
-    rotating reference frame.
+    When a particle enters the reentry domain, a reentry event is triggered and the simulation
+    is stopped. If no reentry radius is provided (the default), then no reentry events are possible.
 exit_radius: typing.Optional[float] = None
     Exit radius. If provided, the simulation will track the distance of all particles
     from the origin, and when a particle's distance from the origin exceeds the provided limit,
@@ -74,7 +141,7 @@ pars: typing.Optional[numpy.ndarray[numpy.double]] = None
     particle.
 
     If this argument is not provided (the default), then all runtime parameters for
-    all particles are initialised to zero. Note that the value of the runtime parameters
+    all particles are initialised to zero. Note that the values of the runtime parameters
     can be changed at any time via the :attr:`pars` attribute.
 tol: typing.Optional[float] = None
     The tolerance used when numerically solving the dynamical equations. If not provided,
@@ -123,13 +190,26 @@ conj_whitelist: typing.Set[int] = set()
 
 std::string sim_pars_docstring()
 {
-    return "Values of the runtime parameters";
+    return R"(Values of the runtime parameters
+
+The parameters are stored in a two-dimensional :class:`~numpy.ndarray` of shape :math:`n\times N_p`, where
+:math:`n` is the number of particles in the simulation and :math:`N_p` is the number of runtime
+parameters appearing in the dynamical equations.
+
+While this is a read-only property (in the sense that it is not possible to set
+a new array of runtime parameters via this property), the values contained in the
+array *can* be written to.
+
+)";
 }
 
 std::string sim_conj_whitelist_docstring()
 {
     return R"(Conjunction whitelist
 
+This :class:`set` contains the list of particles considered during the detection of
+conjunction events. If this list is empty, then *all* particles are considered during
+the detection of conjunction events.
 
 )";
 }
@@ -137,6 +217,13 @@ std::string sim_conj_whitelist_docstring()
 std::string sim_interrupt_info_docstring()
 {
     return "Interrupt info";
+}
+
+std::string sim_step_docstring()
+{
+    return R"(step() -> None
+
+)";
 }
 
 } // namespace cascade_py::docstrings
