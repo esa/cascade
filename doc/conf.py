@@ -14,6 +14,7 @@ author = "Francesco Biscani and Dario Izzo"
 import cascade as csc
 
 release = csc.__version__
+version = csc.__version__
 
 # -- General configuration ---------------------------------------------------
 
@@ -30,7 +31,7 @@ extensions = [
 ]
 
 intersphinx_mapping = {
-    "hy": ("https://bluescarni.github.io/heyoka.py", None),
+    "hypy": ("https://bluescarni.github.io/heyoka.py", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "python": ("https://docs.python.org/3", None),
 }

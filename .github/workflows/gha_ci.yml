@@ -44,7 +44,7 @@ jobs:
           mkdir build
           cd build
           cmake ../ -G "Visual Studio 16 2019" -A x64 -DCMAKE_INSTALL_PREFIX=C:\Miniconda\envs\cascade_devel\Library -DCASCADE_BUILD_TESTS=yes -DBoost_NO_BOOST_CMAKE=ON -DCASCADE_BUILD_PYTHON_BINDINGS=yes
-          cmake --build . --config Release --target install
+          cmake --build . -j4 --config Release --target install
           ctest -j4 -V -C Release
           cd c:\
           python -c "from cascade import test; test.run_test_suite()"
