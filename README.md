@@ -7,7 +7,7 @@ cascade
 <br />
 <p align="center">
   <a href="https://github.com/esa/cascade">
-    <img src="doc/_static/images/logo.png" alt="Logo" width="280">
+    <img src="doc/_static/images/logo.png" alt="An illustration of the Earth surrounded by space debris; the Earth has a face on it with a worried look." width="280">
   </a>
   <p align="center">
     n-body simulation for the evolution of orbital environments
