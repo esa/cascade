@@ -97,7 +97,9 @@ cascade is released under the MPL-2.0 license. The authors are Francesco Biscani
    :caption: Tutorials:
    
    tutorials/quickstart
-   tutorials/conjandcoll
+   tutorials/conjunctions
+   tutorials/whitelists
+
 
 .. toctree::
    :maxdepth: 1
@@ -105,7 +107,7 @@ cascade is released under the MPL-2.0 license. The authors are Francesco Biscani
 
    examples/20yearsofLEO_coll
    examples/oneweekofLEO_conj
-
+   examples/itokawa_cubesats
 
 .. toctree::
    :maxdepth: 1

@@ -6,6 +6,7 @@ set(CASCADE_PY_PYTHON_FILES
     __init__.py
     dynamics/__init__.py
     dynamics/_simple_earth.py
+    dynamics/_rotating_mascon.py
     test.py
 )
 

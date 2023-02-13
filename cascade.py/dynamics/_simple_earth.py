@@ -46,13 +46,13 @@ def simple_earth(
     J2=True, J3=False, C22S22=True, sun=False, moon=False, SRP=False, drag=True
 ):
     """Returns heyoka expressions to be used as dynamics in :class:`~cascade.sim` and corresponding
-    to the Earth orbital environment as perturbed by selectable terms.
+    to the Earth orbital environment as perturbed by selectable term (all in SI units).
 
     The equations are taken from those used during the ESA Kelvins competition
     "Space Debris: the Origin" adding a drag term.
 
-    Note that at simulation time t=0 the Moon and Sun phase as well as the Earth rotation phase
-    refers to a specific (albeit unknown) epoch.
+    The reference frame used is the EME2000 and thus a simulation time of zero will refer to the epoch
+    2000 JAN 01 12:00:00, or JD 2451545.0
 
     .. note::
        The equations are largely derived from:
