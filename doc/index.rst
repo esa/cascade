@@ -30,7 +30,6 @@ cascade is released under the MPL-2.0 license. The authors are Francesco Biscani
    :caption: Contents:
 
    install.rst
-   user_guide.rst
    api_reference.rst
 
 .. grid::
