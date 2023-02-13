@@ -36,7 +36,7 @@
     <script src="../_static/design-tabs.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="20 years of LEO - (collisions)" href="../examples/20yearsofLEO_coll.html" />
+    <link rel="next" title="Whitelists" href="whitelists.html" />
     <link rel="prev" title="Quickstart" href="quickstart.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
@@ -194,6 +194,11 @@
    Conjunctions
   </a>
  </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="whitelists.html">
+   Whitelists
+  </a>
+ </li>
 </ul>
 <p aria-level="2" class="caption" role="heading">
  <span class="caption-text">
@@ -209,6 +214,11 @@
  <li class="toctree-l1">
   <a class="reference internal" href="../examples/oneweekofLEO_conj.html">
    One week of LEO - (conjunctions)
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../examples/itokawa_cubesats.html">
+   Swarming Itokawa with cubesats
   </a>
  </li>
 </ul>
@@ -296,7 +306,7 @@ title="Toggle navigation"
   <div class="menu-dropdown__content">
     <ul>
       <li>
-        <a href="https://mybinder.org/v2/gh/esa/cascade/main?urlpath=lab/tree/doc/tutorials/conjandcoll.ipynb"
+        <a href="https://mybinder.org/v2/gh/esa/cascade/main?urlpath=lab/tree/doc/tutorials/conjunctions.ipynb"
    class="headerbtn"
    data-toggle="tooltip"
 data-placement="left"
@@ -356,7 +366,7 @@ title="Source repository"
       </li>
       
       <li>
-        <a href="https://github.com/esa/cascade/issues/new?title=Issue%20on%20page%20%2Ftutorials/conjandcoll.html&body=Your%20issue%20content%20here."
+        <a href="https://github.com/esa/cascade/issues/new?title=Issue%20on%20page%20%2Ftutorials/conjunctions.html&body=Your%20issue%20content%20here."
    class="headerbtn"
    data-toggle="tooltip"
 data-placement="left"
@@ -384,7 +394,7 @@ title="Open an issue"
   <div class="menu-dropdown__content">
     <ul>
       <li>
-        <a href="../_sources/tutorials/conjandcoll.ipynb.txt"
+        <a href="../_sources/tutorials/conjunctions.ipynb.txt"
    class="headerbtn"
    data-toggle="tooltip"
 data-placement="left"
@@ -603,7 +613,7 @@ title="Print to PDF"
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/4dba6a56af7496305a1ead4e7ab1e1786c01066dd2d2b2e0f9e7b10122669a54.png" src="../_images/4dba6a56af7496305a1ead4e7ab1e1786c01066dd2d2b2e0f9e7b10122669a54.png" />
+<img alt="../_images/8a426879cfcb4674ed2ae00d5c2f49a8913afdda96d0c4edb2490fc90405a35c.png" src="../_images/8a426879cfcb4674ed2ae00d5c2f49a8913afdda96d0c4edb2490fc90405a35c.png" />
 </div>
 </div>
 </section>
@@ -629,7 +639,7 @@ title="Print to PDF"
 </div>
 </div>
 </div>
-<p>At the end of this simulation all conjunctions will be stored in the attribute <code class="docutils literal notranslate"><span class="pre">sim.conjunctions</span></code>. This contains in each line the idx of the two objects, the conjunction time, the closest distance and the states of the two particles at the conjunction.</p>
+<p>At the end of this simulation all conjunctions will be stored in the attribute <code class="xref py py-class docutils literal notranslate"><span class="pre">cascade.sim.conjunctions</span></code>. This contains in each line the idx of the two objects, the conjunction time, the closest distance and the states of the two particles at the conjunction.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">conj_n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">conjunctions</span><span class="p">)</span>
@@ -640,8 +650,8 @@ title="Print to PDF"
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of conjunctions:  436
-Minimal conjunction distance:  0.00044605479778727394
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of conjunctions:  474
+Minimal conjunction distance:  0.00011592615595355195
 </pre></div>
 </div>
 </div>
@@ -675,7 +685,7 @@ Minimal conjunction distance:  0.00044605479778727394
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/f5aaeedb421b6ff79daba54dc3c3f1dd935cbd6f7f6b666a28d4652bd9c6463a.png" src="../_images/f5aaeedb421b6ff79daba54dc3c3f1dd935cbd6f7f6b666a28d4652bd9c6463a.png" />
+<img alt="../_images/a24b506434584728ede8d3227a9dbe7b960399ae980120ea3cee5c5f92ff3b9c.png" src="../_images/a24b506434584728ede8d3227a9dbe7b960399ae980120ea3cee5c5f92ff3b9c.png" />
 </div>
 </div>
 <p>as expected, in this case, conjunctions happen more or less uniformly in the Keplerian ring defined by the orbits.</p>
@@ -697,10 +707,10 @@ Minimal conjunction distance:  0.00044605479778727394
             <p class="prev-next-title">Quickstart</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="../examples/20yearsofLEO_coll.html" title="next page">
+    <a class='right-next' id="next-link" href="whitelists.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">20 years of LEO - (collisions)</p>
+        <p class="prev-next-title">Whitelists</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

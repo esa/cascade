@@ -190,8 +190,13 @@
   </a>
  </li>
  <li class="toctree-l1">
-  <a class="reference internal" href="../tutorials/conjandcoll.html">
+  <a class="reference internal" href="../tutorials/conjunctions.html">
    Conjunctions
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../tutorials/whitelists.html">
+   Whitelists
   </a>
  </li>
 </ul>
@@ -209,6 +214,11 @@
  <li class="toctree-l1">
   <a class="reference internal" href="../examples/oneweekofLEO_conj.html">
    One week of LEO - (conjunctions)
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../examples/itokawa_cubesats.html">
+   Swarming Itokawa with cubesats
   </a>
  </li>
 </ul>
@@ -422,11 +432,11 @@ title="Print to PDF"
 <dt class="sig sig-object py" id="cascade.dynamics.simple_earth">
 <span class="sig-prename descclassname"><span class="pre">cascade.dynamics.</span></span><span class="sig-name descname"><span class="pre">simple_earth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">J2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">J3</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C22S22</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">moon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SRP</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cascade.dynamics.simple_earth" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns heyoka expressions to be used as dynamics in <a class="reference internal" href="cascade.sim.html#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">sim</span></code></a> and corresponding
-to the Earth orbital environment as perturbed by selectable terms.</p>
+to the Earth orbital environment as perturbed by selectable term (all in SI units).</p>
 <p>The equations are taken from those used during the ESA Kelvins competition
 “Space Debris: the Origin” adding a drag term.</p>
-<p>Note that at simulation time t=0 the Moon and Sun phase as well as the Earth rotation phase
-refers to a specific (albeit unknown) epoch.</p>
+<p>The reference frame used is the EME2000 and thus a simulation time of zero will refer to the epoch
+2000 JAN 01 12:00:00, or JD 2451545.0</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The equations are largely derived from:

@@ -36,7 +36,7 @@
     <script src="../_static/design-tabs.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="The current LEO population" href="../utilities/leo_population.html" />
+    <link rel="next" title="Swarming Itokawa with cubesats" href="itokawa_cubesats.html" />
     <link rel="prev" title="20 years of LEO - (collisions)" href="20yearsofLEO_coll.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
@@ -190,8 +190,13 @@
   </a>
  </li>
  <li class="toctree-l1">
-  <a class="reference internal" href="../tutorials/conjandcoll.html">
+  <a class="reference internal" href="../tutorials/conjunctions.html">
    Conjunctions
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../tutorials/whitelists.html">
+   Whitelists
   </a>
  </li>
 </ul>
@@ -209,6 +214,11 @@
  <li class="toctree-l1 current active">
   <a class="current reference internal" href="#">
    One week of LEO - (conjunctions)
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="itokawa_cubesats.html">
+   Swarming Itokawa with cubesats
   </a>
  </li>
 </ul>
@@ -557,6 +567,9 @@ The necessary steps to prepare such data are described by the code made availabl
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># r is in km and v in km/s</span>
 <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;data/leo_population.pk&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
     <span class="n">r_ic</span><span class="p">,</span><span class="n">v_ic</span><span class="p">,</span><span class="n">to_satcat_index</span><span class="p">,</span><span class="n">satcat</span> <span class="o">=</span> <span class="n">pkl</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+
+<span class="c1"># reference epoch for the initial conditions</span>
+<span class="n">t0_jd</span> <span class="o">=</span> <span class="n">pk</span><span class="o">.</span><span class="n">epoch_from_iso_string</span><span class="p">(</span><span class="s2">&quot;20220301T000000&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">jd</span> <span class="c1"># Julian date corresponding to 2022-Mar-01 00:00:00</span>
 </pre></div>
 </div>
 </div>
@@ -567,7 +580,7 @@ The necessary steps to prepare such data are described by the code made availabl
 <li><p><strong>to_satcat_index</strong>: contains the indexes in the satcat of the corresponding r_ic,v_ic entry</p></li>
 <li><p><strong>satcat</strong>: the database created of all tracked objects</p></li>
 </ul>
-<p>The object described by the entry <code class="docutils literal notranslate"><span class="pre">satcat[to_satcat_index[j]]</span></code> has initial position <code class="docutils literal notranslate"><span class="pre">r_ic[j]</span></code> and initial velocity <code class="docutils literal notranslate"><span class="pre">v_ic[j]</span></code>. Let us inspect one entry</p>
+<p>The object described by the entry <code class="docutils literal notranslate"><span class="pre">satcat[to_satcat_index[j]]</span></code> has initial position <code class="docutils literal notranslate"><span class="pre">r_ic[j]</span></code> and initial velocity <code class="docutils literal notranslate"><span class="pre">v_ic[j]</span></code>.</p>
 <p>On top of all the info distributed from the <a class="reference external" href="https://en.wikipedia.org/wiki/United_States_Space_Surveillance_Network">US Space Surveillance Network (SSN)</a> we have added to the satcat (see <a class="reference internal" href="../utilities/leo_population.html"><span class="doc std std-doc">The current LEO population</span></a> notebook) dictionary an estimate of the object radius which we will need to define the various collisional radii. As we will be using a dynamics that also models the atmospheric drag via the BSTAR coefficient, we create the array to be used as parameter when instantiating a :class:<code class="docutils literal notranslate"><span class="pre">~cascade.sim</span></code>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -680,6 +693,16 @@ Note that this cost is to be paid only once. As far as the dynamics remains unch
 </div>
 </div>
 </div>
+<p>we also need to set the starting time of the simulation so that the dynamics, written in the EME2000 reference frame (see ~<code class="xref py py-class docutils literal notranslate"><span class="pre">sim.dynamics.simple_earth</span></code>) will be correctly using the Sun, Moon and Earth positions at the time of the initial conditions.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We define here the simulation starting time knowing that in the dynamics t=0 corresponds to 1st Jan 2000 12:00. </span>
+<span class="n">t0</span> <span class="o">=</span> <span class="p">(</span><span class="n">t0_jd</span> <span class="o">-</span> <span class="n">pk</span><span class="o">.</span><span class="n">epoch_from_iso_string</span><span class="p">(</span><span class="s2">&quot;20000101T120000&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">jd</span><span class="p">)</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">DAY2SEC</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">t0</span>
+</pre></div>
+</div>
+</div>
+</div>
 <p>Note that with respect to the simulation <a class="reference internal" href="20yearsofLEO_coll.html"><span class="doc std std-doc">20 Years in LEO - (collisions)</span></a> we have here added the <code class="docutils literal notranslate"><span class="pre">conj_thresh</span></code> argument setting it to 5000 m and a <code class="docutils literal notranslate"><span class="pre">min_coll_radius</span></code> argument setting it to infinity. The effect of the first argument will be that of activating conjunction tracking. All close encounters with a distance smaller than the <code class="docutils literal notranslate"><span class="pre">conj_thresh</span></code> are guaranteed to be detected and reported. The effect of setting an infinite <code class="docutils literal notranslate"><span class="pre">min_coll_radius</span></code> is that of deactivating entirely the collision checks as we are informing cascade to ignore all collisions involving object of size smaller than <code class="docutils literal notranslate"><span class="pre">min_coll_radius</span></code>.</p>
 </section>
 <section id="running-the-simulation">
@@ -687,13 +710,13 @@ Note that this cost is to be paid only once. As far as the dynamics remains unch
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">time</span>
-<span class="n">final_t</span> <span class="o">=</span> <span class="mi">7</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">DAY2SEC</span>
+<span class="n">final_t</span> <span class="o">=</span> <span class="n">t0</span> <span class="o">+</span> <span class="mi">7</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">DAY2SEC</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting the simulation:&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
 
 <span class="n">current_year</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="k">while</span> <span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">&lt;</span> <span class="n">final_t</span><span class="p">:</span>
-    <span class="n">years_elapsed</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">SEC2DAY</span> <span class="o">//</span> <span class="mf">365.25</span>
+    <span class="n">years_elapsed</span> <span class="o">=</span> <span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">SEC2DAY</span> <span class="o">//</span> <span class="mf">365.25</span>
 
     <span class="k">if</span> <span class="n">years_elapsed</span> <span class="o">==</span> <span class="n">current_year</span><span class="p">:</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;out/year_&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">current_year</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;.pk&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
@@ -707,7 +730,7 @@ Note that this cost is to be paid only once. As far as the dynamics remains unch
         <span class="c1"># We log the event to file</span>
         <span class="n">satcat_idx1</span> <span class="o">=</span> <span class="n">to_satcat_index</span><span class="p">[</span><span class="n">pi</span><span class="p">]</span>
         <span class="n">satcat_idx2</span> <span class="o">=</span> <span class="n">to_satcat_index</span><span class="p">[</span><span class="n">pj</span><span class="p">]</span>
-        <span class="n">days_elapsed</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">SEC2DAY</span>
+        <span class="n">days_elapsed</span> <span class="o">=</span> <span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">SEC2DAY</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;out/collision_log.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file_object</span><span class="p">:</span>
             <span class="n">file_object</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">days_elapsed</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">satcat_idx1</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">satcat_idx2</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">pi</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">pj</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -726,7 +749,7 @@ Note that this cost is to be paid only once. As far as the dynamics remains unch
         <span class="n">pi</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">interrupt_info</span>
         <span class="c1"># We log the event to file</span>
         <span class="n">satcat_idx</span> <span class="o">=</span> <span class="n">to_satcat_index</span><span class="p">[</span><span class="n">pi</span><span class="p">]</span>
-        <span class="n">days_elapsed</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">SEC2DAY</span>
+        <span class="n">days_elapsed</span> <span class="o">=</span> <span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">SEC2DAY</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;out/decay_log.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file_object</span><span class="p">:</span>
             <span class="n">file_object</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">days_elapsed</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">satcat_idx</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="c1"># We log the event to screen</span>
@@ -855,10 +878,10 @@ Elapsed [s]:  25.159433603286743
             <p class="prev-next-title">20 years of LEO - (collisions)</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="../utilities/leo_population.html" title="next page">
+    <a class='right-next' id="next-link" href="itokawa_cubesats.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">The current LEO population</p>
+        <p class="prev-next-title">Swarming Itokawa with cubesats</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

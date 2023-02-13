@@ -30,6 +30,7 @@
    .. autosummary::
    
       ~sim.coll_whitelist
+      ~sim.compact_mode
       ~sim.conj_thresh
       ~sim.conj_whitelist
       ~sim.conjunctions

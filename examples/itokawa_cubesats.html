@@ -1,0 +1,1115 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Swarming Itokawa with cubesats &#8212; cascade 0.1 documentation</title>
+    
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" href="../_static/styles/sphinx-book-theme.css?digest=5115cc725059bd94278eecd172e13a965bf8f5a9" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/design-style.4045f2051d55cab465a707391d5b2007.min.css" />
+    
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?digest=9c920249402e914e316237a7dbc6769907cce411"></script>
+    <script src="../_static/design-tabs.js"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="The current LEO population" href="../utilities/leo_population.html" />
+    <link rel="prev" title="One week of LEO - (conjunctions)" href="oneweekofLEO_conj.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="60">
+<!-- Checkboxes to toggle the left sidebar -->
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle navigation sidebar">
+<label class="overlay overlay-navbar" for="__navigation">
+    <div class="visually-hidden">Toggle navigation sidebar</div>
+</label>
+<!-- Checkboxes to toggle the in-page toc -->
+<input type="checkbox" class="sidebar-toggle" name="__page-toc" id="__page-toc" aria-label="Toggle in-page Table of Contents">
+<label class="overlay overlay-pagetoc" for="__page-toc">
+    <div class="visually-hidden">Toggle in-page Table of Contents</div>
+</label>
+<!-- Headers at the top -->
+<div class="announcement header-item noprint"></div>
+<div class="header header-item noprint"></div>
+
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<!-- Sidebar -->
+<div class="bd-sidebar noprint" id="site-navigation">
+    <div class="bd-sidebar__content">
+        <div class="bd-sidebar__top"><div class="navbar-brand-box">
+    <a class="navbar-brand text-wrap" href="../index.html">
+      
+        <!-- `logo` is deprecated in Sphinx 4.0, so remove this when we stop supporting 3 -->
+        
+      
+      
+      <img src="../_static/logo.png" class="logo" alt="logo">
+      
+      
+      <h1 class="site-logo" id="site-title">cascade 0.1 documentation</h1>
+      
+    </a>
+</div><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../index.html">
+                    cascade
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  Contents:
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="../install.html">
+   Installation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../user_guide.html">
+   User guide
+  </a>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../api_reference.html">
+   API reference
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="../mod_cascade.html">
+     <code class="xref py py-mod docutils literal notranslate">
+      <span class="pre">
+       cascade
+      </span>
+     </code>
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+    <label for="toctree-checkbox-2">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.sim.html">
+       cascade.sim
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.outcome.html">
+       cascade.outcome
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="../mod_cascade_dynamics.html">
+     <code class="xref py py-mod docutils literal notranslate">
+      <span class="pre">
+       cascade.dynamics
+      </span>
+     </code>
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+    <label for="toctree-checkbox-3">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.dynamics.kepler.html">
+       cascade.dynamics.kepler
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.dynamics.simple_earth.html">
+       cascade.dynamics.simple_earth
+      </a>
+     </li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  Tutorials:
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="../tutorials/quickstart.html">
+   Quickstart
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../tutorials/conjunctions.html">
+   Conjunctions
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../tutorials/whitelists.html">
+   Whitelists
+  </a>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  Examples:
+ </span>
+</p>
+<ul class="current nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="20yearsofLEO_coll.html">
+   20 years of LEO - (collisions)
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="oneweekofLEO_conj.html">
+   One week of LEO - (conjunctions)
+  </a>
+ </li>
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Swarming Itokawa with cubesats
+  </a>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  Utilities:
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="../utilities/leo_population.html">
+   The current LEO population
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../utilities/simple_atmosphere.html">
+   A differentiable atmosphere
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../utilities/cubes.html">
+   The
+   <em>
+    Cube
+   </em>
+   approach
+  </a>
+ </li>
+</ul>
+
+    </div>
+</nav></div>
+        <div class="bd-sidebar__bottom">
+             <!-- To handle the deprecated key -->
+            
+            <div class="navbar_extra_footer">
+            Theme by the <a href="https://ebp.jupyterbook.org">Executable Book Project</a>
+            </div>
+            
+        </div>
+    </div>
+    <div id="rtd-footer-container"></div>
+</div>
+
+
+          
+
+
+          
+<!-- A tiny helper pixel to detect if we've scrolled -->
+<div class="sbt-scroll-pixel-helper"></div>
+<!-- Main content -->
+<div class="col py-0 content-container">
+    
+    <div class="header-article row sticky-top noprint">
+        
+
+
+
+<div class="col py-1 d-flex header-article-main">
+    <div class="header-article__left">
+        
+        <label for="__navigation"
+  class="headerbtn"
+  data-toggle="tooltip"
+data-placement="right"
+title="Toggle navigation"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-bars"></i>
+  </span>
+
+</label>
+
+        
+    </div>
+    <div class="header-article__right">
+<div class="menu-dropdown menu-dropdown-launch-buttons">
+  <button class="headerbtn menu-dropdown__trigger"
+      aria-label="Launch interactive content">
+      <i class="fas fa-rocket"></i>
+  </button>
+  <div class="menu-dropdown__content">
+    <ul>
+      <li>
+        <a href="https://mybinder.org/v2/gh/esa/cascade/main?urlpath=lab/tree/doc/examples/itokawa_cubesats.ipynb"
+   class="headerbtn"
+   data-toggle="tooltip"
+data-placement="left"
+title="Launch on Binder"
+>
+  
+
+<span class="headerbtn__icon-container">
+  
+    <img src="../_static/images/logo_binder.svg">
+  </span>
+<span class="headerbtn__text-container">Binder</span>
+</a>
+
+      </li>
+      
+    </ul>
+  </div>
+</div>
+
+<button onclick="toggleFullScreen()"
+  class="headerbtn"
+  data-toggle="tooltip"
+data-placement="bottom"
+title="Fullscreen mode"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+<div class="menu-dropdown menu-dropdown-repository-buttons">
+  <button class="headerbtn menu-dropdown__trigger"
+      aria-label="Source repositories">
+      <i class="fab fa-github"></i>
+  </button>
+  <div class="menu-dropdown__content">
+    <ul>
+      <li>
+        <a href="https://github.com/esa/cascade"
+   class="headerbtn"
+   data-toggle="tooltip"
+data-placement="left"
+title="Source repository"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="headerbtn__text-container">repository</span>
+</a>
+
+      </li>
+      
+      <li>
+        <a href="https://github.com/esa/cascade/issues/new?title=Issue%20on%20page%20%2Fexamples/itokawa_cubesats.html&body=Your%20issue%20content%20here."
+   class="headerbtn"
+   data-toggle="tooltip"
+data-placement="left"
+title="Open an issue"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="headerbtn__text-container">open issue</span>
+</a>
+
+      </li>
+      
+    </ul>
+  </div>
+</div>
+
+<div class="menu-dropdown menu-dropdown-download-buttons">
+  <button class="headerbtn menu-dropdown__trigger"
+      aria-label="Download this page">
+      <i class="fas fa-download"></i>
+  </button>
+  <div class="menu-dropdown__content">
+    <ul>
+      <li>
+        <a href="../_sources/examples/itokawa_cubesats.ipynb.txt"
+   class="headerbtn"
+   data-toggle="tooltip"
+data-placement="left"
+title="Download source file"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="headerbtn__text-container">.ipynb</span>
+</a>
+
+      </li>
+      
+      <li>
+        
+<button onclick="printPdf(this)"
+  class="headerbtn"
+  data-toggle="tooltip"
+data-placement="left"
+title="Print to PDF"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="headerbtn__text-container">.pdf</span>
+</button>
+
+      </li>
+      
+    </ul>
+  </div>
+</div>
+<label for="__page-toc"
+  class="headerbtn headerbtn-page-toc"
+  
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-list"></i>
+  </span>
+
+</label>
+
+    </div>
+</div>
+
+<!-- Table of contents -->
+<div class="col-md-3 bd-toc show noprint">
+    <div class="tocsection onthispage pt-5 pb-3">
+        <i class="fas fa-list"></i> Contents
+    </div>
+    <nav id="bd-toc-nav" aria-label="Page">
+        <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#importing-and-defining-the-irregular-body">
+   Importing and defining the irregular body
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#exploring-the-dynamics-of-one-single-cubesat">
+   Exploring the dynamics of one single cubesat
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#the-mother-trajectory">
+     The “mother” trajectory
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#simulate-cubesat-swarming">
+   Simulate cubesat swarming
+  </a>
+ </li>
+</ul>
+
+    </nav>
+</div>
+    </div>
+    <div class="article row">
+        <div class="col pl-md-3 pl-lg-5 content-container">
+            <!-- Table of contents that is only displayed when printing the page -->
+            <div id="jb-print-docs-body" class="onlyprint">
+                <h1>Swarming Itokawa with cubesats</h1>
+                <!-- Table of contents -->
+                <div id="print-main-content">
+                    <div id="jb-print-toc">
+                        
+                        <div>
+                            <h2> Contents </h2>
+                        </div>
+                        <nav aria-label="Page">
+                            <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#importing-and-defining-the-irregular-body">
+   Importing and defining the irregular body
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#exploring-the-dynamics-of-one-single-cubesat">
+   Exploring the dynamics of one single cubesat
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#the-mother-trajectory">
+     The “mother” trajectory
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#simulate-cubesat-swarming">
+   Simulate cubesat swarming
+  </a>
+ </li>
+</ul>
+
+                        </nav>
+                    </div>
+                </div>
+            </div>
+            <main id="main-content" role="main">
+                
+              <div>
+                
+  <section class="tex2jax_ignore mathjax_ignore" id="swarming-itokawa-with-cubesats">
+<h1>Swarming Itokawa with cubesats<a class="headerlink" href="#swarming-itokawa-with-cubesats" title="Permalink to this headline">#</a></h1>
+<p>In this example we consider a rather advanced mission option that was inspired to us by the European Space Agency
+<a class="reference external" href="https://www.esa.int/Space_Safety/Hera">HERA mission</a>. HERA is an interplanetary spacecraft that will explore the binary system named Didymos in 2025.
+In the case of HERA, two cubesats called Milani and <a class="reference external" href="https://www.heramission.space/hera-mission-juventas-cubesat">Juventas</a>, will detach from the main
+mother satellite to perform some detailed exploration of the system, including the exploartion of its gravity field.
+The use of cubesats to increase the mission scientific output, while minimizing risks connected to operating in a highly unknown environment,
+is a possibility future advanced missions.</p>
+<p>We will show the use of cascade to study the dynamics of a large number of cubesats simultaneously orbiting an irregular body. We will assume a number of cubesats get deployed from a common orbit and compute the <span class="math notranslate nohighlight">\(DV\)</span> needed
+for such a swarm to avoid collision while keeping all the cubesats within some maximum and minimum range from the asteroid centre.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This example concerns a case that has not driven the development of cascade. In particular, the events frequency (collision reentry and exit) is much higher if compared to the optimal timestep of Taylor integrator. As a consequence the overall algorithm, still very usable, becomes less efficient as dynamics computations (i.e. the Taylor coefficients) are thrown away at each event trigger.</p>
+</div>
+<p>Let us start with some imports:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># core imports</span>
+<span class="kn">import</span> <span class="nn">pykep</span> <span class="k">as</span> <span class="nn">pk</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy</span>
+<span class="kn">import</span> <span class="nn">pickle</span> <span class="k">as</span> <span class="nn">pkl</span>
+<span class="kn">import</span> <span class="nn">cascade</span> <span class="k">as</span> <span class="nn">csc</span>
+<span class="kn">import</span> <span class="nn">heyoka</span> <span class="k">as</span> <span class="nn">hy</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+
+<span class="c1"># plotting</span>
+<span class="kn">from</span> <span class="nn">mpl_toolkits.mplot3d</span> <span class="kn">import</span> <span class="n">Axes3D</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="o">%</span><span class="k">matplotlib</span> inline
+</pre></div>
+</div>
+</div>
+</div>
+<section id="importing-and-defining-the-irregular-body">
+<h2>Importing and defining the irregular body<a class="headerlink" href="#importing-and-defining-the-irregular-body" title="Permalink to this headline">#</a></h2>
+<p>In the example we are going to consider the asteroid <a class="reference external" href="https://en.wikipedia.org/wiki/25143_Itokawa">Itokawa</a> as an example of irregular body, with the understanding that a similar study is possible for any body. We will use mascons to have a representation of irregular bodies. In other words, an asteroid to us will be a set of point masses located in specific positions with some given mass.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;data/itokawa_mascon.pk&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+    <span class="n">mascon_points</span><span class="p">,</span> <span class="n">mascon_masses</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">pkl</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="o">+</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="s2">&quot;number of mascons is&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">mascon_masses</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Itokawa: number of mascons is 41748
+</pre></div>
+</div>
+</div>
+</div>
+<p>In the case of Itokawa, the mascon model of the body is here provided by the pickled file <code class="docutils literal notranslate"><span class="pre">itokawa_mascon.pk</span></code> and was developed in the project <a class="reference external" href="https://github.com/darioizzo/geodesyNets">geodesyNET</a> corresponding to a perfectly uniform density asteroid. We actually know that Itokawa is actually inhomogeneous, but for the purpose of this example this is irrelevant and thus homogenuity is assumed.
+Some physical properties of the asteroid are defined next:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">L</span> <span class="o">=</span> <span class="mf">350.44</span> <span class="c1"># [m] units of length (used in the mascon model)</span>
+<span class="n">M</span> <span class="o">=</span> <span class="mf">3.51E10</span> <span class="c1"># [kg] units of mass (the Itokawa mass)</span>
+<span class="n">G</span> <span class="o">=</span> <span class="mf">6.6743E-11</span> <span class="c1"># [m^3/s^2/kg] units for G (the Cavendish constant)</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">L</span><span class="o">**</span><span class="mi">3</span><span class="o">/</span><span class="n">G</span><span class="o">/</span><span class="n">M</span><span class="p">)</span> <span class="c1"># [s] induced units of time</span>
+<span class="n">wz</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="p">(</span><span class="mf">12.132</span> <span class="o">*</span> <span class="mf">60.</span> <span class="o">*</span> <span class="mf">60.</span> <span class="o">/</span> <span class="n">T</span><span class="p">)</span> <span class="c1"># asteroid angular velocity is 12.132 hours, here computed in the selected units</span>
+<span class="n">w_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">wz</span><span class="p">])</span> <span class="c1"># we assume a rotation around the z axis</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>we now visualize the mascon model:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define the 3d Axis</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
+
+<span class="c1"># Plot all mascons </span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter3D</span><span class="p">(</span><span class="n">mascon_points</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">mascon_points</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">mascon_points</span><span class="p">[:,</span><span class="mi">2</span><span class="p">],</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.03</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">)</span>
+
+<span class="c1"># Plot a safety sphere around it</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.1</span><span class="p">)</span>
+<span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mgrid</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">:</span><span class="mi">40</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">:</span><span class="mi">40</span><span class="n">j</span><span class="p">]</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">u</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+<span class="n">Y</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">u</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+<span class="n">Z</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot_wireframe</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+<span class="c1"># Set the axis limits </span>
+<span class="n">limit</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="n">limit</span><span class="p">,</span><span class="n">limit</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="n">limit</span><span class="p">,</span><span class="n">limit</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">(</span><span class="o">-</span><span class="n">limit</span><span class="p">,</span><span class="n">limit</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">view_init</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="o">-</span><span class="mi">45</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Mascon model for Itokawa&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_zticks</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]);</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/160df7e9b07299f64688dcc39f4704f4d12f9e5555c9a35fc5b2daebdf42c4bb.png" src="../_images/160df7e9b07299f64688dcc39f4704f4d12f9e5555c9a35fc5b2daebdf42c4bb.png" />
+</div>
+</div>
+</section>
+<section id="exploring-the-dynamics-of-one-single-cubesat">
+<h2>Exploring the dynamics of one single cubesat<a class="headerlink" href="#exploring-the-dynamics-of-one-single-cubesat" title="Permalink to this headline">#</a></h2>
+<p>Before delving into a full cascade simulation, it is useful to investigate the dynamics of a single cubesat around the irregular body considered. We will do so using directly
+<a class="reference external" href="https://bluescarni.github.io/heyoka.py/index.html">heyoka</a>, knwing that cascade smulations also use Taylor integrators for the dynamics provided via heyoka.</p>
+<p>In then the <code class="code docutils literal notranslate"><span class="pre">cascade.dynamics</span></code> module we provide the dynamics of a spacecraft around a rotating asteroid modelled by a mascon model. The dynamics implements the equations of motion:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\left\{
+\begin{array}{l}
+\dot{\mathbf r} = \mathbf v \\
+\dot {\mathbf v} = -G \sum_{j=0}^N \frac {m_j}{|\mathbf r - \mathbf r_j|^3} (\mathbf r - \mathbf r_j) - 2 \boldsymbol\omega \times \mathbf v - \boldsymbol \omega \times\boldsymbol\omega \times \mathbf r
+\end{array}
+\right.
+\end{split}\]</div>
+<p>see the paper <a class="reference external" href="https://arxiv.org/abs/2204.09948">Reliable event detection for Taylor methods in astrodynamics</a> for further information. Note that we are using units where <span class="math notranslate nohighlight">\(G=1\)</span> and <span class="math notranslate nohighlight">\(GM=1\)</span>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dyn</span> <span class="o">=</span> <span class="n">csc</span><span class="o">.</span><span class="n">dynamics</span><span class="o">.</span><span class="n">rotating_mascon</span><span class="p">(</span><span class="n">Gconst</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">,</span> <span class="n">masses</span><span class="o">=</span><span class="n">mascon_masses</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="n">mascon_points</span><span class="p">,</span> <span class="n">omega</span> <span class="o">=</span> <span class="n">w_vec</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We now instantiate a Taylor integrator using <a class="reference external" href="https://bluescarni.github.io/heyoka.py/index.html">heyoka</a>’s <code class="xref py py-class docutils literal notranslate"><span class="pre">hy.taylor_adaptive</span></code> class. Note that we added two <a class="reference external" href="https://bluescarni.github.io/heyoka.py/notebooks/Event%20detection.html#terminal-events">terminal events</a> to the equations as to perform a manouvre whenever the spacecarft is too close or too far:</p>
+<div class="math notranslate nohighlight">
+\[
+\Delta \mathbf V =  - 2(\mathbf {\hat r} \cdot \mathbf v) \mathbf {\hat r}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mathbf {\hat r}\)</span> represents the unit vector of the spacecraft position and <span class="math notranslate nohighlight">\(\mathbf v\)</span> its velocity.</p>
+<p>Note how the <code class="docutils literal notranslate"><span class="pre">taylor_adaptive</span></code> constructor is called with the argument <code class="docutils literal notranslate"><span class="pre">compact_mode</span></code> set to True as otherwise the equation generation would take a considerable amount of time.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Re-entry event</span>
+<span class="n">safety_radius</span> <span class="o">=</span> <span class="mf">1.1</span>
+<span class="c1"># Exit event</span>
+<span class="n">exit_radius</span> <span class="o">=</span> <span class="mf">3.</span>
+
+<span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span> <span class="o">=</span> <span class="n">hy</span><span class="o">.</span><span class="n">make_vars</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span><span class="p">)</span>
+<span class="n">vx</span><span class="p">,</span><span class="n">vy</span><span class="p">,</span><span class="n">vz</span> <span class="o">=</span> <span class="n">hy</span><span class="o">.</span><span class="n">make_vars</span><span class="p">(</span><span class="s2">&quot;vx&quot;</span><span class="p">,</span> <span class="s2">&quot;vy&quot;</span><span class="p">,</span> <span class="s2">&quot;vz&quot;</span><span class="p">)</span>
+
+<span class="c1"># Applies the DV to the spacecraft state</span>
+<span class="k">def</span> <span class="nf">dv_invert_radial</span><span class="p">(</span><span class="n">ta</span><span class="p">,</span> <span class="n">mr</span><span class="p">,</span> <span class="n">d_sgn</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">DV</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">ta</span><span class="o">.</span><span class="n">state</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">rotv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">w_vec</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">ta</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">])</span> <span class="o">-</span> <span class="n">rotv</span>
+    <span class="n">rhat</span> <span class="o">=</span> <span class="n">r</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+    <span class="n">ta</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">rhat</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">rhat</span> <span class="o">+</span> <span class="n">rotv</span>
+    <span class="n">DV</span><span class="o">+=</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">rhat</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">rhat</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">True</span>
+
+<span class="c1"># Define a terminal event that detects the entry in the safety sphere</span>
+<span class="n">reentry_ev</span> <span class="o">=</span> <span class="n">hy</span><span class="o">.</span><span class="n">t_event</span><span class="p">(</span>
+        <span class="c1"># The event equation.</span>
+        <span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">y</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">z</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">safety_radius</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span>
+        <span class="c1"># The callback.</span>
+        <span class="n">callback</span> <span class="o">=</span> <span class="n">dv_invert_radial</span><span class="p">)</span>
+
+<span class="c1"># Define a terminal event that detects the exit from a sphere</span>
+<span class="n">exit_ev</span> <span class="o">=</span> <span class="n">hy</span><span class="o">.</span><span class="n">t_event</span><span class="p">(</span>
+        <span class="c1"># The event equation.</span>
+        <span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">y</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">z</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">exit_radius</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span>
+        <span class="c1"># The callback.</span>
+        <span class="n">callback</span> <span class="o">=</span> <span class="n">dv_invert_radial</span><span class="p">)</span>
+
+<span class="c1"># Constructs the Taylor integrator</span>
+<span class="n">taylor</span> <span class="o">=</span> <span class="n">hy</span><span class="o">.</span><span class="n">taylor_adaptive</span><span class="p">(</span><span class="n">sys</span><span class="o">=</span><span class="n">dyn</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],</span> <span class="n">compact_mode</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">t_events</span><span class="o">=</span><span class="p">[</span><span class="n">reentry_ev</span><span class="p">,</span> <span class="n">exit_ev</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We start simulating the orbit from where the cubesats will be deployed, in the non rotating frame. Such an orbit is here designed starting from <span class="math notranslate nohighlight">\(\mathbf r_{ic}\)</span> and a circular velocity of magnitude <span class="math notranslate nohighlight">\(\sqrt{\frac{1}{r_ic}}\)</span>. The resulting dynamics is very sensitive to these choices, given the irregular form of the body and the close proximity to the asteroid we are assuming.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># This is a phase we can use to design the starting orbit</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">0</span><span class="o">/</span><span class="mi">50</span>
+<span class="n">cs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+<span class="n">sn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+<span class="c1"># We consider a polar orbit with velocity aligned to the x axis</span>
+<span class="n">r_ic</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.7</span><span class="o">*</span><span class="n">sn</span><span class="p">,</span> <span class="mf">1.7</span><span class="o">*</span><span class="n">cs</span><span class="p">])</span>
+<span class="n">vrot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">w_vec</span><span class="p">,</span> <span class="n">r_ic</span><span class="p">)</span>
+<span class="n">v_ic</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">r_ic</span><span class="p">))</span><span class="o">*</span><span class="n">cs</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">r_ic</span><span class="p">))</span><span class="o">*</span><span class="n">sn</span><span class="p">])</span> <span class="o">-</span> <span class="n">vrot</span>
+<span class="n">taylor</span><span class="o">.</span><span class="n">state</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">r_ic</span>
+<span class="n">taylor</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">v_ic</span>
+<span class="n">taylor</span><span class="o">.</span><span class="n">time</span><span class="o">=</span><span class="mf">0.</span>
+<span class="c1"># The propagation time correspond to roughly 24 hours (i.e. roughly two Itokawa rotations)</span>
+<span class="n">tgrid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="mf">10.19</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+<span class="c1"># Global DV in case manouvres are done</span>
+<span class="n">DV</span><span class="o">=</span><span class="mi">0</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We perform the numerical propagation.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The use of the propagate_grid method of heyoka’s Taylor integrator, in this case will ensure we are able to plot the entire trajectory at the end, while sacrificing performances only marginally.</p>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">mother</span> <span class="o">=</span> <span class="n">taylor</span><span class="o">.</span><span class="n">propagate_grid</span><span class="p">(</span><span class="n">tgrid</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<section id="the-mother-trajectory">
+<h3>The “mother” trajectory<a class="headerlink" href="#the-mother-trajectory" title="Permalink to this headline">#</a></h3>
+<p>We now first plot the cubesat trajectory, then compute the control DV that was needed to keep the cubesat at a safe distance.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># This helper function can be used to transform the simulation output into the inertial frame</span>
+<span class="k">def</span> <span class="nf">rotate</span><span class="p">(</span><span class="n">tgrid</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">w_vec</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">scipy.spatial.transform</span> <span class="kn">import</span> <span class="n">Rotation</span> <span class="k">as</span> <span class="n">rot</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+    <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+    <span class="n">retval</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">states</span><span class="p">)</span>
+    <span class="n">direction</span> <span class="o">=</span> <span class="n">w_vec</span>
+    <span class="k">for</span> <span class="n">t</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">tgrid</span><span class="p">,</span> <span class="n">retval</span><span class="p">):</span>
+        <span class="n">R</span> <span class="o">=</span> <span class="n">rot</span><span class="o">.</span><span class="n">from_rotvec</span><span class="p">(</span><span class="n">t</span> <span class="o">*</span> <span class="n">direction</span><span class="p">)</span><span class="o">.</span><span class="n">as_matrix</span><span class="p">()</span>
+        <span class="n">item</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">R</span><span class="nd">@item</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">item</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">R</span><span class="nd">@item</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">retval</span>
+<span class="n">mother_rotated</span><span class="o">=</span><span class="n">rotate</span><span class="p">(</span><span class="n">tgrid</span><span class="p">,</span> <span class="n">mother</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">w_vec</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define the 3d Axis</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">13</span><span class="p">,</span><span class="mi">7</span><span class="p">))</span>
+
+<span class="c1">#Plot in the rotatting frame</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">121</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
+
+<span class="c1"># Plot all mascons </span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter3D</span><span class="p">(</span><span class="n">mascon_points</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">mascon_points</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">mascon_points</span><span class="p">[:,</span><span class="mi">2</span><span class="p">],</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">)</span>
+
+<span class="c1"># Plot the safety sphere around it</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.1</span><span class="p">)</span>
+<span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mgrid</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">:</span><span class="mi">40</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">:</span><span class="mi">40</span><span class="n">j</span><span class="p">]</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">u</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+<span class="n">Y</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">u</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+<span class="n">Z</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot_wireframe</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">plot3D</span><span class="p">(</span><span class="n">mother</span><span class="p">[</span><span class="mi">4</span><span class="p">][:,</span><span class="mi">0</span><span class="p">],</span><span class="n">mother</span><span class="p">[</span><span class="mi">4</span><span class="p">][:,</span><span class="mi">1</span><span class="p">],</span><span class="n">mother</span><span class="p">[</span><span class="mi">4</span><span class="p">][:,</span><span class="mi">2</span><span class="p">])</span>
+
+<span class="n">limit</span><span class="o">=</span><span class="mi">4</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="n">limit</span><span class="p">,</span><span class="n">limit</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="n">limit</span><span class="p">,</span><span class="n">limit</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">(</span><span class="o">-</span><span class="n">limit</span><span class="p">,</span><span class="n">limit</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">view_init</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">90</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Body frame&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_zticks</span><span class="p">([])</span>
+
+<span class="c1"># Plot in the inertial frame</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">122</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
+<span class="c1"># Plot the safety sphere around it</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">safety_radius</span>
+<span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mgrid</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">:</span><span class="mi">40</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">:</span><span class="mi">40</span><span class="n">j</span><span class="p">]</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">u</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+<span class="n">Y</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">u</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+<span class="n">Z</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot_wireframe</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">plot3D</span><span class="p">(</span><span class="n">mother_rotated</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span><span class="n">mother_rotated</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span><span class="n">mother_rotated</span><span class="p">[:,</span><span class="mi">2</span><span class="p">])</span>
+
+<span class="n">limit</span><span class="o">=</span><span class="mi">4</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="n">limit</span><span class="p">,</span><span class="n">limit</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="n">limit</span><span class="p">,</span><span class="n">limit</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">(</span><span class="o">-</span><span class="n">limit</span><span class="p">,</span><span class="n">limit</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">view_init</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">90</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Inertial frame&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_zticks</span><span class="p">([]);</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/e418def0d271f3e800164a4ac96c91dbbf28c806d253db2ddd75592b370f2f75.png" src="../_images/e418def0d271f3e800164a4ac96c91dbbf28c806d253db2ddd75592b370f2f75.png" />
+</div>
+</div>
+<p>In case the cubesat manouvres to avoid its entrance into the safety zone, or drifting too far away, we can even evaluate the amount of DV that is provided by the cubesat propulsion system:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Total DV: &quot;</span><span class="p">,</span> <span class="n">DV</span> <span class="o">*</span> <span class="n">L</span> <span class="o">/</span> <span class="n">T</span><span class="p">,</span> <span class="s2">&quot;m/s&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Trajectory duration: &quot;</span><span class="p">,</span> <span class="n">taylor</span><span class="o">.</span><span class="n">time</span><span class="o">*</span><span class="n">T</span><span class="o">/</span><span class="mi">60</span><span class="o">/</span><span class="mi">60</span><span class="o">/</span><span class="mi">24</span><span class="p">,</span> <span class="s2">&quot;days&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Total DV:  0.0 m/s
+Trajectory duration:  1.0110078428455458 days
+</pre></div>
+</div>
+</div>
+</div>
+<p>in this case zero, but in general not necessarily so.</p>
+</section>
+</section>
+<section id="simulate-cubesat-swarming">
+<h2>Simulate cubesat swarming<a class="headerlink" href="#simulate-cubesat-swarming" title="Permalink to this headline">#</a></h2>
+<p>Having had a look at the dynamics of a single cubesat, we move on to study the behaviour of a swarm of cubesats under the same dynamics. We assume that each cubesat has the capability to perform manouvres whenever it gets too close to another element of the swarm, to the central body or whenever it flies too far away.</p>
+<p>We thus instantiate a <a class="reference internal" href="../generated/cascade.sim.html#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">cascade.sim</span></code></a> object to perform a collision simulation where each body has the same collisional radius. Upon the detection of a collision event we will perfrom an avoidance manouvre.
+Upon detection of a reentry or exit event (in this case corresponding to entering the safe sphere) we perform a manouvre to invert the radial component of the velocity.</p>
+<p>At the beginning only the mother craft is in the simulation. Slowly at each deployment we will add cubesats.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Number of cubesats to simulate</span>
+<span class="n">n_cubesats</span> <span class="o">=</span> <span class="mi">50</span>
+<span class="c1"># Collisional radius (5m)</span>
+<span class="n">radius</span> <span class="o">=</span> <span class="mf">5.</span> <span class="o">/</span> <span class="n">L</span>
+<span class="c1"># The initial state is the mother only</span>
+<span class="n">ic_state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">7</span><span class="p">))</span> <span class="o">*</span> <span class="n">radius</span>
+<span class="n">ic_state</span><span class="p">[</span><span class="mi">0</span><span class="p">][:</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">mother</span><span class="p">[</span><span class="mi">4</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We are now ready to instantiate a cascade simulation. With respect to previous examples we here need to make use of the argument <code class="docutils literal notranslate"><span class="pre">compact_mode</span></code> else the just in time compilation of the internal Taylor integrators will take too much time. With <code class="docutils literal notranslate"><span class="pre">compact_mode</span></code> we are sacrificing some optimizations in the jitted code but we allow the simulation object to be built in a few seconds only even if the mascon model has tens of thousands of mascons adding to the right hand side of the dynamics.</p>
+<p>We have also added an <code class="docutils literal notranslate"><span class="pre">exit_radius</span></code> as to be able to trigger events when cubesats are going too far from the center and thus keep the entire swarm always close to the asteroid.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Number of collisional timesteps to be processed in parallel.</span>
+<span class="n">n_par_ct</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="c1"># Timestep of the simulation</span>
+<span class="n">simulation_step</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mf">10.</span>
+<span class="c1"># Collisional timestep</span>
+<span class="n">collisional_step</span> <span class="o">=</span> <span class="n">simulation_step</span> <span class="o">/</span> <span class="n">n_par_ct</span>
+<span class="c1"># Re-entry event</span>
+<span class="n">safety_radius</span> <span class="o">=</span> <span class="mf">1.1</span>
+<span class="c1"># Exit event</span>
+<span class="n">exit_radius</span> <span class="o">=</span> <span class="mf">3.</span>
+<span class="c1"># The simulation object</span>
+<span class="n">sim</span> <span class="o">=</span> <span class="n">csc</span><span class="o">.</span><span class="n">sim</span><span class="p">(</span><span class="n">ic_state</span><span class="p">,</span> <span class="n">collisional_step</span><span class="p">,</span> <span class="n">dyn</span><span class="o">=</span><span class="n">dyn</span><span class="p">,</span> <span class="n">reentry_radius</span><span class="o">=</span><span class="n">safety_radius</span><span class="p">,</span> <span class="n">n_par_ct</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">compact_mode</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exit_radius</span> <span class="o">=</span> <span class="n">exit_radius</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We now run a simulation where collisions are avoided by a virtual elastic collision (using cubesat <span class="math notranslate nohighlight">\(DV\)</span>)
+and all cubesats are forced to remain within the exit and the safety radius (using cubesat <span class="math notranslate nohighlight">\(DV\)</span>).</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Simulation length in time units</span>
+<span class="n">final_t</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">DAY2SEC</span> <span class="o">/</span> <span class="n">T</span>
+<span class="c1"># We will store for each cubesat the cumulated DV</span>
+<span class="n">DV</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_cubesats</span><span class="p">)</span>
+<span class="c1"># Counters</span>
+<span class="n">n_coll</span><span class="p">,</span> <span class="n">n_sm</span><span class="p">,</span> <span class="n">n_am</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+<span class="c1"># We store the positions of the events</span>
+<span class="n">ev_pos</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="c1"># We also store the position of all cubesats at the end of each step</span>
+<span class="n">all_pos</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">ic_state</span><span class="p">)</span>
+<span class="n">counter</span><span class="o">=</span> <span class="mi">1</span> 
+<span class="c1"># Start of the simulation</span>
+<span class="k">while</span> <span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">&lt;</span> <span class="n">final_t</span><span class="p">:</span>
+    <span class="c1"># One step</span>
+    <span class="n">oc</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">counter</span><span class="o">&lt;</span><span class="n">n_cubesats</span><span class="p">:</span>
+        <span class="c1"># copying current swarm</span>
+        <span class="n">new_ic_state</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
+        <span class="c1"># adding one element where the mother is</span>
+        <span class="n">new_ic_state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">new_ic_state</span><span class="p">,</span> <span class="p">[</span><span class="n">new_ic_state</span><span class="p">[</span><span class="mi">0</span><span class="p">]]))</span>
+        <span class="c1"># adding deployment </span>
+        <span class="n">new_ic_state</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_ic_state</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="n">new_ic_state</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">new_ic_state</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="mi">3</span><span class="p">])</span> <span class="o">*</span> <span class="mi">10</span><span class="o">/</span><span class="n">L</span>
+        <span class="n">sim</span><span class="o">.</span><span class="n">set_new_state_pars</span><span class="p">(</span><span class="n">new_ic_state</span><span class="p">)</span>
+        <span class="n">counter</span><span class="o">+=</span><span class="mi">1</span>
+
+    <span class="c1"># Appending the cubesat positions</span>
+    <span class="n">all_pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">all_pos</span><span class="p">,</span> <span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">))</span>
+    <span class="c1"># Cleaning the print</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\r</span><span class="s2">                                                                              &quot;</span><span class="p">,</span><span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="c1"># Printing time</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\r</span><span class="s2">Time: </span><span class="si">{</span><span class="n">sim</span><span class="o">.</span><span class="n">time</span><span class="si">:</span><span class="s2">3.3f</span><span class="si">}</span><span class="s2"> - cubesats: </span><span class="si">{</span><span class="n">counter</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Checking events</span>
+    <span class="k">if</span> <span class="n">oc</span> <span class="o">==</span> <span class="n">csc</span><span class="o">.</span><span class="n">outcome</span><span class="o">.</span><span class="n">collision</span><span class="p">:</span>
+        <span class="n">pi</span><span class="p">,</span> <span class="n">pj</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">interrupt_info</span>
+        <span class="c1"># Collision Avoidance Manouvre</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; - CAM:&quot;</span><span class="p">,</span> <span class="n">pi</span><span class="p">,</span><span class="n">pj</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="c1"># sat i inertial state</span>
+        <span class="n">ri</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">pi</span><span class="p">][:</span><span class="mi">3</span><span class="p">])</span>
+        <span class="n">vroti</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">w_vec</span><span class="p">,</span> <span class="n">ri</span><span class="p">)</span>
+        <span class="n">vi</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">pi</span><span class="p">][</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">-</span> <span class="n">vroti</span>
+        <span class="c1"># sat j inertial state</span>
+        <span class="n">rj</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">pj</span><span class="p">][:</span><span class="mi">3</span><span class="p">])</span>
+        <span class="n">vrotj</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">w_vec</span><span class="p">,</span> <span class="n">rj</span><span class="p">)</span>
+        <span class="n">vj</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">pj</span><span class="p">][</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">-</span> <span class="n">vrotj</span>
+        <span class="c1"># Elastic collision: the velocity components along rij are exchanged</span>
+        <span class="n">rij</span> <span class="o">=</span> <span class="p">(</span><span class="n">ri</span><span class="o">-</span><span class="n">rj</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">ri</span><span class="o">-</span><span class="n">rj</span><span class="p">)</span>
+        <span class="n">vi_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">vi</span><span class="p">,</span> <span class="n">rij</span><span class="p">)</span> <span class="o">*</span> <span class="n">rij</span>
+        <span class="n">vj_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">vj</span><span class="p">,</span> <span class="n">rij</span><span class="p">)</span> <span class="o">*</span> <span class="n">rij</span>
+        <span class="n">vi</span> <span class="o">=</span> <span class="n">vi</span> <span class="o">-</span> <span class="n">vi_r</span> <span class="o">+</span> <span class="n">vj_r</span>
+        <span class="n">vj</span> <span class="o">=</span> <span class="n">vj</span> <span class="o">-</span> <span class="n">vj_r</span> <span class="o">+</span> <span class="n">vi_r</span>
+        <span class="c1"># ... in the rotating frame</span>
+        <span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">pi</span><span class="p">][</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">vi</span> <span class="o">+</span> <span class="n">vroti</span>
+        <span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">pj</span><span class="p">][</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">vj</span> <span class="o">+</span> <span class="n">vrotj</span>
+        <span class="c1"># Updating DVs</span>
+        <span class="n">DV_mag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">vj_r</span><span class="o">-</span><span class="n">vi_r</span><span class="p">)</span>
+        <span class="n">DV</span><span class="p">[</span><span class="n">pi</span><span class="p">]</span><span class="o">+=</span> <span class="n">DV_mag</span>
+        <span class="n">DV</span><span class="p">[</span><span class="n">pj</span><span class="p">]</span><span class="o">+=</span> <span class="n">DV_mag</span>
+        <span class="c1"># Updating the number of collisions counter and the event positions</span>
+        <span class="n">n_coll</span><span class="o">+=</span><span class="mi">1</span>
+        <span class="n">ev_pos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ri</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">oc</span> <span class="o">==</span> <span class="n">csc</span><span class="o">.</span><span class="n">outcome</span><span class="o">.</span><span class="n">reentry</span><span class="p">:</span>
+        <span class="n">pi</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">interrupt_info</span>
+        <span class="c1"># Safety Manouvre</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; - SM:&quot;</span><span class="p">,</span> <span class="n">pi</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="c1"># sat i inertial state</span>
+        <span class="n">ri</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">pi</span><span class="p">][:</span><span class="mi">3</span><span class="p">])</span>
+        <span class="n">vrot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">w_vec</span><span class="p">,</span> <span class="n">ri</span><span class="p">)</span>
+        <span class="n">vi</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">pi</span><span class="p">][</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">-</span> <span class="n">vrot</span>
+        <span class="c1"># Inverting the radial inertial velocity component and transforming back to the rotating frame</span>
+        <span class="n">hatr</span> <span class="o">=</span> <span class="n">ri</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">ri</span><span class="p">)</span>
+        <span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">pi</span><span class="p">][</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">vi</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">hatr</span><span class="p">,</span><span class="n">vi</span><span class="p">)</span> <span class="o">*</span> <span class="n">hatr</span> <span class="o">+</span> <span class="n">vrot</span>
+        <span class="c1"># Updating DVs</span>
+        <span class="n">DV</span><span class="p">[</span><span class="n">pi</span><span class="p">]</span><span class="o">+=</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">hatr</span><span class="p">,</span><span class="n">vi</span><span class="p">)</span> <span class="o">*</span> <span class="n">hatr</span><span class="p">)</span>
+        <span class="c1"># Updating the number of safety manouvres counter and the event positions</span>
+        <span class="n">n_sm</span><span class="o">+=</span><span class="mi">1</span>
+        <span class="n">ev_pos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ri</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">oc</span> <span class="o">==</span> <span class="n">csc</span><span class="o">.</span><span class="n">outcome</span><span class="o">.</span><span class="n">exit</span><span class="p">:</span>
+        <span class="n">pi</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">interrupt_info</span>
+        <span class="c1"># Re-approach Manouvre</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; - RAM:&quot;</span><span class="p">,</span> <span class="n">pi</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="c1"># sat i inertial state</span>
+        <span class="n">ri</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">pi</span><span class="p">][:</span><span class="mi">3</span><span class="p">])</span>
+        <span class="n">vrot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">w_vec</span><span class="p">,</span> <span class="n">ri</span><span class="p">)</span>
+        <span class="n">vi</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">pi</span><span class="p">][</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">-</span> <span class="n">vrot</span>
+        <span class="c1"># Inverting the radial inertial velocity component and transforming back to the rotating frame</span>
+        <span class="n">hatr</span> <span class="o">=</span> <span class="n">ri</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">ri</span><span class="p">)</span>
+        <span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">pi</span><span class="p">][</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">vi</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">hatr</span><span class="p">,</span><span class="n">vi</span><span class="p">)</span> <span class="o">*</span> <span class="n">hatr</span> <span class="o">+</span> <span class="n">vrot</span>
+        <span class="c1"># Updating DVs</span>
+        <span class="n">DV</span><span class="p">[</span><span class="n">pi</span><span class="p">]</span><span class="o">+=</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">hatr</span><span class="p">,</span><span class="n">vi</span><span class="p">)</span> <span class="o">*</span> <span class="n">hatr</span><span class="p">)</span>
+        <span class="c1"># Updating the number of safety manouvres counter and the event positions</span>
+        <span class="n">n_am</span><span class="o">+=</span><span class="mi">1</span>
+        <span class="n">ev_pos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ri</span><span class="p">)</span>
+
+<span class="n">ev_pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ev_pos</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Number of collisions: &quot;</span><span class="p">,</span> <span class="n">n_coll</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of safety manouvres: &quot;</span><span class="p">,</span> <span class="n">n_sm</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of re-approach manouvres: &quot;</span><span class="p">,</span> <span class="n">n_am</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Time: 81.010 - cubesats: 50                                                   
+Number of collisions:  115
+Number of safety manouvres:  6
+Number of re-approach manouvres:  4
+</pre></div>
+</div>
+</div>
+</div>
+<p>We plot the cubesats positions and the positions of all manouvres.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ev_pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ev_pos</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">plot_swarm</span><span class="p">(</span><span class="n">az</span><span class="p">,</span> <span class="n">el</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="p">):</span>
+    <span class="c1"># Plot all mascons </span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">scatter3D</span><span class="p">(</span><span class="n">mascon_points</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">mascon_points</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">mascon_points</span><span class="p">[:,</span><span class="mi">2</span><span class="p">],</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.03</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Plot swarm</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">scatter3D</span><span class="p">(</span><span class="n">all_pos</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">all_pos</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">all_pos</span><span class="p">[:,</span><span class="mi">2</span><span class="p">],</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.03</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Plot events</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">scatter3D</span><span class="p">(</span><span class="n">ev_pos</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">ev_pos</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">ev_pos</span><span class="p">[:,</span><span class="mi">2</span><span class="p">],</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mf">3.</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Plot initial state</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">scatter3D</span><span class="p">(</span><span class="n">ic_state</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">ic_state</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">ic_state</span><span class="p">[:,</span><span class="mi">2</span><span class="p">],</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mf">3.</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;g&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Plot a safety sphere around it</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="mf">1.1</span>
+    <span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mgrid</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">:</span><span class="mi">40</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">:</span><span class="mi">40</span><span class="n">j</span><span class="p">]</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">u</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">u</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">r</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot_wireframe</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+    <span class="c1"># Set the axis limits </span>
+    <span class="n">limit</span><span class="o">=</span><span class="mi">3</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="o">-</span><span class="n">limit</span><span class="p">,</span><span class="n">limit</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="n">limit</span><span class="p">,</span><span class="n">limit</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_zlim</span><span class="p">(</span><span class="o">-</span><span class="n">limit</span><span class="p">,</span><span class="n">limit</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">view_init</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="o">-</span><span class="mi">45</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_zticks</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">view_init</span><span class="p">(</span><span class="n">az</span><span class="p">,</span> <span class="n">el</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ax</span>
+
+<span class="c1"># Define the 3d Axis</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">121</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
+<span class="n">plot_swarm</span><span class="p">(</span><span class="mi">90</span><span class="p">,</span><span class="mi">90</span><span class="p">,</span><span class="n">ax</span><span class="p">,</span> <span class="s2">&quot;top view&quot;</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">122</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
+<span class="n">plot_swarm</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">90</span><span class="p">,</span><span class="n">ax</span><span class="p">,</span> <span class="s2">&quot;side view&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<img alt="../_images/56db6e86d7e476223bc4fa65dc47939dd5dfb8e295938c4eb4187c553a04859e.png" src="../_images/56db6e86d7e476223bc4fa65dc47939dd5dfb8e295938c4eb4187c553a04859e.png" />
+</div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All manouvres to keep the swarm within the defined range happen, as expected, at the surface of the spheres defining the allowed zone. The collision avoidance manouvres appear clusered in specific areas defined by the complex dynamics.</p>
+</div>
+<p>We also plot the <span class="math notranslate nohighlight">\(DV\)</span> distribution.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_cubesats</span><span class="p">),</span> <span class="n">DV</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Cubesat N.&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;DV consumption [m/s]&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Text(0, 0.5, &#39;DV consumption [m/s]&#39;)
+</pre></div>
+</div>
+<img alt="../_images/66a84807a65a8720819cdde5a2017f1c660186ee83f08c6f9f4e1c076724025f.png" src="../_images/66a84807a65a8720819cdde5a2017f1c660186ee83f08c6f9f4e1c076724025f.png" />
+</div>
+</div>
+<p>That is all folks! Pretty cool stuff if you ask me.</p>
+</section>
+</section>
+
+
+              </div>
+              
+            </main>
+            <footer class="footer-article noprint">
+                
+    <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+    <a class='left-prev' id="prev-link" href="oneweekofLEO_conj.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">One week of LEO - (conjunctions)</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="../utilities/leo_population.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">The current LEO population</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+            </footer>
+        </div>
+    </div>
+    <div class="footer-content row">
+        <footer class="col footer"><p>
+  
+    By Francesco Biscani and Dario Izzo<br/>
+  
+      &copy; Copyright 2023, Francesco Biscani and Dario Izzo.<br/>
+</p>
+        </footer>
+    </div>
+    
+</div>
+
+
+      </div>
+    </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+
+
+  </body>
+</html>

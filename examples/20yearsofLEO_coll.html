@@ -37,7 +37,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="One week of LEO - (conjunctions)" href="oneweekofLEO_conj.html" />
-    <link rel="prev" title="Conjunctions" href="../tutorials/conjandcoll.html" />
+    <link rel="prev" title="Whitelists" href="../tutorials/whitelists.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
     
@@ -190,8 +190,13 @@
   </a>
  </li>
  <li class="toctree-l1">
-  <a class="reference internal" href="../tutorials/conjandcoll.html">
+  <a class="reference internal" href="../tutorials/conjunctions.html">
    Conjunctions
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../tutorials/whitelists.html">
+   Whitelists
   </a>
  </li>
 </ul>
@@ -209,6 +214,11 @@
  <li class="toctree-l1">
   <a class="reference internal" href="oneweekofLEO_conj.html">
    One week of LEO - (conjunctions)
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="itokawa_cubesats.html">
+   Swarming Itokawa with cubesats
   </a>
  </li>
 </ul>
@@ -541,6 +551,9 @@ The necessary steps to prepare such data are described by the code made availabl
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># r is in km and v in km/s</span>
 <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;data/leo_population.pk&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
     <span class="n">r_ic</span><span class="p">,</span><span class="n">v_ic</span><span class="p">,</span><span class="n">to_satcat_index</span><span class="p">,</span><span class="n">satcat</span> <span class="o">=</span> <span class="n">pkl</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+
+<span class="c1"># reference epoch for the initial conditions</span>
+<span class="n">t0_jd</span> <span class="o">=</span> <span class="n">pk</span><span class="o">.</span><span class="n">epoch_from_iso_string</span><span class="p">(</span><span class="s2">&quot;20220301T000000&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">jd</span> <span class="c1"># Julian date corresponding to 2022-Mar-01 00:00:00</span>
 </pre></div>
 </div>
 </div>
@@ -592,7 +605,7 @@ Velocity (km/s):  [ 1.38399824  5.88779107 -3.78530589]
 </section>
 <section id="building-the-dynamical-system-to-integrate">
 <h2>Building the dynamical system to integrate<a class="headerlink" href="#building-the-dynamical-system-to-integrate" title="Permalink to this headline">#</a></h2>
-<p>The dynamics in the LEO environment is dominated by drag and gravitational effects. The effect of the Moon gravity, Sun gravity and solar radiation pressure are much weaker and thus not considered here, even if they would not add much complexity in the simulation. We make use of the cascade class <code class="docutils literal notranslate"><span class="pre">cascade.dynamics.simple_earth</span></code> returning analytical expressions for such a dynamics.</p>
+<p>The dynamics in the LEO environment is dominated by drag and gravitational effects. The effect of the Moon gravity, Sun gravity and solar radiation pressure are much weaker and thus not considered here, even if they would not add much complexity in the simulation. We make use of the cascade class <code class="docutils literal notranslate"><span class="pre">cascade.dynamics.simple_earth</span></code> returning analytical expressions for such a dynamics in the EME2000 reference frame.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dyn</span> <span class="o">=</span>  <span class="n">csc</span><span class="o">.</span><span class="n">dynamics</span><span class="o">.</span><span class="n">simple_earth</span><span class="p">(</span><span class="n">J2</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">J3</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">C22S22</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">sun</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">moon</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">SRP</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">drag</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -612,11 +625,11 @@ Velocity (km/s):  [ 1.38399824  5.88779107 -3.78530589]
  (y, vy),
  (z, vz),
  (vx,
-  ((((((-398600440779972.44 * x) * pow((x**2 + y**2 + z**2), -1.5000000000000000)) + (((-1.7555131752869966e+19 / (2.0000000000000000 * sqrt((x**2 + y**2 + z**2)))) * x) * ((3.0000000000000000 / (x**2 + y**2 + z**2)**2) - ((15.000000000000000 * z**2) / ((x**2 + y**2 + z**2)**2 * (x**2 + y**2 + z**2)))))) + ((((((7.6591108648176013e+17 / (2.0000000000000000 * pow((x**2 + y**2 + z**2), 3.5000000000000000))) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * (((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2 - ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2)) + ((1.5318221729635203e+17 / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) - (((((7.6591108648176013e+17 / (2.0000000000000000 * pow((x**2 + y**2 + z**2), 3.5000000000000000))) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * (((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2 - ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2)) - ((1.5318221729635203e+17 / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) + (((((-(-4.3966387893411789e+17 / pow((x**2 + y**2 + z**2), 3.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) + ((-87932775786823584. / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) - ((((-(-4.3966387893411789e+17 / pow((x**2 + y**2 + z**2), 3.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2) + ((-87932775786823584. / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) + (-(((((((1.0170993499999999e-06 * exp((-4.6382291000000000e-05 * (-6383152.2451599995 + sqrt((x**2 + y**2 + z**2)))))) + (0.78644337499999994 * exp((-0.00018608004800000001 * (-6400979.2808999997 + sqrt((x**2 + y**2 + z**2))))))) + (7.5034188300000001e-09 * exp((-2.4866717600000000e-05 * (-6382415.8782899994 + sqrt((x**2 + y**2 + z**2))))))) + (8.6393425200000000e-14 * exp((-4.8108085200000002e-06 * (-6378292.5916729998 + sqrt((x**2 + y**2 + z**2))))))) / 2.4615341004863758e-08) * p0) * sqrt((vx**2 + vy**2 + vz**2))) * vx))),
+  ((((((-398600440779972.44 * x) * pow((x**2 + y**2 + z**2), -1.5000000000000000)) + (((-1.7555131752869961e+25 / (2.0000000000000000 * sqrt((x**2 + y**2 + z**2)))) * x) * ((3.0000000000000000 / (x**2 + y**2 + z**2)**2) - ((15.000000000000000 * z**2) / ((x**2 + y**2 + z**2)**2 * (x**2 + y**2 + z**2)))))) + ((((((7.6591108648176011e+23 / (2.0000000000000000 * pow((x**2 + y**2 + z**2), 3.5000000000000000))) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * (((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2 - ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2)) + ((1.5318221729635202e+23 / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) - (((((7.6591108648176011e+23 / (2.0000000000000000 * pow((x**2 + y**2 + z**2), 3.5000000000000000))) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * (((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2 - ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2)) - ((1.5318221729635202e+23 / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) + (((((-(-4.3966387893411792e+23 / pow((x**2 + y**2 + z**2), 3.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) + ((-8.7932775786823574e+22 / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) - ((((-(-4.3966387893411792e+23 / pow((x**2 + y**2 + z**2), 3.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2) + ((-8.7932775786823574e+22 / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) + (-(((((((1.0170993499999999e-06 * exp((-4.6382291000000000e-05 * (-6383152.2451599995 + sqrt((x**2 + y**2 + z**2)))))) + (0.78644337499999994 * exp((-0.00018608004800000001 * (-6400979.2808999997 + sqrt((x**2 + y**2 + z**2))))))) + (7.5034188300000001e-09 * exp((-2.4866717600000000e-05 * (-6382415.8782899994 + sqrt((x**2 + y**2 + z**2))))))) + (8.6393425200000000e-14 * exp((-4.8108085200000002e-06 * (-6378292.5916729998 + sqrt((x**2 + y**2 + z**2))))))) / 2.4615341004863758e-08) * p0) * sqrt((vx**2 + vy**2 + vz**2))) * vx))),
  (vy,
-  ((((((-398600440779972.44 * y) * pow((x**2 + y**2 + z**2), -1.5000000000000000)) + (((-1.7555131752869966e+19 / (2.0000000000000000 * sqrt((x**2 + y**2 + z**2)))) * y) * ((3.0000000000000000 / (x**2 + y**2 + z**2)**2) - ((15.000000000000000 * z**2) / ((x**2 + y**2 + z**2)**2 * (x**2 + y**2 + z**2)))))) + ((((((7.6591108648176013e+17 / (2.0000000000000000 * pow((x**2 + y**2 + z**2), 3.5000000000000000))) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * (((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2 - ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2)) + ((1.5318221729635203e+17 / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (((((7.6591108648176013e+17 / (2.0000000000000000 * pow((x**2 + y**2 + z**2), 3.5000000000000000))) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * (((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2 - ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2)) - ((1.5318221729635203e+17 / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) + (((((-(-4.3966387893411789e+17 / pow((x**2 + y**2 + z**2), 3.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) + ((-87932775786823584. / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + ((((-(-4.3966387893411789e+17 / pow((x**2 + y**2 + z**2), 3.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2) + ((-87932775786823584. / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) + (-(((((((1.0170993499999999e-06 * exp((-4.6382291000000000e-05 * (-6383152.2451599995 + sqrt((x**2 + y**2 + z**2)))))) + (0.78644337499999994 * exp((-0.00018608004800000001 * (-6400979.2808999997 + sqrt((x**2 + y**2 + z**2))))))) + (7.5034188300000001e-09 * exp((-2.4866717600000000e-05 * (-6382415.8782899994 + sqrt((x**2 + y**2 + z**2))))))) + (8.6393425200000000e-14 * exp((-4.8108085200000002e-06 * (-6378292.5916729998 + sqrt((x**2 + y**2 + z**2))))))) / 2.4615341004863758e-08) * p0) * sqrt((vx**2 + vy**2 + vz**2))) * vy))),
+  ((((((-398600440779972.44 * y) * pow((x**2 + y**2 + z**2), -1.5000000000000000)) + (((-1.7555131752869961e+25 / (2.0000000000000000 * sqrt((x**2 + y**2 + z**2)))) * y) * ((3.0000000000000000 / (x**2 + y**2 + z**2)**2) - ((15.000000000000000 * z**2) / ((x**2 + y**2 + z**2)**2 * (x**2 + y**2 + z**2)))))) + ((((((7.6591108648176011e+23 / (2.0000000000000000 * pow((x**2 + y**2 + z**2), 3.5000000000000000))) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * (((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2 - ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2)) + ((1.5318221729635202e+23 / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (((((7.6591108648176011e+23 / (2.0000000000000000 * pow((x**2 + y**2 + z**2), 3.5000000000000000))) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * (((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2 - ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2)) - ((1.5318221729635202e+23 / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) + (((((-(-4.3966387893411792e+23 / pow((x**2 + y**2 + z**2), 3.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) + ((-8.7932775786823574e+22 / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + ((((-(-4.3966387893411792e+23 / pow((x**2 + y**2 + z**2), 3.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2) + ((-8.7932775786823574e+22 / pow((x**2 + y**2 + z**2), 2.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t))))))) * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) + (-(((((((1.0170993499999999e-06 * exp((-4.6382291000000000e-05 * (-6383152.2451599995 + sqrt((x**2 + y**2 + z**2)))))) + (0.78644337499999994 * exp((-0.00018608004800000001 * (-6400979.2808999997 + sqrt((x**2 + y**2 + z**2))))))) + (7.5034188300000001e-09 * exp((-2.4866717600000000e-05 * (-6382415.8782899994 + sqrt((x**2 + y**2 + z**2))))))) + (8.6393425200000000e-14 * exp((-4.8108085200000002e-06 * (-6378292.5916729998 + sqrt((x**2 + y**2 + z**2))))))) / 2.4615341004863758e-08) * p0) * sqrt((vx**2 + vy**2 + vz**2))) * vy))),
  (vz,
-  ((((((-398600440779972.44 * z) * pow((x**2 + y**2 + z**2), -1.5000000000000000)) + (((-1.7555131752869966e+19 / (2.0000000000000000 * sqrt((x**2 + y**2 + z**2)))) * z) * ((3.0000000000000000 * (3.0000000000000000 / (x**2 + y**2 + z**2)**2)) - ((15.000000000000000 * z**2) / ((x**2 + y**2 + z**2)**2 * (x**2 + y**2 + z**2)))))) + (((7.6591108648176013e+17 / (2.0000000000000000 * pow((x**2 + y**2 + z**2), 3.5000000000000000))) * z) * (((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2 - ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2))) + (((-(-4.3966387893411789e+17 / pow((x**2 + y**2 + z**2), 3.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * z)) + (-(((((((1.0170993499999999e-06 * exp((-4.6382291000000000e-05 * (-6383152.2451599995 + sqrt((x**2 + y**2 + z**2)))))) + (0.78644337499999994 * exp((-0.00018608004800000001 * (-6400979.2808999997 + sqrt((x**2 + y**2 + z**2))))))) + (7.5034188300000001e-09 * exp((-2.4866717600000000e-05 * (-6382415.8782899994 + sqrt((x**2 + y**2 + z**2))))))) + (8.6393425200000000e-14 * exp((-4.8108085200000002e-06 * (-6378292.5916729998 + sqrt((x**2 + y**2 + z**2))))))) / 2.4615341004863758e-08) * p0) * sqrt((vx**2 + vy**2 + vz**2))) * vz)))]
+  ((((((-398600440779972.44 * z) * pow((x**2 + y**2 + z**2), -1.5000000000000000)) + (((-1.7555131752869961e+25 / (2.0000000000000000 * sqrt((x**2 + y**2 + z**2)))) * z) * ((3.0000000000000000 * (3.0000000000000000 / (x**2 + y**2 + z**2)**2)) - ((15.000000000000000 * z**2) / ((x**2 + y**2 + z**2)**2 * (x**2 + y**2 + z**2)))))) + (((7.6591108648176011e+23 / (2.0000000000000000 * pow((x**2 + y**2 + z**2), 3.5000000000000000))) * z) * (((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2 - ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))**2))) + (((-(-4.3966387893411792e+23 / pow((x**2 + y**2 + z**2), 3.5000000000000000)) * ((x * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * ((-x * sin((4.8949608921188084 + (7.2921158548340406e-05 * t)))) + (y * cos((4.8949608921188084 + (7.2921158548340406e-05 * t)))))) * z)) + (-(((((((1.0170993499999999e-06 * exp((-4.6382291000000000e-05 * (-6383152.2451599995 + sqrt((x**2 + y**2 + z**2)))))) + (0.78644337499999994 * exp((-0.00018608004800000001 * (-6400979.2808999997 + sqrt((x**2 + y**2 + z**2))))))) + (7.5034188300000001e-09 * exp((-2.4866717600000000e-05 * (-6382415.8782899994 + sqrt((x**2 + y**2 + z**2))))))) + (8.6393425200000000e-14 * exp((-4.8108085200000002e-06 * (-6378292.5916729998 + sqrt((x**2 + y**2 + z**2))))))) / 2.4615341004863758e-08) * p0) * sqrt((vx**2 + vy**2 + vz**2))) * vz)))]
 </pre></div>
 </div>
 </div>
@@ -701,23 +714,36 @@ Note that this cost is to be paid only once. As far as the dynamics remains unch
 </div>
 </div>
 </div>
+<p>we also need to set the starting time of the simulation so that the dynamics, written in the EME2000 reference frame (see ~<code class="xref py py-class docutils literal notranslate"><span class="pre">sim.dynamics.simple_earth</span></code>) will be correctly using the Sun, Moon and Earth positions at the time of the initial conditions.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># We define here the simulation starting time knowing that in the dynamics t=0 corresponds to 1st Jan 2000 12:00. </span>
+<span class="n">t0</span> <span class="o">=</span> <span class="p">(</span><span class="n">t0_jd</span> <span class="o">-</span> <span class="n">pk</span><span class="o">.</span><span class="n">epoch_from_iso_string</span><span class="p">(</span><span class="s2">&quot;20000101T120000&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">jd</span><span class="p">)</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">DAY2SEC</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">t0</span>
+</pre></div>
+</div>
+</div>
+</div>
 </section>
 <section id="running-the-simulation">
 <h2>Running the simulation<a class="headerlink" href="#running-the-simulation" title="Permalink to this headline">#</a></h2>
 <p>The following block will perform a simulation where the method <em>step</em> of a cascade <code class="docutils literal notranslate"><span class="pre">sim</span></code> object is called  repeatedly up to when the simulation time reaches the maximum allocated (<code class="docutils literal notranslate"><span class="pre">final_t</span></code>).
 All collision events and orbital decays are logged on files and on screen.</p>
-<p>The simulation can take up to days to complete if we are set to simulate 20 years and on a few CPUs only. In this notebook we thus set it to end after 30 days, and will report the extrapolated time of execution for 20 years.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The simulation can take up to days to complete if we are set to simulate 20 years and on a few CPUs only. In this notebook we thus set the simulation time to be 30 days and will only report the expected time to complete a simulation for 20 years.</p>
+</div>
 <p>As a consequence mostly reentry events are triggered. You can let the simulation run for longer by changing the value for <code class="docutils literal notranslate"><span class="pre">final_t</span></code> and collision events will also appear.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">time</span>
-<span class="n">final_t</span> <span class="o">=</span> <span class="mi">30</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">DAY2SEC</span>
+<span class="n">final_t</span> <span class="o">=</span> <span class="n">t0</span> <span class="o">+</span> <span class="mi">30</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">DAY2SEC</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting the simulation:&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
 
 <span class="n">current_year</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="k">while</span> <span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">&lt;</span> <span class="n">final_t</span><span class="p">:</span>
-    <span class="n">years_elapsed</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">SEC2DAY</span> <span class="o">//</span> <span class="mf">365.25</span>
+    <span class="n">years_elapsed</span> <span class="o">=</span> <span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">SEC2DAY</span> <span class="o">//</span> <span class="mf">365.25</span>
 
     <span class="k">if</span> <span class="n">years_elapsed</span> <span class="o">==</span> <span class="n">current_year</span><span class="p">:</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;out/year_&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">current_year</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;.pk&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
@@ -731,7 +757,7 @@ All collision events and orbital decays are logged on files and on screen.</p>
         <span class="c1"># We log the event to file</span>
         <span class="n">satcat_idx1</span> <span class="o">=</span> <span class="n">to_satcat_index</span><span class="p">[</span><span class="n">pi</span><span class="p">]</span>
         <span class="n">satcat_idx2</span> <span class="o">=</span> <span class="n">to_satcat_index</span><span class="p">[</span><span class="n">pj</span><span class="p">]</span>
-        <span class="n">days_elapsed</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">SEC2DAY</span>
+        <span class="n">days_elapsed</span> <span class="o">=</span> <span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">SEC2DAY</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;out/collision_log.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file_object</span><span class="p">:</span>
             <span class="n">file_object</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">days_elapsed</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">satcat_idx1</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">satcat_idx2</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">pi</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">sim</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">pj</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -750,12 +776,11 @@ All collision events and orbital decays are logged on files and on screen.</p>
         <span class="n">pi</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">interrupt_info</span>
         <span class="c1"># We log the event to file</span>
         <span class="n">satcat_idx</span> <span class="o">=</span> <span class="n">to_satcat_index</span><span class="p">[</span><span class="n">pi</span><span class="p">]</span>
-        <span class="n">days_elapsed</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">SEC2DAY</span>
+        <span class="n">days_elapsed</span> <span class="o">=</span> <span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span> <span class="o">*</span> <span class="n">pk</span><span class="o">.</span><span class="n">SEC2DAY</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;out/decay_log.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file_object</span><span class="p">:</span>
             <span class="n">file_object</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">days_elapsed</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">satcat_idx</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="c1"># We log the event to screen</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">satcat</span><span class="p">[</span><span class="n">satcat_idx</span><span class="p">][</span><span class="s2">&quot;OBJECT_NAME&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span>
-        <span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span> <span class="o">+</span> <span class="n">satcat</span><span class="p">[</span><span class="n">satcat_idx</span><span class="p">][</span><span class="s2">&quot;OBJECT_ID&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span><span class="p">,</span> <span class="n">days_elapsed</span><span class="p">,</span> <span class="s2">&quot;REMOVED&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">satcat</span><span class="p">[</span><span class="n">satcat_idx</span><span class="p">][</span><span class="s2">&quot;OBJECT_NAME&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="n">satcat</span><span class="p">[</span><span class="n">satcat_idx</span><span class="p">][</span><span class="s2">&quot;OBJECT_ID&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">}</span><span class="s1">) days: </span><span class="si">{</span><span class="n">days_elapsed</span><span class="si">:</span><span class="s1">3.3f</span><span class="si">}</span><span class="s1"> - REMOVED&#39;</span><span class="p">)</span>
         <span class="c1"># We remove the re-entered object and restart the simulation</span>
         <span class="n">sim</span><span class="o">.</span><span class="n">remove_particles</span><span class="p">([</span><span class="n">pi</span><span class="p">])</span>
         <span class="n">to_satcat_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">to_satcat_index</span><span class="p">,</span> <span class="p">[</span><span class="n">pi</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>    
@@ -768,77 +793,73 @@ All collision events and orbital decays are logged on files and on screen.</p>
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Starting the simulation:
-COSMOS 1408 DEB, 1982-092FH,  0.0011340601727223452 REMOVED
-COSMOS 1408 DEB, 1982-092GM,  0.004104128502777978 REMOVED
-SL-4 R/B, 2006-061B,  0.005720066519105361 REMOVED
-FREGAT DEB, 2011-037ET,  0.00730725373713235 REMOVED
-CZ-3B R/B, 2021-010B,  0.018195437495537422 REMOVED
-COSMOS 1408 DEB, 1982-092UM,  0.026522936514473208 REMOVED
-COSMOS 1408 DEB, 1982-092AEC,  0.028751478490793174 REMOVED
-COSMOS 1408 DEB, 1982-092AHN,  0.05382193033468462 REMOVED
-CZ-3B R/B, 2021-003B,  0.061109115323666155 REMOVED
-FREGAT DEB, 2011-037LV,  0.07330302827907705 REMOVED
-FREGAT DEB, 2011-037NV,  0.07449452724975524 REMOVED
-STARLINK-1919, 2020-074AG,  0.21425160310227995 REMOVED
-COSMOS 1408 DEB, 1982-092KJ,  0.5662938890380064 REMOVED
-COSMOS 2251 DEB, 1993-036AEZ,  0.6238039100945627 REMOVED
-COSMOS 1408 DEB, 1982-092ANG,  0.7531321743660606 REMOVED
-FALCON 9 DEB, 2020-055BR,  0.9420367945206803 REMOVED
-COSMOS 1408 DEB, 1982-092GN,  1.008246169629845 REMOVED
-COSMOS 1408 DEB, 1982-092TY,  1.0425599079990764 REMOVED
-COSMOS 1408 DEB, 1982-092SQ,  1.0720537058920492 REMOVED
-COSMOS 2241, 1993-022A,  1.6112104439376314 REMOVED
-CZ-2D DEB, 2017-077D,  1.624332686474556 REMOVED
-COSMOS 1408 DEB, 1982-092BBR,  1.8406286003952987 REMOVED
-COSMOS 1408 DEB, 1982-092APD,  1.9207567080093246 REMOVED
-COSMOS 1408 DEB, 1982-092AQN,  2.3239938584399304 REMOVED
-COSMOS 1408 DEB, 1982-092BCU,  2.5696359225329957 REMOVED
-COSMOS 1408 DEB, 1982-092AWP,  2.672832891709164 REMOVED
-STARLINK-1064, 2019-074BJ,  2.900589626118199 REMOVED
-COSMOS 2251 DEB, 1993-036BGH,  3.036463516740673 REMOVED
-COSMOS 1408 DEB, 1982-092ACC,  3.7112933594826285 REMOVED
-COSMOS 1408 DEB, 1982-092HV,  3.7270920137791705 REMOVED
-FENGYUN 1C DEB, 1999-025CVY,  4.318001830712988 REMOVED
-COSMOS 1408 DEB, 1982-092QH,  5.240540225699056 REMOVED
-COSMOS 1408 DEB, 1982-092MN,  5.555927183147772 REMOVED
-COSMOS 1408 DEB, 1982-092KV,  5.731769635348274 REMOVED
-COSMOS 1408 DEB, 1982-092PQ,  6.015140014434743 REMOVED
-COSMOS 1408 DEB, 1982-092BHF,  6.274866013801969 REMOVED
-COSMOS 1408 DEB, 1982-092AWZ,  6.290924935712509 REMOVED
-COSMOS 1408 DEB, 1982-092AYM,  6.81499287930357 REMOVED
-COSMOS 1408 DEB, 1982-092AWJ,  7.308427052695066 REMOVED
-COSMOS 1408 DEB, 1982-092PG,  7.397451390240031 REMOVED
-FREGAT DEB, 2011-037BC,  7.876571660590149 REMOVED
-COSMOS 1408 DEB, 1982-092ACJ,  8.855366703572233 REMOVED
-COSMOS 1408 DEB, 1982-092NE,  9.149533323775291 REMOVED
-IRIDIUM 33 DEB, 1997-051DC,  9.310838016049313 REMOVED
-COSMOS 1408 DEB, 1982-092YV,  9.574387059958713 REMOVED
-COSMOS 1408 DEB, 1982-092SZ,  9.7743617727449 REMOVED
-COSMOS 1408 DEB, 1982-092KE,  11.31075332232809 REMOVED
-COSMOS 1408 DEB, 1982-092AP,  11.429939170343582 REMOVED
-COSMOS 1408 DEB, 1982-092AJN,  12.546476527748634 REMOVED
-COSMOS 1408 DEB, 1982-092AKT,  13.115506017039019 REMOVED
-QUETZAL-1, 1998-067RL,  13.647193283524608 REMOVED
-FREGAT DEB, 2011-037L,  15.16802769025021 REMOVED
-STARLINK-1859, 2020-088AA,  15.378380569707032 REMOVED
-COSMOS 1408 DEB, 1982-092ASR,  15.488187261630962 REMOVED
-COSMOS 1408 DEB, 1982-092BAJ,  15.79058998613543 REMOVED
-STARLINK-2306, 2021-024M,  17.866511338947312 REMOVED
-COSMOS 1408 DEB, 1982-092ALC,  17.933014217631968 REMOVED
-COSMOS 1408 DEB, 1982-092AZH,  18.704542466159598 REMOVED
-COSMOS 1408 DEB, 1982-092AER,  18.80681940163051 REMOVED
-COSMOS 1408 DEB, 1982-092AMJ,  20.21662187343785 REMOVED
-COSMOS 1408 DEB, 1982-092MS,  20.774824068242282 REMOVED
-COSMOS 1408 DEB, 1982-092BEY,  21.525051787779784 REMOVED
-COSMOS 1408 DEB, 1982-092ASS,  23.49900473135704 REMOVED
-COSMOS 1408 DEB, 1982-092BBQ,  24.00795202832335 REMOVED
-COSMOS 1408 DEB, 1982-092BFP,  24.101413639557776 REMOVED
-COSMOS 1408 DEB, 1982-092BHE,  28.152084406142794 REMOVED
-COSMOS 1408 DEB, 1982-092AFD,  28.478181021158605 REMOVED
-COSMOS 1408 DEB, 1982-092PK,  29.269725667804103 REMOVED
-COSMOS 1408 DEB, 1982-092AJS,  29.531879411125722 REMOVED
-Elapsed [s]:  64.79247164726257
-Time projected to simulate 20 years is  4.382490790585677  hours
+COSMOS 1408 DEB (1982-092FH) days: 0.001 - REMOVED
+COSMOS 1408 DEB (1982-092GM) days: 0.004 - REMOVED
+SL-4 R/B (2006-061B) days: 0.006 - REMOVED
+FREGAT DEB (2011-037ET) days: 0.007 - REMOVED
+CZ-3B R/B (2021-010B) days: 0.018 - REMOVED
+COSMOS 1408 DEB (1982-092AEC) days: 0.030 - REMOVED
+COSMOS 2241 (1993-022A) days: 0.043 - REMOVED
+CZ-3B R/B (2021-003B) days: 0.061 - REMOVED
+FREGAT DEB (2011-037LV) days: 0.073 - REMOVED
+FREGAT DEB (2011-037NV) days: 0.079 - REMOVED
+COSMOS 1408 DEB (1982-092UM) days: 0.079 - REMOVED
+COSMOS 1408 DEB (1982-092AHN) days: 0.116 - REMOVED
+STARLINK-1919 (2020-074AG) days: 0.158 - REMOVED
+COSMOS 1408 DEB (1982-092KJ) days: 0.527 - REMOVED
+COSMOS 2251 DEB (1993-036AEZ) days: 0.673 - REMOVED
+COSMOS 1408 DEB (1982-092GN) days: 1.128 - REMOVED
+FALCON 9 DEB (2020-055BR) days: 1.188 - REMOVED
+COSMOS 1408 DEB (1982-092SQ) days: 1.326 - REMOVED
+COSMOS 1408 DEB (1982-092ANG) days: 1.410 - REMOVED
+COSMOS 1408 DEB (1982-092TY) days: 1.525 - REMOVED
+COSMOS 1408 DEB (1982-092APD) days: 1.574 - REMOVED
+COSMOS 1408 DEB (1982-092AQN) days: 1.977 - REMOVED
+CZ-2D DEB (2017-077D) days: 2.858 - REMOVED
+COSMOS 1408 DEB (1982-092BBR) days: 3.149 - REMOVED
+COSMOS 2251 DEB (1993-036BGH) days: 3.160 - REMOVED
+COSMOS 1408 DEB (1982-092ACC) days: 3.166 - REMOVED
+COSMOS 1408 DEB (1982-092BCU) days: 3.266 - REMOVED
+STARLINK-1064 (2019-074BJ) days: 3.399 - REMOVED
+COSMOS 1408 DEB (1982-092HV) days: 4.207 - REMOVED
+COSMOS 1408 DEB (1982-092AWP) days: 5.088 - REMOVED
+COSMOS 1408 DEB (1982-092PQ) days: 5.157 - REMOVED
+FREGAT DEB (2011-037BC) days: 5.861 - REMOVED
+COSMOS 1408 DEB (1982-092QH) days: 6.125 - REMOVED
+FENGYUN 1C DEB (1999-025CVY) days: 6.797 - REMOVED
+COSMOS 1408 DEB (1982-092BHF) days: 7.790 - REMOVED
+COSMOS 1408 DEB (1982-092KV) days: 8.100 - REMOVED
+COSMOS 1408 DEB (1982-092PG) days: 8.489 - REMOVED
+COSMOS 1408 DEB (1982-092MN) days: 9.667 - REMOVED
+COSMOS 1408 DEB (1982-092SZ) days: 10.160 - REMOVED
+COSMOS 1408 DEB (1982-092AWZ) days: 10.264 - REMOVED
+COSMOS 1408 DEB (1982-092AWJ) days: 11.038 - REMOVED
+FREGAT DEB (2011-037L) days: 11.056 - REMOVED
+COSMOS 1408 DEB (1982-092AYM) days: 11.243 - REMOVED
+COSMOS 1408 DEB (1982-092KE) days: 11.851 - REMOVED
+QUETZAL-1 (1998-067RL) days: 12.409 - REMOVED
+COSMOS 1408 DEB (1982-092NE) days: 13.676 - REMOVED
+COSMOS 1408 DEB (1982-092ACJ) days: 13.952 - REMOVED
+COSMOS 1408 DEB (1982-092AJN) days: 14.792 - REMOVED
+STARLINK-1859 (2020-088AA) days: 15.143 - REMOVED
+IRIDIUM 33 DEB (1997-051DC) days: 15.542 - REMOVED
+COSMOS 1408 DEB (1982-092YV) days: 16.435 - REMOVED
+STARLINK-2306 (2021-024M) days: 16.813 - REMOVED
+COSMOS 1408 DEB (1982-092AKT) days: 17.615 - REMOVED
+COSMOS 1408 DEB (1982-092AZH) days: 17.748 - REMOVED
+COSMOS 1408 DEB (1982-092AMJ) days: 18.196 - REMOVED
+COSMOS 1408 DEB (1982-092AP) days: 18.974 - REMOVED
+COSMOS 1408 DEB (1982-092BEY) days: 20.103 - REMOVED
+COSMOS 1408 DEB (1982-092ASS) days: 20.386 - REMOVED
+COSMOS 1408 DEB (1982-092ASR) days: 23.654 - REMOVED
+SL-4 R/B (2021-008B) days: 23.867 - REMOVED
+COSMOS 1408 DEB (1982-092BAJ) days: 24.877 - REMOVED
+COSMOS 1408 DEB (1982-092BBQ) days: 25.088 - REMOVED
+COSMOS 1408 DEB (1982-092AER) days: 26.649 - REMOVED
+COSMOS 1408 DEB (1982-092BGC) days: 29.469 - REMOVED
+COSMOS 1408 DEB (1982-092MS) days: 29.704 - REMOVED
+Elapsed [s]:  125.4750497341156
+Time projected to simulate 20 years is  8.486992947293652  hours
 </pre></div>
 </div>
 </div>
@@ -855,11 +876,11 @@ Time projected to simulate 20 years is  4.382490790585677  hours
                 
     <!-- Previous / next buttons -->
 <div class='prev-next-area'>
-    <a class='left-prev' id="prev-link" href="../tutorials/conjandcoll.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="../tutorials/whitelists.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Conjunctions</p>
+            <p class="prev-next-title">Whitelists</p>
         </div>
     </a>
     <a class='right-next' id="next-link" href="oneweekofLEO_conj.html" title="next page">
