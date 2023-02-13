@@ -10,4 +10,4 @@ API reference
    :maxdepth: 1
 
    mod_cascade
-   mod_cascade_dynamics
+   mod_cascade_dynamics 

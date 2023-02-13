@@ -20,8 +20,21 @@ std::string outcome_docstring();
 
 std::string sim_docstring();
 std::string sim_init_docstring();
-std::string sim_pars_docstring();
+std::string sim_time_docstring();
+std::string sim_ct_docstring();
+std::string sim_n_par_ct_docstring();
+std::string sim_conj_thresh_docstring();
+std::string sim_min_coll_radius_docstring();
+std::string sim_coll_whitelist_docstring();
 std::string sim_conj_whitelist_docstring();
+std::string sim_nparts_docstring();
+std::string sim_npars_docstring();
+std::string sim_tol_docstring();
+std::string sim_high_accuracy_docstring();
+std::string sim_compact_mode_docstring();
+std::string sim_reentry_radius_docstring();
+std::string sim_exit_radius_docstring();
+std::string sim_pars_docstring();
 std::string sim_interrupt_info_docstring();
 std::string sim_step_docstring();
 

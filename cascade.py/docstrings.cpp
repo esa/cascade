@@ -155,7 +155,7 @@ compact_mode: bool = False
     Compact mode. If enabled, the just-in-time compilation process will manipulate efficiently
     also very long expression for the dynamics. This is useful, for example, when using long expansions
     to model distrubances, or when gravity is modelled via mascon models. This comes at the price
-    of a performance penalty (~<x2) in the resulting numerical integrtor.
+    of a performance penalty (~<x2) in the resulting numerical integrator.
 n_par_ct: int = 1
     Number of collisional timesteps to be processed in parallel. This is a
     tuning parameter that, while not affecting the correctness of the simulation,
@@ -188,17 +188,72 @@ conj_whitelist: typing.Set[int] = set()
 )";
 }
 
-std::string sim_pars_docstring()
+std::string sim_time_docstring()
 {
-    return R"(Values of the runtime parameters
+    return R"(Current simulation time
 
-The parameters are stored in a two-dimensional :class:`~numpy.ndarray` of shape :math:`n\times N_p`, where
-:math:`n` is the number of particles in the simulation and :math:`N_p` is the number of runtime
-parameters appearing in the dynamical equations.
+This float contains the value of the current simulation time. It can be set and
+referred to in the dynamics equation as ``heyoka.time``.
 
-While this is a read-only property (in the sense that it is not possible to set
-a new array of runtime parameters via this property), the values contained in the
-array *can* be written to.
+)";
+}
+
+std::string sim_ct_docstring()
+{
+    return R"(Collisional time
+
+This float represents the length in time units of the collisional timestep. Must be positive and finite. 
+It can be set and its value will be used in the next call to the propagation methods of the :class:`~cascade.sim`
+class (such as :meth:`cascade.sim.step()` and :meth:`cascade.sim.propagate_until()`).
+
+)";
+}
+
+std::string sim_n_par_ct_docstring()
+{
+    return R"(Number of collisional timesteps to be processed in parallel.
+
+This is a tuning parameter that, while not affecting the correctness of the simulation,
+can greatly influence its performance. The optimal value of this parameter
+depends heavily on the specifics of the simulation, and thus users are advised
+to experiment with different values to determine which one works best.
+
+)";
+}
+
+std::string sim_conj_thresh_docstring()
+{
+    return R"(Conjunction threshold
+
+Conjunctions are tracked only if the conjunction distance
+is less than this threshold. By default, this value is set to zero, which means
+that conjunction tracking is disabled. The conjunction threshold can be changed
+at any time.
+
+)";
+}
+
+std::string sim_min_coll_radius_docstring()
+{
+    return R"(Minimum collisional radius. 
+    
+A collision between two particles is detected
+only if the radius of at least one particle is greater than this value. By default,
+this value is zero, which means that only collisions between point-like particles
+are skipped. If this value is set to :math:`+\infty`, then collision detection
+is disabled for all particles. The minimum collisional radius can be changed
+at any time.
+
+)";
+}
+
+std::string sim_coll_whitelist_docstring()
+{
+    return R"(Collision whitelist
+
+This :class:`set` contains the list of particles considered during the detection of
+collision events. If this list is empty, then *all* particles are considered during
+the detection of collision events.
 
 )";
 }
@@ -214,9 +269,106 @@ the detection of conjunction events.
 )";
 }
 
+std::string sim_nparts_docstring()
+{
+    return R"(Number of particles
+
+A read-only attribute containing the current number of particles. The number of particles ina  simulation can be controlled
+by removing particles via methods such as :meth:`sim.remove_particles()` or :meth:`sim.set_new_state_pars()`.
+
+)";
+}
+
+std::string sim_npars_docstring()
+{
+    return R"(Number of runtime paramenters
+
+A read-only attribute containing the number of runtime parameters in the dynamics.
+
+)";
+}
+
+std::string sim_tol_docstring()
+{
+    return R"(Numerical integration tolerance
+
+The tolerance used when numerically solving the dynamical equations. If not provided,
+it defaults to the double-precision epsilon (:math:`\sim 2.2\times 10^{-16}`).
+
+)";
+}
+
+std::string sim_high_accuracy_docstring()
+{
+    return R"(High-accuracy mode. 
+    
+If enabled, the numerical integrator will employ techniques
+to minimise the accumulation of floating-point truncation errors, at the price
+of a small performance penalty. This can be useful to maintain high accuracy
+in long-running simulations.
+
+)";
+}
+
+std::string sim_compact_mode_docstring()
+{
+    return R"(Compact mode. 
+    
+If enabled, the just-in-time compilation process will manipulate efficiently
+also very long expression for the dynamics. This is useful, for example, when using long expansions
+to model distrubances, or when gravity is modelled via mascon models. This comes at the price
+of a performance penalty (~<x2) in the resulting numerical integrator.
+
+)";
+}
+
+std::string sim_reentry_radius_docstring()
+{
+    return R"(The radius of the reentry domain. 
+    
+If a single scalar is provided, then the reentry
+domain is a sphere of the given radius centred in the origin. If a list of 3 values is
+provided, then the reentry domain is a triaxial ellipsoid centred in the origin whose
+three semi-axes lengths :math:`\left( a,b,c \right)` are given by the values in the list.
+
+)";
+}
+
+std::string sim_exit_radius_docstring()
+{
+    return R"(Exit radius
+
+If provided, the simulation will track the distance of all particles
+from the origin, and when a particle's distance from the origin exceeds the provided limit,
+the simulation will stop with an exit event. By default, no exit radius is defined.
+
+)";
+}
+
+std::string sim_pars_docstring()
+{
+    return R"(Values of the runtime parameters appearing in the objects dynamics.
+
+The parameters are stored in a two-dimensional :class:`~numpy.ndarray` of shape :math:`n\times N_p`, where
+:math:`n` is the number of particles in the simulation and :math:`N_p` is the number of runtime
+parameters appearing in the dynamical equations.
+
+While this is a read-only property (in the sense that it is not possible to set
+a new array of runtime parameters via this property), the values contained in the
+array *can* be written to.
+
+)";
+}
+
 std::string sim_interrupt_info_docstring()
 {
-    return "Interrupt info";
+    return R"(Interrupt info
+
+This :class:`sim.outcome` contains the information on the outcome of the latest call to 
+the propagation methods of the :class:`~cascade.sim`
+class (such as :meth:`cascade.sim.step()` and :meth:`cascade.sim.propagate_until()`).
+
+)";
 }
 
 std::string sim_step_docstring()
