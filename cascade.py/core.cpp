@@ -162,20 +162,20 @@ PYBIND11_MODULE(core, m)
              "pars"_a = py::none{}, "tol"_a = py::none{}, "high_accuracy"_a = false, "compact_mode"_a = false, "n_par_ct"_a = 1, "conj_thresh"_a = 0.,
              "min_coll_radius"_a = 0., "coll_whitelist"_a = whitelist_t{}, "conj_whitelist"_a = whitelist_t{}, docstrings::sim_init_docstring().c_str())
         .def_property_readonly("interrupt_info", &sim::get_interrupt_info, docstrings::sim_interrupt_info_docstring().c_str())
-        .def_property("time", &sim::get_time, &sim::set_time)
-        .def_property("ct", &sim::get_ct, &sim::set_ct)
-        .def_property("n_par_ct", &sim::get_n_par_ct, &sim::set_n_par_ct)
-        .def_property("conj_thresh", &sim::get_conj_thresh, &sim::set_conj_thresh)
-        .def_property("min_coll_radius", &sim::get_min_coll_radius, &sim::set_min_coll_radius)
-        .def_property("coll_whitelist", &sim::get_coll_whitelist, &sim::set_coll_whitelist)
+        .def_property("time", &sim::get_time, &sim::set_time, docstrings::sim_time_docstring().c_str())
+        .def_property("ct", &sim::get_ct, &sim::set_ct, docstrings::sim_ct_docstring().c_str())
+        .def_property("n_par_ct", &sim::get_n_par_ct, &sim::set_n_par_ct, docstrings::sim_n_par_ct_docstring().c_str())
+        .def_property("conj_thresh", &sim::get_conj_thresh, &sim::set_conj_thresh, docstrings::sim_conj_thresh_docstring().c_str())
+        .def_property("min_coll_radius", &sim::get_min_coll_radius, &sim::set_min_coll_radius, docstrings::sim_min_coll_radius_docstring().c_str())
+        .def_property("coll_whitelist", &sim::get_coll_whitelist, &sim::set_coll_whitelist, docstrings::sim_coll_whitelist_docstring().c_str())
         .def_property("conj_whitelist", &sim::get_conj_whitelist, &sim::set_conj_whitelist, docstrings::sim_conj_whitelist_docstring().c_str())
-        .def_property_readonly("nparts", &sim::get_nparts)
-        .def_property_readonly("npars", &sim::get_npars)
-        .def_property_readonly("tol", &sim::get_tol)
-        .def_property_readonly("high_accuracy", &sim::get_high_accuracy)
-        .def_property_readonly("compact_mode", &sim::get_compact_mode)
-        .def_property_readonly("reentry_radius", &sim::get_reentry_radius)
-        .def_property_readonly("exit_radius", &sim::get_exit_radius)
+        .def_property_readonly("nparts", &sim::get_nparts, docstrings::sim_nparts_docstring().c_str())
+        .def_property_readonly("npars", &sim::get_npars, docstrings::sim_npars_docstring().c_str())
+        .def_property_readonly("tol", &sim::get_tol, docstrings::sim_tol_docstring().c_str())
+        .def_property_readonly("high_accuracy", &sim::get_high_accuracy, docstrings::sim_high_accuracy_docstring().c_str())
+        .def_property_readonly("compact_mode", &sim::get_compact_mode, docstrings::sim_compact_mode_docstring().c_str())
+        .def_property_readonly("reentry_radius", &sim::get_reentry_radius, docstrings::sim_reentry_radius_docstring().c_str())
+        .def_property_readonly("exit_radius", &sim::get_exit_radius, docstrings::sim_exit_radius_docstring().c_str())
         .def(
             "step",
             [](sim &s) {
@@ -194,7 +194,7 @@ PYBIND11_MODULE(core, m)
 
                 return s.propagate_until(t);
             },
-            "t"_a)
+            "t"_a, docstrings::sim_propagate_until_docstring().c_str())
         // Expose the state getters.
         .def_property_readonly("state",
                                [](const sim &s) {
@@ -227,7 +227,7 @@ PYBIND11_MODULE(core, m)
                                        (**ptr).data(), std::move(state_caps));
 
                                    return ret;
-                               })
+                               }, docstrings::sim_state_docstring().c_str())
         .def_property_readonly("pars",
                                [](const sim &s) {
                                    // NOTE: same idea as in the state getter.
@@ -295,7 +295,7 @@ PYBIND11_MODULE(core, m)
 
                 s.set_new_state_pars(std::move(state_vec), std::move(pars_vec));
             },
-            "new_state"_a, "new_pars"_a = py::none{})
+            "new_state"_a, "new_pars"_a = py::none{}, docstrings::sim_set_new_state_pars_docstring().c_str())
         // Conjunctions.
         .def_property_readonly("conjunctions",
                         [](const sim &s) {
@@ -318,10 +318,10 @@ PYBIND11_MODULE(core, m)
                             ret.attr("flags").attr("writeable") = false;
 
                             return ret;
-                        })
-        .def("reset_conjunctions", &sim::reset_conjunctions)
+                        }, docstrings::sim_conjunctions_docstring().c_str())
+        .def("reset_conjunctions", &sim::reset_conjunctions, docstrings::sim_reset_conjunctions_docstring().c_str())
         // Remove particles.
-        .def("remove_particles", &sim::remove_particles)
+        .def("remove_particles", &sim::remove_particles, "idxs"_a, docstrings::sim_remove_particles_docstring().c_str())
         // Repr.
         .def("__repr__", [](const sim &s) {
             std::ostringstream oss;
@@ -329,17 +329,23 @@ PYBIND11_MODULE(core, m)
             return oss.str();
         });
 
-    m.def("set_nthreads", [](std::size_t n) {
-        if (n == 0u) {
-            cpy::detail::tbb_gc.reset();
-        } else {
-            cpy::detail::tbb_gc.emplace(oneapi::tbb::global_control::max_allowed_parallelism, n);
-        }
-    });
+    m.def(
+        "set_nthreads",
+        [](std::size_t n) {
+            if (n == 0u) {
+                cpy::detail::tbb_gc.reset();
+            } else {
+                cpy::detail::tbb_gc.emplace(oneapi::tbb::global_control::max_allowed_parallelism, n);
+            }
+        },
+        "n"_a, docstrings::set_nthreads_docstring().c_str());
 
-    m.def("get_nthreads", []() {
-        return oneapi::tbb::global_control::active_value(oneapi::tbb::global_control::max_allowed_parallelism);
-    });
+    m.def(
+        "get_nthreads",
+        []() {
+            return oneapi::tbb::global_control::active_value(oneapi::tbb::global_control::max_allowed_parallelism);
+        },
+        docstrings::get_nthreads_docstring().c_str());
 
     // Make sure the TBB control structure is cleaned
     // up before shutdown.

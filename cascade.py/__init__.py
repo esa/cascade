@@ -18,6 +18,8 @@ Classes
 
     sim
     outcome
+    set_nthreads
+    get_nthreads
 
 """
 

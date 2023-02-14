@@ -8,6 +8,9 @@
 
 # This little helper returns the heyoka expression for the density using
 # an exponential fit
+import typing
+import heyoka as hy
+
 def _compute_atmospheric_density(h):
     """
     Returns the heyoka expression for the atmosheric density in kg.m^3.
@@ -43,9 +46,11 @@ def _compute_atmospheric_density(h):
 
 
 def simple_earth(
-    J2=True, J3=False, C22S22=True, sun=False, moon=False, SRP=False, drag=True
-):
-    """Returns heyoka expressions to be used as dynamics in :class:`~cascade.sim` and corresponding
+    J2: bool=True, J3: bool=False, C22S22: bool=True, sun: bool=False, moon: bool=False, SRP: bool=False, drag: bool=True
+) -> typing.List[typing.Tuple[hy.expression, hy.expression]]:
+    """Perturbed dynamics around the Earth.
+    
+    Returns heyoka expressions to be used as dynamics in :class:`~cascade.sim` and corresponding
     to the Earth orbital environment as perturbed by selectable term (all in SI units).
 
     The equations are taken from those used during the ESA Kelvins competition
@@ -75,7 +80,7 @@ def simple_earth(
         drag (bool, optional): adds the drag acceleration (atmosphere is modelled via a fitted isotropic NRLMSISE00). Defaults to True.
 
     Returns:
-        list of tuples (:class:`heyoka.expression`,:class:`heyoka.expression`): The dynamics in SI units. Can be used to instantiate a :class:`~cascade.sim`.
+        The dynamics in SI units. Can be used to instantiate a :class:`~cascade.sim`.
     """
     from cascade.dynamics import kepler
     import heyoka as hy
