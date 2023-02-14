@@ -194,7 +194,7 @@ PYBIND11_MODULE(core, m)
 
                 return s.propagate_until(t);
             },
-            "t"_a)
+            "t"_a, docstrings::sim_propagate_until_docstring().c_str())
         // Expose the state getters.
         .def_property_readonly("state",
                                [](const sim &s) {
@@ -227,7 +227,7 @@ PYBIND11_MODULE(core, m)
                                        (**ptr).data(), std::move(state_caps));
 
                                    return ret;
-                               })
+                               }, docstrings::sim_state_docstring().c_str())
         .def_property_readonly("pars",
                                [](const sim &s) {
                                    // NOTE: same idea as in the state getter.
@@ -295,7 +295,7 @@ PYBIND11_MODULE(core, m)
 
                 s.set_new_state_pars(std::move(state_vec), std::move(pars_vec));
             },
-            "new_state"_a, "new_pars"_a = py::none{})
+            "new_state"_a, "new_pars"_a = py::none{}, docstrings::sim_set_new_state_pars_docstring().c_str())
         // Conjunctions.
         .def_property_readonly("conjunctions",
                         [](const sim &s) {
@@ -318,10 +318,10 @@ PYBIND11_MODULE(core, m)
                             ret.attr("flags").attr("writeable") = false;
 
                             return ret;
-                        })
-        .def("reset_conjunctions", &sim::reset_conjunctions)
+                        }, docstrings::sim_conjunctions_docstring().c_str())
+        .def("reset_conjunctions", &sim::reset_conjunctions, docstrings::sim_reset_conjunctions_docstring().c_str())
         // Remove particles.
-        .def("remove_particles", &sim::remove_particles)
+        .def("remove_particles", &sim::remove_particles, "idxs"_a, docstrings::sim_remove_particles_docstring().c_str())
         // Repr.
         .def("__repr__", [](const sim &s) {
             std::ostringstream oss;
@@ -329,17 +329,23 @@ PYBIND11_MODULE(core, m)
             return oss.str();
         });
 
-    m.def("set_nthreads", [](std::size_t n) {
-        if (n == 0u) {
-            cpy::detail::tbb_gc.reset();
-        } else {
-            cpy::detail::tbb_gc.emplace(oneapi::tbb::global_control::max_allowed_parallelism, n);
-        }
-    });
+    m.def(
+        "set_nthreads",
+        [](std::size_t n) {
+            if (n == 0u) {
+                cpy::detail::tbb_gc.reset();
+            } else {
+                cpy::detail::tbb_gc.emplace(oneapi::tbb::global_control::max_allowed_parallelism, n);
+            }
+        },
+        "n"_a, docstrings::set_nthreads_docstring().c_str());
 
-    m.def("get_nthreads", []() {
-        return oneapi::tbb::global_control::active_value(oneapi::tbb::global_control::max_allowed_parallelism);
-    });
+    m.def(
+        "get_nthreads",
+        []() {
+            return oneapi::tbb::global_control::active_value(oneapi::tbb::global_control::max_allowed_parallelism);
+        },
+        docstrings::get_nthreads_docstring().c_str());
 
     // Make sure the TBB control structure is cleaned
     // up before shutdown.

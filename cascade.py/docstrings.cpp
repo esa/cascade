@@ -190,7 +190,7 @@ conj_whitelist: typing.Set[int] = set()
 
 std::string sim_time_docstring()
 {
-    return R"(Current simulation time
+    return R"(Current simulation time.
 
 This float contains the value of the current simulation time. It can be set and
 referred to in the dynamics equation as ``heyoka.time``.
@@ -200,7 +200,7 @@ referred to in the dynamics equation as ``heyoka.time``.
 
 std::string sim_ct_docstring()
 {
-    return R"(Collisional time
+    return R"(Collisional time.
 
 This float represents the length in time units of the collisional timestep. Must be positive and finite. 
 It can be set and its value will be used in the next call to the propagation methods of the :class:`~cascade.sim`
@@ -223,7 +223,7 @@ to experiment with different values to determine which one works best.
 
 std::string sim_conj_thresh_docstring()
 {
-    return R"(Conjunction threshold
+    return R"(Conjunction threshold.
 
 Conjunctions are tracked only if the conjunction distance
 is less than this threshold. By default, this value is set to zero, which means
@@ -249,7 +249,7 @@ at any time.
 
 std::string sim_coll_whitelist_docstring()
 {
-    return R"(Collision whitelist
+    return R"(Collision whitelist.
 
 This :class:`set` contains the list of particles considered during the detection of
 collision events. If this list is empty, then *all* particles are considered during
@@ -260,7 +260,7 @@ the detection of collision events.
 
 std::string sim_conj_whitelist_docstring()
 {
-    return R"(Conjunction whitelist
+    return R"(Conjunction whitelist.
 
 This :class:`set` contains the list of particles considered during the detection of
 conjunction events. If this list is empty, then *all* particles are considered during
@@ -271,7 +271,7 @@ the detection of conjunction events.
 
 std::string sim_nparts_docstring()
 {
-    return R"(Number of particles
+    return R"(Number of particles.
 
 A read-only attribute containing the current number of particles. The number of particles ina  simulation can be controlled
 by removing particles via methods such as :meth:`sim.remove_particles()` or :meth:`sim.set_new_state_pars()`.
@@ -281,16 +281,16 @@ by removing particles via methods such as :meth:`sim.remove_particles()` or :met
 
 std::string sim_npars_docstring()
 {
-    return R"(Number of runtime paramenters
+    return R"(Number of runtime paramenters.
 
-A read-only attribute containing the number of runtime parameters in the dynamics.
+A read-only attribute containing the number of runtime parameters in the dynamics :math:`N_p`.
 
 )";
 }
 
 std::string sim_tol_docstring()
 {
-    return R"(Numerical integration tolerance
+    return R"(Numerical integration tolerance.
 
 The tolerance used when numerically solving the dynamical equations. If not provided,
 it defaults to the double-precision epsilon (:math:`\sim 2.2\times 10^{-16}`).
@@ -336,11 +336,61 @@ three semi-axes lengths :math:`\left( a,b,c \right)` are given by the values in 
 
 std::string sim_exit_radius_docstring()
 {
-    return R"(Exit radius
+    return R"(Exit radius.
 
 If provided, the simulation will track the distance of all particles
 from the origin, and when a particle's distance from the origin exceeds the provided limit,
 the simulation will stop with an exit event. By default, no exit radius is defined.
+
+)";
+}
+
+std::string sim_interrupt_info_docstring()
+{
+    return R"(Interrupt info.
+
+Returns the information on the outcome of the latest call to 
+the propagation methods of the :class:`~cascade.sim`
+class (such as :meth:`cascade.sim.step()` and :meth:`cascade.sim.propagate_until()`).
+
+)";
+}
+
+std::string sim_step_docstring()
+{
+    return R"(step() -> cascade.outcome
+
+Performs a single step of the simulation.
+
+Cascade will try to advance the simulation time of
+:attr:`cascade.sim.ct` times :attr:`cascade.sim.n_par_ct`. If events trigger in such a time
+interval the simulation will stop and set its state/time at the epoch the first event was triggered.
+
+Returns:
+    The :attr:`cascade.outcome` of the simulation step.
+)";
+}
+
+std::string sim_propagate_until_docstring()
+{
+    return R"(propagate_until(t: float) -> cascade.outcome
+
+Attempts to advance the simulation time to *t*.
+
+Cascade will try to advance the simulation time to the
+value given. If events trigger in such a time interval the simulation will stop and set its state/time at
+the epoch the first event was triggered.
+
+Parameters
+----------
+
+t: float 
+    The propagation time.
+
+Returns
+-------
+
+The :attr:`cascade.outcome` of the simulation step.
 
 )";
 }
@@ -353,27 +403,146 @@ The parameters are stored in a two-dimensional :class:`~numpy.ndarray` of shape 
 :math:`n` is the number of particles in the simulation and :math:`N_p` is the number of runtime
 parameters appearing in the dynamical equations.
 
-While this is a read-only property (in the sense that it is not possible to set
-a new array of runtime parameters via this property), the values contained in the
-array *can* be written to.
+..note::
+
+    While this is a read-only property (in the sense that it is not possible to set
+    a new array of runtime parameters via this property), the values contained in the
+    array CAN be written to.
 
 )";
 }
 
-std::string sim_interrupt_info_docstring()
+std::string sim_state_docstring()
 {
-    return R"(Interrupt info
+    return R"(State of all the particles currently in the simulation.
 
-This :class:`sim.outcome` contains the information on the outcome of the latest call to 
-the propagation methods of the :class:`~cascade.sim`
-class (such as :meth:`cascade.sim.step()` and :meth:`cascade.sim.propagate_until()`).
+The state is stored in a two-dimensional :class:`~numpy.ndarray` of shape
+:math:`n\times 7`, where the number of rows :math:`n` is the number of particles in the simulation,
+the first 6 columns contain the cartesian state variables :math:`\left( x,y,z,v_x,v_y,v_z \right)`
+of each particle, and the seventh column contains the particle sizes.
+
+..note::
+
+    While this is a read-only property (in the sense that it is not possible to set
+    a new array of runtime parameters via this property), the values contained in the
+    array CAN be written to.
 
 )";
 }
 
-std::string sim_step_docstring()
+std::string sim_set_new_state_pars_docstring()
 {
-    return R"(step() -> None
+    return R"(set_new_state_pars(new_state: numpy.ndarray, new_pars: numpy.ndarray = None) -> None
+
+Sets new values for the simulation state and parameters. 
+
+If no *pars* are passed only the state will be set and all
+parameters, if present, will be set to zero.
+
+Parameters
+----------
+
+new_state: (:math:`n`, 7) :class:`~numpy.ndarray`
+    The new state for all particles.
+
+new_pars: (:math:`n`, :math:`N_p`) :class:`~numpy.ndarray`
+    The new runtime parameters for the dynamics all particles.
+
+Raises
+-------
+
+ValueError: whenever the input arguments have wrong dimensions.
+
+.. note::
+
+    The user can also set new values for the state and parameters assigning directly the values contained in the
+    :attr:`cascade.sim.state` and :attr:`cascade.sim.par`. 
+
+)";
+}
+
+std::string sim_conjunctions_docstring()
+{
+    return R"(Conjunctions recorded during the simulation.
+
+A read-only attribute containing all the conjunction events in a :class:`~numpy.ndarray`. Each element of the array will be
+a :class:`~numpy.void` containing the following information:
+
+- ``i``, (int): id of the first particle involved in the conjunction event.
+- ``j``, (int): id of the first particle involved in the conjunction event.
+- ``t``, (float): time of the conjunction event.
+- ``dist``, (float): closest approach distance.
+- ``state_i``, (:class:`~numpy.ndarray`): state (:math:`x,y,z,vx,vy,vz`) of the first particle at the conjunction.
+- ``state_j``, (:class:`~numpy.ndarray`): state (:math:`x,y,z,vx,vy,vz`) of the second particle at the conjunction.
+
+Whenever the cascade simulation is made with a :attr:`cascade.sim.conj_thresh` larger than its
+default zero value, all conjunction events of whitelisted objects (or of all objects in case no whitelist is provided)
+are detected and tracked. A conjunction event will not stop the simulation hence the user cannot 'react' to it.
+
+)";
+}
+
+std::string sim_reset_conjunctions_docstring()
+{
+    return R"(reset_conjunctions() -> None
+
+Clears the :class:`~numpy.ndarray` storin conjunctions events, thus freeing all associated memory.
+This is useful in very long simulations where the number of conjunction events can grow 
+substantially. The user can then store them in some other form, or extract relevant statistics 
+to then reset the conjunctions.
+
+)";
+}
+
+std::string sim_remove_particles_docstring()
+{
+    return R"(remove_particles(idxs: typing.List[int]) -> None
+
+Removes particles from the simulation.
+
+This takes care to remove all the particles and their corresponding parameters. 
+
+Parameters
+----------
+
+idxs: typing.List[int]
+   The indexes of the particles to be removed.
+
+)";
+}
+
+std::string set_nthreads_docstring()
+{
+    return R"(set_nthreads(n: int) -> None
+
+Sets the maximum number of threads allowed.
+
+Cascades under the hoods works with the Threading Building Blocks (TBB) API to control the parallelism of
+all its parts. This function exposes the *max_allowed_parallelism* TBB global control setter.
+
+Parameters
+----------
+
+n: int
+   The maximum allowed number of threads.
+
+)";
+}
+
+std::string get_nthreads_docstring()
+{
+    return R"(get_nthreads() -> int
+
+Gets the maximum number of threads allowed.
+
+Cascades under the hoods works with the Threading Building Blocks (TBB) API to control the parallelism of
+all its parts. This function exposes the *max_allowed_parallelism* TBB global control getter.
+
+Returns
+----------
+
+n: int
+   The maximum allowed number of threads.
 
 )";
 }

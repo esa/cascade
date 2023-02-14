@@ -34,9 +34,18 @@ std::string sim_high_accuracy_docstring();
 std::string sim_compact_mode_docstring();
 std::string sim_reentry_radius_docstring();
 std::string sim_exit_radius_docstring();
-std::string sim_pars_docstring();
 std::string sim_interrupt_info_docstring();
 std::string sim_step_docstring();
+std::string sim_propagate_until_docstring();
+std::string sim_state_docstring();
+std::string sim_pars_docstring();
+std::string sim_set_new_state_pars_docstring();
+std::string sim_conjunctions_docstring();
+std::string sim_reset_conjunctions_docstring();
+std::string sim_remove_particles_docstring();
+
+std::string set_nthreads_docstring();
+std::string get_nthreads_docstring();
 
 } // namespace cascade_py::docstrings
 
