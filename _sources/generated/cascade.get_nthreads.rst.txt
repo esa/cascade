@@ -1,0 +1,17 @@
+﻿cascade.get\_nthreads
+=====================
+
+.. currentmodule:: cascade
+
+.. autoclass:: get_nthreads
+   :members:
+   :special-members: __init__
+   
+
+   
+   
+   
+
+   
+   
+   

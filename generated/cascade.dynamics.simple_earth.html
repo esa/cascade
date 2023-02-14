@@ -36,7 +36,7 @@
     <script src="../_static/design-tabs.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Quickstart" href="../tutorials/quickstart.html" />
+    <link rel="next" title="cascade.dynamics.mascon_asteroid" href="cascade.dynamics.mascon_asteroid.html" />
     <link rel="prev" title="cascade.dynamics.kepler" href="cascade.dynamics.kepler.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
@@ -108,11 +108,6 @@
    Installation
   </a>
  </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="../user_guide.html">
-   User guide
-  </a>
- </li>
  <li class="toctree-l1 current active has-children">
   <a class="reference internal" href="../api_reference.html">
    API reference
@@ -147,6 +142,16 @@
        cascade.outcome
       </a>
      </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.set_nthreads.html">
+       cascade.set_nthreads
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.get_nthreads.html">
+       cascade.get_nthreads
+      </a>
+     </li>
     </ul>
    </li>
    <li class="toctree-l2 current active has-children">
@@ -171,6 +176,16 @@
      <li class="toctree-l3 current active">
       <a class="current reference internal" href="#">
        cascade.dynamics.simple_earth
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.dynamics.mascon_asteroid.html">
+       cascade.dynamics.mascon_asteroid
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.dynamics.mascon_asteroid_energy.html">
+       cascade.dynamics.mascon_asteroid_energy
       </a>
      </li>
     </ul>
@@ -430,8 +445,9 @@ title="Print to PDF"
 <h1>cascade.dynamics.simple_earth<a class="headerlink" href="#cascade-dynamics-simple-earth" title="Permalink to this headline">#</a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="cascade.dynamics.simple_earth">
-<span class="sig-prename descclassname"><span class="pre">cascade.dynamics.</span></span><span class="sig-name descname"><span class="pre">simple_earth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">J2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">J3</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C22S22</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">moon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SRP</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cascade.dynamics.simple_earth" title="Permalink to this definition">#</a></dt>
-<dd><p>Returns heyoka expressions to be used as dynamics in <a class="reference internal" href="cascade.sim.html#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">sim</span></code></a> and corresponding
+<span class="sig-prename descclassname"><span class="pre">cascade.dynamics.</span></span><span class="sig-name descname"><span class="pre">simple_earth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">J2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">J3</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C22S22</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sun</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">moon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SRP</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.11)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.11)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><span class="pre">heyoka.core.expression</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">heyoka.core.expression</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#cascade.dynamics.simple_earth" title="Permalink to this definition">#</a></dt>
+<dd><p>Perturbed dynamics around the Earth.</p>
+<p>Returns heyoka expressions to be used as dynamics in <a class="reference internal" href="cascade.sim.html#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">sim</span></code></a> and corresponding
 to the Earth orbital environment as perturbed by selectable term (all in SI units).</p>
 <p>The equations are taken from those used during the ESA Kelvins competition
 “Space Debris: the Origin” adding a drag term.</p>
@@ -464,9 +480,6 @@ simulation parameter (after BSTAR if present).</p>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The dynamics in SI units. Can be used to instantiate a <a class="reference internal" href="cascade.sim.html#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">sim</span></code></a>.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>list of tuples (<code class="xref py py-class docutils literal notranslate"><span class="pre">heyoka.expression</span></code>,:class:<cite>heyoka.expression</cite>)</p>
-</dd>
 </dl>
 </dd></dl>
 
@@ -487,10 +500,10 @@ simulation parameter (after BSTAR if present).</p>
             <p class="prev-next-title">cascade.dynamics.kepler</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="../tutorials/quickstart.html" title="next page">
+    <a class='right-next' id="next-link" href="cascade.dynamics.mascon_asteroid.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Quickstart</p>
+        <p class="prev-next-title">cascade.dynamics.mascon_asteroid</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

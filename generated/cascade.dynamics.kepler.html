@@ -110,11 +110,6 @@
    Installation
   </a>
  </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="../user_guide.html">
-   User guide
-  </a>
- </li>
  <li class="toctree-l1 current active has-children">
   <a class="reference internal" href="../api_reference.html">
    API reference
@@ -149,6 +144,16 @@
        cascade.outcome
       </a>
      </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.set_nthreads.html">
+       cascade.set_nthreads
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.get_nthreads.html">
+       cascade.get_nthreads
+      </a>
+     </li>
     </ul>
    </li>
    <li class="toctree-l2 current active has-children">
@@ -173,6 +178,16 @@
      <li class="toctree-l3">
       <a class="reference internal" href="cascade.dynamics.simple_earth.html">
        cascade.dynamics.simple_earth
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.dynamics.mascon_asteroid.html">
+       cascade.dynamics.mascon_asteroid
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.dynamics.mascon_asteroid_energy.html">
+       cascade.dynamics.mascon_asteroid_energy
       </a>
      </li>
     </ul>
@@ -433,7 +448,7 @@ title="Print to PDF"
 <dl class="py function">
 <dt class="sig sig-object py" id="cascade.dynamics.kepler">
 <span class="sig-prename descclassname"><span class="pre">cascade.dynamics.</span></span><span class="sig-name descname"><span class="pre">kepler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mu</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.11)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.11)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><span class="pre">heyoka.expression</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">heyoka.expression</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#cascade.dynamics.kepler" title="Permalink to this definition">#</a></dt>
-<dd><p>Keplerian dynamics</p>
+<dd><p>Keplerian dynamics.</p>
 <p>This function generates the dynamical equations of purely-Keplerian dynamics. Specifically,
 the returned system of differential equations will be:</p>
 <div class="math notranslate nohighlight">

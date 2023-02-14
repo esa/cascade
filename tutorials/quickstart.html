@@ -37,7 +37,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Conjunctions" href="conjunctions.html" />
-    <link rel="prev" title="cascade.dynamics.simple_earth" href="../generated/cascade.dynamics.simple_earth.html" />
+    <link rel="prev" title="cascade.dynamics.mascon_asteroid_energy" href="../generated/cascade.dynamics.mascon_asteroid_energy.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
     
@@ -108,11 +108,6 @@
    Installation
   </a>
  </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="../user_guide.html">
-   User guide
-  </a>
- </li>
  <li class="toctree-l1 has-children">
   <a class="reference internal" href="../api_reference.html">
    API reference
@@ -147,6 +142,16 @@
        cascade.outcome
       </a>
      </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_nthreads.html">
+       cascade.set_nthreads
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.get_nthreads.html">
+       cascade.get_nthreads
+      </a>
+     </li>
     </ul>
    </li>
    <li class="toctree-l2 has-children">
@@ -171,6 +176,16 @@
      <li class="toctree-l3">
       <a class="reference internal" href="../generated/cascade.dynamics.simple_earth.html">
        cascade.dynamics.simple_earth
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.dynamics.mascon_asteroid.html">
+       cascade.dynamics.mascon_asteroid
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.dynamics.mascon_asteroid_energy.html">
+       cascade.dynamics.mascon_asteroid_energy
       </a>
      </li>
     </ul>
@@ -555,7 +570,7 @@ computations we make use of <a class="reference external" href="https://esa.gith
 </div>
 <section id="the-dynamics">
 <h2>The dynamics<a class="headerlink" href="#the-dynamics" title="Permalink to this headline">#</a></h2>
-<p>For this quickstart we will make use a simple non dimensional Keplerian dynamics and make use of the <code class="docutils literal notranslate"><span class="pre">cascade.dynamics</span></code> module to instantiate it.</p>
+<p>For this quickstart we will make use a simple non dimensional Keplerian dynamics and make use of the <a class="reference internal" href="../mod_cascade_dynamics.html#module-cascade.dynamics" title="cascade.dynamics"><code class="xref py py-mod docutils literal notranslate"><span class="pre">cascade.dynamics</span></code></a> module to instantiate it.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>A dynamics is defined by tuples of <a class="reference external" href="https://bluescarni.github.io/heyoka.py/">heyoka</a> expressions containing the state variable and the corresponding expression for its derivative.</p>
@@ -629,7 +644,7 @@ computations we make use of <a class="reference external" href="https://esa.gith
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/57fbd7665c5d70c487d173808fea6520b10506cf4e3a80f7cd52b2fafe52d09f.png" src="../_images/57fbd7665c5d70c487d173808fea6520b10506cf4e3a80f7cd52b2fafe52d09f.png" />
+<img alt="../_images/e71b6d03c6f57676b0e91d79b2d9877eae99a65bdf2648824c358aea132f0b20.png" src="../_images/e71b6d03c6f57676b0e91d79b2d9877eae99a65bdf2648824c358aea132f0b20.png" />
 </div>
 </div>
 </section>
@@ -657,8 +672,7 @@ computations we make use of <a class="reference external" href="https://esa.gith
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>We have setup things so that a collision is almost certainly happening early on …. if thats the case the simulation outcome will be ‘collision’ and the information contained in the
-<code class="docutils literal notranslate"><span class="pre">interrupt_info</span></code> attribute will be the ids of the objects involved.</p>
+<p>We have setup things so that a collision is almost certainly happening early on …. if thats the case the simulation <a class="reference internal" href="../generated/cascade.outcome.html#cascade.outcome" title="cascade.outcome"><code class="xref py py-class docutils literal notranslate"><span class="pre">outcome</span></code></a> will be <code class="docutils literal notranslate"><span class="pre">collision</span></code> and the information contained in the  <a class="reference internal" href="../generated/cascade.sim.html#cascade.sim.interrupt_info" title="cascade.sim.interrupt_info"><code class="xref py py-attr docutils literal notranslate"><span class="pre">interrupt_info</span></code></a> attribute will be the ids of the objects involved.</p>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -672,8 +686,8 @@ computations we make use of <a class="reference external" href="https://esa.gith
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Outcome:  collision
-Time:  0.9948545343268014
-Particle 599 collided with particle 727
+Time:  15.75180414327871
+Particle 579 collided with particle 876
 </pre></div>
 </div>
 </div>
@@ -707,7 +721,7 @@ visualize the collision position.</p>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/d546d0d5605c2f7ae992f95289209958c07d2f6dd92457c5c7f2b394391394e7.png" src="../_images/d546d0d5605c2f7ae992f95289209958c07d2f6dd92457c5c7f2b394391394e7.png" />
+<img alt="../_images/686dd068bb7d055614a22cc4654fbf1c0107422bcee346877da6bec5b35121ed.png" src="../_images/686dd068bb7d055614a22cc4654fbf1c0107422bcee346877da6bec5b35121ed.png" />
 </div>
 </div>
 </section>
@@ -721,11 +735,11 @@ visualize the collision position.</p>
                 
     <!-- Previous / next buttons -->
 <div class='prev-next-area'>
-    <a class='left-prev' id="prev-link" href="../generated/cascade.dynamics.simple_earth.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="../generated/cascade.dynamics.mascon_asteroid_energy.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">cascade.dynamics.simple_earth</p>
+            <p class="prev-next-title">cascade.dynamics.mascon_asteroid_energy</p>
         </div>
     </a>
     <a class='right-next' id="next-link" href="conjunctions.html" title="next page">

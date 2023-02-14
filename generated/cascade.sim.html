@@ -110,11 +110,6 @@
    Installation
   </a>
  </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="../user_guide.html">
-   User guide
-  </a>
- </li>
  <li class="toctree-l1 current active has-children">
   <a class="reference internal" href="../api_reference.html">
    API reference
@@ -149,6 +144,16 @@
        cascade.outcome
       </a>
      </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.set_nthreads.html">
+       cascade.set_nthreads
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.get_nthreads.html">
+       cascade.get_nthreads
+      </a>
+     </li>
     </ul>
    </li>
    <li class="toctree-l2 has-children">
@@ -173,6 +178,16 @@
      <li class="toctree-l3">
       <a class="reference internal" href="cascade.dynamics.simple_earth.html">
        cascade.dynamics.simple_earth
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.dynamics.mascon_asteroid.html">
+       cascade.dynamics.mascon_asteroid
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.dynamics.mascon_asteroid_energy.html">
+       cascade.dynamics.mascon_asteroid_energy
       </a>
      </li>
     </ul>
@@ -433,7 +448,7 @@ title="Print to PDF"
 <dl class="py class">
 <dt class="sig sig-object py" id="cascade.sim">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cascade.</span></span><span class="sig-name descname"><span class="pre">sim</span></span><a class="headerlink" href="#cascade.sim" title="Permalink to this definition">#</a></dt>
-<dd><p>The simulation class</p>
+<dd><p>The simulation class.</p>
 <p>This class acts as a container for a collection of spherical particles, propagating their
 states in time according to user-defined dynamical equations and accounting for
 collisions and/or conjunctions.</p>
@@ -455,22 +470,22 @@ Alternatively, ready-made dynamical equations for a variety of use cases are ava
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#cascade.sim.__init__" title="cascade.sim.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(state, ct[, dyn, reentry_radius, ...])</p></td>
-<td><p>Constructor</p></td>
+<td><p>Constructor.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">propagate_until</span></code></p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#cascade.sim.propagate_until" title="cascade.sim.propagate_until"><code class="xref py py-obj docutils literal notranslate"><span class="pre">propagate_until</span></code></a>(t)</p></td>
+<td><p>Attempts to advance the simulation time to <em>t</em>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_particles</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#cascade.sim.remove_particles" title="cascade.sim.remove_particles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_particles</span></code></a>(idxs)</p></td>
+<td><p>Removes particles from the simulation.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset_conjunctions</span></code></p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#cascade.sim.reset_conjunctions" title="cascade.sim.reset_conjunctions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset_conjunctions</span></code></a>()</p></td>
+<td><p>Reset the conjunctions list.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_new_state_pars</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#cascade.sim.set_new_state_pars" title="cascade.sim.set_new_state_pars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_new_state_pars</span></code></a>(new_state[, new_pars])</p></td>
+<td><p>Sets new values for the simulation state and parameters.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#cascade.sim.step" title="cascade.sim.step"><code class="xref py py-obj docutils literal notranslate"><span class="pre">step</span></code></a>()</p></td>
-<td><p></p></td>
+<td><p>Performs a single step of the simulation.</p></td>
 </tr>
 </tbody>
 </table>
@@ -481,66 +496,66 @@ Alternatively, ready-made dynamical equations for a variety of use cases are ava
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">coll_whitelist</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#cascade.sim.coll_whitelist" title="cascade.sim.coll_whitelist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">coll_whitelist</span></code></a></p></td>
+<td><p>Collision whitelist.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">compact_mode</span></code></p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#cascade.sim.compact_mode" title="cascade.sim.compact_mode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compact_mode</span></code></a></p></td>
+<td><p>Compact mode.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">conj_thresh</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#cascade.sim.conj_thresh" title="cascade.sim.conj_thresh"><code class="xref py py-obj docutils literal notranslate"><span class="pre">conj_thresh</span></code></a></p></td>
+<td><p>Conjunction threshold.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#cascade.sim.conj_whitelist" title="cascade.sim.conj_whitelist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">conj_whitelist</span></code></a></p></td>
-<td><p>Conjunction whitelist</p></td>
+<td><p>Conjunction whitelist.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">conjunctions</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#cascade.sim.conjunctions" title="cascade.sim.conjunctions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">conjunctions</span></code></a></p></td>
+<td><p>Conjunctions recorded during the simulation.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ct</span></code></p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#cascade.sim.ct" title="cascade.sim.ct"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ct</span></code></a></p></td>
+<td><p>Collisional time.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">exit_radius</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#cascade.sim.exit_radius" title="cascade.sim.exit_radius"><code class="xref py py-obj docutils literal notranslate"><span class="pre">exit_radius</span></code></a></p></td>
+<td><p>Exit radius.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">high_accuracy</span></code></p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#cascade.sim.high_accuracy" title="cascade.sim.high_accuracy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">high_accuracy</span></code></a></p></td>
+<td><p>High-accuracy mode.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#cascade.sim.interrupt_info" title="cascade.sim.interrupt_info"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interrupt_info</span></code></a></p></td>
-<td><p>Interrupt info</p></td>
+<td><p>Interrupt info.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_coll_radius</span></code></p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#cascade.sim.min_coll_radius" title="cascade.sim.min_coll_radius"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_coll_radius</span></code></a></p></td>
+<td><p>Minimum collisional radius.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_par_ct</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#cascade.sim.n_par_ct" title="cascade.sim.n_par_ct"><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_par_ct</span></code></a></p></td>
+<td><p>Number of collisional timesteps to be processed in parallel.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">npars</span></code></p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#cascade.sim.npars" title="cascade.sim.npars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">npars</span></code></a></p></td>
+<td><p>Number of runtime paramenters.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">nparts</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#cascade.sim.nparts" title="cascade.sim.nparts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nparts</span></code></a></p></td>
+<td><p>Number of particles.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#cascade.sim.pars" title="cascade.sim.pars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pars</span></code></a></p></td>
-<td><p>Values of the runtime parameters</p></td>
+<td><p>Values of the runtime parameters appearing in the objects dynamics.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">reentry_radius</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#cascade.sim.reentry_radius" title="cascade.sim.reentry_radius"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reentry_radius</span></code></a></p></td>
+<td><p>The radius of the reentry domain.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">state</span></code></p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#cascade.sim.state" title="cascade.sim.state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">state</span></code></a></p></td>
+<td><p>State of all the particles currently in the simulation.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">time</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#cascade.sim.time" title="cascade.sim.time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">time</span></code></a></p></td>
+<td><p>Current simulation time.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">tol</span></code></p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#cascade.sim.tol" title="cascade.sim.tol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tol</span></code></a></p></td>
+<td><p>Numerical integration tolerance.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="cascade.sim.__init__">
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.24)"><span class="pre">numpy.ndarray</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.double" title="(in NumPy v1.24)"><span class="pre">numpy.double</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ct</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">dyn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.11)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.11)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.11)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><span class="pre">heyoka.expression</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">heyoka.expression</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reentry_radius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.11)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.11)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exit_radius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.11)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.11)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.24)"><span class="pre">numpy.ndarray</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.double" title="(in NumPy v1.24)"><span class="pre">numpy.double</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.11)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_accuracy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compact_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_par_ct</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conj_thresh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_coll_radius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coll_whitelist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Set" title="(in Python v3.11)"><span class="pre">Set</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">set()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conj_whitelist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Set" title="(in Python v3.11)"><span class="pre">Set</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">set()</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cascade.sim.__init__" title="Permalink to this definition">#</a></dt>
-<dd><p>Constructor</p>
+<dd><p>Constructor.</p>
 <p>The only two mandatory arguments for the constructor are the initial state and the collisional
 timestep. Several additional configuration options for the simulation can be specified either at
 or after construction.</p>
@@ -551,11 +566,11 @@ or after construction.</p>
 <span class="math notranslate nohighlight">\(n\times 7\)</span>, where the number of rows <span class="math notranslate nohighlight">\(n\)</span> is the number of particles in the simulation,
 the first 6 columns contain the cartesian state variables <span class="math notranslate nohighlight">\(\left( x,y,z,v_x,v_y,v_z \right)\)</span>
 of each particle, and the seventh column contains the particle sizes.</p>
-<p>After construction, the state vector can be accessed via the <code class="xref py py-attr docutils literal notranslate"><span class="pre">state</span></code> attribute.</p>
+<p>After construction, the state vector can be accessed via the <a class="reference internal" href="#cascade.sim.state" title="cascade.sim.state"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state</span></code></a> attribute.</p>
 </p></li>
 <li><p><strong>ct</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – The length in time units of the collisional timestep. Must be positive and finite.
 After construction, the collisional timestep can be changed at any time via the
-<code class="xref py py-attr docutils literal notranslate"><span class="pre">ct</span></code> attribute.</p></li>
+<a class="reference internal" href="#cascade.sim.ct" title="cascade.sim.ct"><code class="xref py py-attr docutils literal notranslate"><span class="pre">ct</span></code></a> attribute.</p></li>
 <li><p><strong>dyn</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.11)"><em>Optional</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.11)"><em>List</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.11)"><em>Tuple</em></a><em>[</em><em>heyoka.expression</em><em>, </em><em>heyoka.expression</em><em>]</em><em>]</em><em>] </em><em>= None</em>) – <p>The particles’ dynamical equations. By default, the dynamics is purely Keplerian (see
 <a class="reference internal" href="cascade.dynamics.kepler.html#cascade.dynamics.kepler" title="cascade.dynamics.kepler"><code class="xref py py-func docutils literal notranslate"><span class="pre">cascade.dynamics.kepler()</span></code></a>).</p>
 <p>Note that the dynamical equations <strong>cannot</strong> be changed after construction.</p>
@@ -590,7 +605,7 @@ in long-running simulations.</p></li>
 <li><p><strong>compact_mode</strong> (<em>bool = False</em>) – Compact mode. If enabled, the just-in-time compilation process will manipulate efficiently
 also very long expression for the dynamics. This is useful, for example, when using long expansions
 to model distrubances, or when gravity is modelled via mascon models. This comes at the price
-of a performance penalty (~&lt;x2) in the resulting numerical integrtor.</p></li>
+of a performance penalty (~&lt;x2) in the resulting numerical integrator.</p></li>
 <li><p><strong>n_par_ct</strong> (<em>int = 1</em>) – Number of collisional timesteps to be processed in parallel. This is a
 tuning parameter that, while not affecting the correctness of the simulation,
 can greatly influence its performance. The optimal value of this parameter
@@ -620,36 +635,283 @@ conjunction whitelist can be changed at any time via the <code class="docutils l
 </dd></dl>
 
 <dl class="py property">
+<dt class="sig sig-object py" id="cascade.sim.coll_whitelist">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">coll_whitelist</span></span><a class="headerlink" href="#cascade.sim.coll_whitelist" title="Permalink to this definition">#</a></dt>
+<dd><p>Collision whitelist.</p>
+<p>This <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code></a> contains the list of particles considered during the detection of
+collision events. If this list is empty, then <em>all</em> particles are considered during
+the detection of collision events.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="cascade.sim.compact_mode">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">compact_mode</span></span><a class="headerlink" href="#cascade.sim.compact_mode" title="Permalink to this definition">#</a></dt>
+<dd><p>Compact mode.</p>
+<p>If enabled, the just-in-time compilation process will manipulate efficiently
+also very long expression for the dynamics. This is useful, for example, when using long expansions
+to model distrubances, or when gravity is modelled via mascon models. This comes at the price
+of a performance penalty (~&lt;x2) in the resulting numerical integrator. Compact mode
+cannot be changed after construction.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="cascade.sim.conj_thresh">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">conj_thresh</span></span><a class="headerlink" href="#cascade.sim.conj_thresh" title="Permalink to this definition">#</a></dt>
+<dd><p>Conjunction threshold.</p>
+<p>Conjunctions are tracked only if the conjunction distance
+is less than this threshold. By default, this value is set to zero, which means
+that conjunction tracking is disabled. The conjunction threshold can be changed
+at any time.</p>
+</dd></dl>
+
+<dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.conj_whitelist">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">conj_whitelist</span></span><a class="headerlink" href="#cascade.sim.conj_whitelist" title="Permalink to this definition">#</a></dt>
-<dd><p>Conjunction whitelist</p>
+<dd><p>Conjunction whitelist.</p>
 <p>This <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code></a> contains the list of particles considered during the detection of
 conjunction events. If this list is empty, then <em>all</em> particles are considered during
 the detection of conjunction events.</p>
 </dd></dl>
 
 <dl class="py property">
+<dt class="sig sig-object py" id="cascade.sim.conjunctions">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">conjunctions</span></span><a class="headerlink" href="#cascade.sim.conjunctions" title="Permalink to this definition">#</a></dt>
+<dd><p>Conjunctions recorded during the simulation.</p>
+<p>A read-only attribute containing all the conjunction events. The events are stored in a
+<a class="reference external" href="https://numpy.org/doc/stable/user/basics.rec.html#structured-arrays" title="(in NumPy v1.24)"><span class="xref std std-ref">structured array</span></a> containing the following records:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">i</span></code>, (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>): id of the first particle involved in the conjunction event,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">j</span></code>, (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>): id of the first particle involved in the conjunction event,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">t</span></code>, (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>): time of the conjunction event,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dist</span></code>, (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>): closest approach distance,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">state_i</span></code>, (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>): state (<span class="math notranslate nohighlight">\(x,y,z,vx,vy,vz\)</span>) of the first particle at the conjunction,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">state_j</span></code>, (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>): state (<span class="math notranslate nohighlight">\(x,y,z,vx,vy,vz\)</span>) of the second particle at the conjunction.</p></li>
+</ul>
+<p>Whenever the cascade simulation is made with a <a class="reference internal" href="#cascade.sim.conj_thresh" title="cascade.sim.conj_thresh"><code class="xref py py-attr docutils literal notranslate"><span class="pre">conj_thresh</span></code></a> larger than its
+default zero value, all conjunction events of whitelisted objects (or of all objects in case no whitelist is provided)
+are detected and tracked. A conjunction event will not stop the simulation hence the user cannot ‘react’ to it.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="cascade.sim.ct">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ct</span></span><a class="headerlink" href="#cascade.sim.ct" title="Permalink to this definition">#</a></dt>
+<dd><p>Collisional time.</p>
+<p>This <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> represents the length in time units of the collisional timestep. Must be positive and finite.
+It can be set and its value will be used in the next call to the propagation methods
+(such as <a class="reference internal" href="#cascade.sim.step" title="cascade.sim.step"><code class="xref py py-meth docutils literal notranslate"><span class="pre">cascade.sim.step()</span></code></a> and <a class="reference internal" href="#cascade.sim.propagate_until" title="cascade.sim.propagate_until"><code class="xref py py-meth docutils literal notranslate"><span class="pre">cascade.sim.propagate_until()</span></code></a>).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="cascade.sim.exit_radius">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">exit_radius</span></span><a class="headerlink" href="#cascade.sim.exit_radius" title="Permalink to this definition">#</a></dt>
+<dd><p>Exit radius.</p>
+<p>If an exit radius is provided upon construction, the simulation will track the distance of all particles
+from the origin, and when a particle’s distance from the origin exceeds this limit,
+the simulation will stop with an exit event. By default, no exit radius is defined
+and this attribute contains the scalar <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="cascade.sim.high_accuracy">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">high_accuracy</span></span><a class="headerlink" href="#cascade.sim.high_accuracy" title="Permalink to this definition">#</a></dt>
+<dd><p>High-accuracy mode.</p>
+<p>If enabled, the numerical integrator will employ techniques
+to minimise the accumulation of floating-point truncation errors, at the price
+of a small performance penalty. This can be useful to maintain high accuracy
+in long-running simulations. High-accuracy mode cannot be changed after construction.</p>
+</dd></dl>
+
+<dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.interrupt_info">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">interrupt_info</span></span><a class="headerlink" href="#cascade.sim.interrupt_info" title="Permalink to this definition">#</a></dt>
-<dd><p>Interrupt info</p>
+<dd><p>Interrupt info.</p>
+<p>Returns the information on the outcome of the latest call to
+the propagation methods of the <a class="reference internal" href="#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">sim</span></code></a>
+class (such as <a class="reference internal" href="#cascade.sim.step" title="cascade.sim.step"><code class="xref py py-meth docutils literal notranslate"><span class="pre">cascade.sim.step()</span></code></a> and <a class="reference internal" href="#cascade.sim.propagate_until" title="cascade.sim.propagate_until"><code class="xref py py-meth docutils literal notranslate"><span class="pre">cascade.sim.propagate_until()</span></code></a>).</p>
+<p>The possible values of this attribute are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">None</span></code>: the propagation method finished successfully and no stopping
+event was detected;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">(i,</span> <span class="pre">j)</span></code> (a pair of integers): the propagation method stopped due to the collision
+between particles <code class="docutils literal notranslate"><span class="pre">i</span></code> and <code class="docutils literal notranslate"><span class="pre">j</span></code>;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">i</span></code> (a single integer): particle <code class="docutils literal notranslate"><span class="pre">i</span></code> either entered the reentry domain or exited
+the simulation domain;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">(i,</span> <span class="pre">tm)</span></code> (integer + time coordinate): a non-finite state was detected for particle
+<code class="docutils literal notranslate"><span class="pre">i</span></code> at time <code class="docutils literal notranslate"><span class="pre">tm</span></code>.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="cascade.sim.min_coll_radius">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">min_coll_radius</span></span><a class="headerlink" href="#cascade.sim.min_coll_radius" title="Permalink to this definition">#</a></dt>
+<dd><p>Minimum collisional radius.</p>
+<p>A collision between two particles is detected
+only if the radius of at least one particle is greater than this value. By default,
+this value is zero, which means that only collisions between point-like particles
+are skipped. If this value is set to <span class="math notranslate nohighlight">\(+\infty\)</span>, then collision detection
+is disabled for all particles. The minimum collisional radius can be changed
+at any time.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="cascade.sim.n_par_ct">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_par_ct</span></span><a class="headerlink" href="#cascade.sim.n_par_ct" title="Permalink to this definition">#</a></dt>
+<dd><p>Number of collisional timesteps to be processed in parallel.</p>
+<p>This is a tuning parameter that, while not affecting the correctness of the simulation,
+can greatly influence its performance. The optimal value of this parameter
+depends heavily on the specifics of the simulation, and thus users are advised
+to experiment with different values to determine which one works best.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="cascade.sim.npars">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">npars</span></span><a class="headerlink" href="#cascade.sim.npars" title="Permalink to this definition">#</a></dt>
+<dd><p>Number of runtime paramenters.</p>
+<p>A read-only attribute containing the number of runtime parameters in the dynamics <span class="math notranslate nohighlight">\(N_p\)</span>.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="cascade.sim.nparts">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">nparts</span></span><a class="headerlink" href="#cascade.sim.nparts" title="Permalink to this definition">#</a></dt>
+<dd><p>Number of particles.</p>
+<p>A read-only attribute containing the current number of particles. The number of particles ina  simulation can be controlled
+by removing particles via methods such as <a class="reference internal" href="#cascade.sim.remove_particles" title="cascade.sim.remove_particles"><code class="xref py py-meth docutils literal notranslate"><span class="pre">remove_particles()</span></code></a> or <a class="reference internal" href="#cascade.sim.set_new_state_pars" title="cascade.sim.set_new_state_pars"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_new_state_pars()</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.pars">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pars</span></span><a class="headerlink" href="#cascade.sim.pars" title="Permalink to this definition">#</a></dt>
-<dd><p>Values of the runtime parameters</p>
+<dd><p>Values of the runtime parameters appearing in the objects dynamics.</p>
 <p>The parameters are stored in a two-dimensional <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> of shape <span class="math notranslate nohighlight">\(n\times N_p\)</span>, where
 <span class="math notranslate nohighlight">\(n\)</span> is the number of particles in the simulation and <span class="math notranslate nohighlight">\(N_p\)</span> is the number of runtime
 parameters appearing in the dynamical equations.</p>
 <p>While this is a read-only property (in the sense that it is not possible to set
 a new array of runtime parameters via this property), the values contained in the
-array <em>can</em> be written to.</p>
+array CAN be written to.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cascade.sim.propagate_until">
+<span class="sig-name descname"><span class="pre">propagate_until</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="cascade.outcome.html#cascade.outcome" title="cascade.outcome"><span class="pre">cascade.outcome</span></a></span></span><a class="headerlink" href="#cascade.sim.propagate_until" title="Permalink to this definition">#</a></dt>
+<dd><p>Attempts to advance the simulation time to <em>t</em>.</p>
+<p>Cascade will try to advance the simulation time to the
+value given. If stopping events trigger in such a time interval,
+the simulation will stop and set its state/time at
+the epoch the first event was triggered.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>t</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><em>float</em></a>) – The propagation time.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The outcome of the propagation.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="cascade.outcome.html#cascade.outcome" title="cascade.outcome">cascade.outcome</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="cascade.sim.reentry_radius">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">reentry_radius</span></span><a class="headerlink" href="#cascade.sim.reentry_radius" title="Permalink to this definition">#</a></dt>
+<dd><p>The radius of the reentry domain.</p>
+<p>The reentry domain is modelled either as a sphere (in which case this property
+will be a single scalar representing the radius of the reentry sphere) or
+as a triaxial ellipsoid (in which case this property will be a list of three
+values representing the three semi-axes lengths <span class="math notranslate nohighlight">\(\left( a,b,c \right)\)</span>
+of the ellipsoid). If no reentry radius was specified upon construction, this
+attribute contains the scalar <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cascade.sim.remove_particles">
+<span class="sig-name descname"><span class="pre">remove_particles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idxs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.11)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.11)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#cascade.sim.remove_particles" title="Permalink to this definition">#</a></dt>
+<dd><p>Removes particles from the simulation.</p>
+<p>This takes care to remove all the particles and their corresponding parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>idxs</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.11)"><em>List</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a><em>]</em>) – The indices of the particles to be removed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cascade.sim.reset_conjunctions">
+<span class="sig-name descname"><span class="pre">reset_conjunctions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.11)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#cascade.sim.reset_conjunctions" title="Permalink to this definition">#</a></dt>
+<dd><p>Reset the conjunctions list.</p>
+<p>Clears the <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> storing conjunctions events, thus freeing all associated memory.
+This is useful in very long simulations where the number of conjunction events can grow
+substantially. The user can then store them in some other form, or extract relevant statistics
+to then reset the conjunctions.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cascade.sim.set_new_state_pars">
+<span class="sig-name descname"><span class="pre">set_new_state_pars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.24)"><span class="pre">numpy.ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_pars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.24)"><span class="pre">numpy.ndarray</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.11)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#cascade.sim.set_new_state_pars" title="Permalink to this definition">#</a></dt>
+<dd><p>Sets new values for the simulation state and parameters.</p>
+<p>If no <em>pars</em> are passed only the state will be set and all
+parameters, if present, will be set to zero.</p>
+<p>Note that this method should be used <strong>only</strong> if you need to alter the number
+of particles in the simulation. If you all you need to do is to change
+the state and/or parameter values for one or more particles, you can write directly
+into <a class="reference internal" href="#cascade.sim.state" title="cascade.sim.state"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state</span></code></a> and <a class="reference internal" href="#cascade.sim.pars" title="cascade.sim.pars"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pars</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>new_state</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.24)"><em>numpy.ndarray</em></a>) – The new state for all particles (the shape must be <span class="math notranslate nohighlight">\(n \times 7\)</span>).</p></li>
+<li><p><strong>new_pars</strong> (<em>numpy.ndarray = None</em>) – The new runtime parameters for the dynamics of all particles (the shape must be <span class="math notranslate nohighlight">\(n \times N_p\)</span>).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="cascade.sim.state">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">state</span></span><a class="headerlink" href="#cascade.sim.state" title="Permalink to this definition">#</a></dt>
+<dd><p>State of all the particles currently in the simulation.</p>
+<p>The state is stored in a two-dimensional <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.24)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> of shape
+<span class="math notranslate nohighlight">\(n\times 7\)</span>, where the number of rows <span class="math notranslate nohighlight">\(n\)</span> is the number of particles in the simulation,
+the first 6 columns contain the cartesian state variables <span class="math notranslate nohighlight">\(\left( x,y,z,v_x,v_y,v_z \right)\)</span>
+of each particle, and the seventh column contains the particle sizes.</p>
+<p>While this is a read-only property (in the sense that it is not possible to set
+a new array of runtime parameters via this property), the values contained in the
+array CAN be written to.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="cascade.sim.step">
-<span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.11)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#cascade.sim.step" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="cascade.outcome.html#cascade.outcome" title="cascade.outcome"><span class="pre">cascade.outcome</span></a></span></span><a class="headerlink" href="#cascade.sim.step" title="Permalink to this definition">#</a></dt>
+<dd><p>Performs a single step of the simulation.</p>
+<p>Cascade will try to advance the simulation time by
+<a class="reference internal" href="#cascade.sim.ct" title="cascade.sim.ct"><code class="xref py py-attr docutils literal notranslate"><span class="pre">ct</span></code></a> times <a class="reference internal" href="#cascade.sim.n_par_ct" title="cascade.sim.n_par_ct"><code class="xref py py-attr docutils literal notranslate"><span class="pre">n_par_ct</span></code></a> time units. If stopping events
+(e.g., collision, reentry, etc.) trigger in such a time
+interval, the simulation will stop and set its state/time at the epoch the first event was triggered.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The outcome of the simulation step.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="cascade.outcome.html#cascade.outcome" title="cascade.outcome">cascade.outcome</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="cascade.sim.time">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">time</span></span><a class="headerlink" href="#cascade.sim.time" title="Permalink to this definition">#</a></dt>
+<dd><p>Current simulation time.</p>
+<p>This <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> contains the value of the current simulation time. It can be set, and
+it is referred to in the dynamics equation as <code class="docutils literal notranslate"><span class="pre">heyoka.time</span></code>.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="cascade.sim.tol">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">tol</span></span><a class="headerlink" href="#cascade.sim.tol" title="Permalink to this definition">#</a></dt>
+<dd><p>Numerical integration tolerance.</p>
+<p>The tolerance used when numerically solving the dynamical equations. If not provided,
+it defaults to the double-precision epsilon (<span class="math notranslate nohighlight">\(\sim 2.2\times 10^{-16}\)</span>). The integration
+tolerance cannot be changed after construction.</p>
+</dd></dl>
 
 </dd></dl>
 

@@ -108,11 +108,6 @@
    Installation
   </a>
  </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="../user_guide.html">
-   User guide
-  </a>
- </li>
  <li class="toctree-l1 has-children">
   <a class="reference internal" href="../api_reference.html">
    API reference
@@ -147,6 +142,16 @@
        cascade.outcome
       </a>
      </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_nthreads.html">
+       cascade.set_nthreads
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.get_nthreads.html">
+       cascade.get_nthreads
+      </a>
+     </li>
     </ul>
    </li>
    <li class="toctree-l2 has-children">
@@ -171,6 +176,16 @@
      <li class="toctree-l3">
       <a class="reference internal" href="../generated/cascade.dynamics.simple_earth.html">
        cascade.dynamics.simple_earth
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.dynamics.mascon_asteroid.html">
+       cascade.dynamics.mascon_asteroid
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.dynamics.mascon_asteroid_energy.html">
+       cascade.dynamics.mascon_asteroid_energy
       </a>
      </li>
     </ul>
@@ -605,7 +620,7 @@ Velocity (km/s):  [ 1.38399824  5.88779107 -3.78530589]
 </section>
 <section id="building-the-dynamical-system-to-integrate">
 <h2>Building the dynamical system to integrate<a class="headerlink" href="#building-the-dynamical-system-to-integrate" title="Permalink to this headline">#</a></h2>
-<p>The dynamics in the LEO environment is dominated by drag and gravitational effects. The effect of the Moon gravity, Sun gravity and solar radiation pressure are much weaker and thus not considered here, even if they would not add much complexity in the simulation. We make use of the cascade class <code class="docutils literal notranslate"><span class="pre">cascade.dynamics.simple_earth</span></code> returning analytical expressions for such a dynamics in the EME2000 reference frame.</p>
+<p>The dynamics in the LEO environment is dominated by drag and gravitational effects. The effect of the Moon gravity, Sun gravity and solar radiation pressure are much weaker and thus not considered here, even if they would not add much complexity in the simulation. We make use of the cascade function <a class="reference internal" href="../generated/cascade.dynamics.simple_earth.html#cascade.dynamics.simple_earth" title="cascade.dynamics.simple_earth"><code class="xref py py-func docutils literal notranslate"><span class="pre">cascade.dynamics.simple_earth()</span></code></a> returning analytical expressions for such a dynamics in the EME2000 reference frame.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dyn</span> <span class="o">=</span>  <span class="n">csc</span><span class="o">.</span><span class="n">dynamics</span><span class="o">.</span><span class="n">simple_earth</span><span class="p">(</span><span class="n">J2</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">J3</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">C22S22</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">sun</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">moon</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">SRP</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">drag</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -727,7 +742,7 @@ Note that this cost is to be paid only once. As far as the dynamics remains unch
 </section>
 <section id="running-the-simulation">
 <h2>Running the simulation<a class="headerlink" href="#running-the-simulation" title="Permalink to this headline">#</a></h2>
-<p>The following block will perform a simulation where the method <em>step</em> of a cascade <code class="docutils literal notranslate"><span class="pre">sim</span></code> object is called  repeatedly up to when the simulation time reaches the maximum allocated (<code class="docutils literal notranslate"><span class="pre">final_t</span></code>).
+<p>The following block will perform a simulation where the method <em>step</em> of a cascade <a class="reference internal" href="../generated/cascade.sim.html#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">cascade.sim</span></code></a> object is called  repeatedly up to when the simulation time reaches the maximum allocated (<code class="docutils literal notranslate"><span class="pre">final_t</span></code>).
 All collision events and orbital decays are logged on files and on screen.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>

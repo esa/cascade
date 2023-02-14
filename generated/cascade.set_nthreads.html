@@ -6,38 +6,38 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>User guide &#8212; cascade 0.1 documentation</title>
+    <title>cascade.set_nthreads &#8212; cascade 0.1 documentation</title>
     
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
-<link href="_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+  <link href="../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
 
     
   <link rel="stylesheet"
-    href="_static/vendor/fontawesome/5.13.0/css/all.min.css">
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
   <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
   <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" href="_static/styles/sphinx-book-theme.css?digest=5115cc725059bd94278eecd172e13a965bf8f5a9" type="text/css" />
-    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
-    <link rel="stylesheet" type="text/css" href="_static/design-style.4045f2051d55cab465a707391d5b2007.min.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" href="../_static/styles/sphinx-book-theme.css?digest=5115cc725059bd94278eecd172e13a965bf8f5a9" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/design-style.4045f2051d55cab465a707391d5b2007.min.css" />
     
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+  <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
 
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/scripts/sphinx-book-theme.js?digest=9c920249402e914e316237a7dbc6769907cce411"></script>
-    <script src="_static/design-tabs.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="API reference" href="api_reference.html" />
-    <link rel="prev" title="Installation" href="install.html" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?digest=9c920249402e914e316237a7dbc6769907cce411"></script>
+    <script src="../_static/design-tabs.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="cascade.get_nthreads" href="cascade.get_nthreads.html" />
+    <link rel="prev" title="cascade.outcome" href="cascade.outcome.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
     
@@ -72,19 +72,19 @@
 <div class="bd-sidebar noprint" id="site-navigation">
     <div class="bd-sidebar__content">
         <div class="bd-sidebar__top"><div class="navbar-brand-box">
-    <a class="navbar-brand text-wrap" href="index.html">
+    <a class="navbar-brand text-wrap" href="../index.html">
       
         <!-- `logo` is deprecated in Sphinx 4.0, so remove this when we stop supporting 3 -->
         
       
       
-      <img src="_static/logo.png" class="logo" alt="logo">
+      <img src="../_static/logo.png" class="logo" alt="logo">
       
       
       <h1 class="site-logo" id="site-title">cascade 0.1 documentation</h1>
       
     </a>
-</div><form class="bd-search d-flex align-items-center" action="search.html" method="get">
+</div><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
   <i class="icon fas fa-search"></i>
   <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
 </form><nav class="bd-links" id="bd-docs-nav" aria-label="Main">
@@ -92,7 +92,7 @@
         
         <ul class="nav bd-sidenav bd-sidenav__home-link">
             <li class="toctree-l1">
-                <a class="reference internal" href="index.html">
+                <a class="reference internal" href="../index.html">
                     cascade
                 </a>
             </li>
@@ -104,53 +104,58 @@
 </p>
 <ul class="current nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="install.html">
+  <a class="reference internal" href="../install.html">
    Installation
   </a>
  </li>
- <li class="toctree-l1 current active">
-  <a class="current reference internal" href="#">
-   User guide
-  </a>
- </li>
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="api_reference.html">
+ <li class="toctree-l1 current active has-children">
+  <a class="reference internal" href="../api_reference.html">
    API reference
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
   <label for="toctree-checkbox-1">
    <i class="fas fa-chevron-down">
    </i>
   </label>
-  <ul>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="mod_cascade.html">
+  <ul class="current">
+   <li class="toctree-l2 current active has-children">
+    <a class="reference internal" href="../mod_cascade.html">
      <code class="xref py py-mod docutils literal notranslate">
       <span class="pre">
        cascade
       </span>
      </code>
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
     <label for="toctree-checkbox-2">
      <i class="fas fa-chevron-down">
      </i>
     </label>
-    <ul>
+    <ul class="current">
      <li class="toctree-l3">
-      <a class="reference internal" href="generated/cascade.sim.html">
+      <a class="reference internal" href="cascade.sim.html">
        cascade.sim
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="generated/cascade.outcome.html">
+      <a class="reference internal" href="cascade.outcome.html">
        cascade.outcome
+      </a>
+     </li>
+     <li class="toctree-l3 current active">
+      <a class="current reference internal" href="#">
+       cascade.set_nthreads
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.get_nthreads.html">
+       cascade.get_nthreads
       </a>
      </li>
     </ul>
    </li>
    <li class="toctree-l2 has-children">
-    <a class="reference internal" href="mod_cascade_dynamics.html">
+    <a class="reference internal" href="../mod_cascade_dynamics.html">
      <code class="xref py py-mod docutils literal notranslate">
       <span class="pre">
        cascade.dynamics
@@ -164,13 +169,23 @@
     </label>
     <ul>
      <li class="toctree-l3">
-      <a class="reference internal" href="generated/cascade.dynamics.kepler.html">
+      <a class="reference internal" href="cascade.dynamics.kepler.html">
        cascade.dynamics.kepler
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="generated/cascade.dynamics.simple_earth.html">
+      <a class="reference internal" href="cascade.dynamics.simple_earth.html">
        cascade.dynamics.simple_earth
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.dynamics.mascon_asteroid.html">
+       cascade.dynamics.mascon_asteroid
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.dynamics.mascon_asteroid_energy.html">
+       cascade.dynamics.mascon_asteroid_energy
       </a>
      </li>
     </ul>
@@ -185,17 +200,17 @@
 </p>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="tutorials/quickstart.html">
+  <a class="reference internal" href="../tutorials/quickstart.html">
    Quickstart
   </a>
  </li>
  <li class="toctree-l1">
-  <a class="reference internal" href="tutorials/conjunctions.html">
+  <a class="reference internal" href="../tutorials/conjunctions.html">
    Conjunctions
   </a>
  </li>
  <li class="toctree-l1">
-  <a class="reference internal" href="tutorials/whitelists.html">
+  <a class="reference internal" href="../tutorials/whitelists.html">
    Whitelists
   </a>
  </li>
@@ -207,17 +222,17 @@
 </p>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="examples/20yearsofLEO_coll.html">
+  <a class="reference internal" href="../examples/20yearsofLEO_coll.html">
    20 years of LEO - (collisions)
   </a>
  </li>
  <li class="toctree-l1">
-  <a class="reference internal" href="examples/oneweekofLEO_conj.html">
+  <a class="reference internal" href="../examples/oneweekofLEO_conj.html">
    One week of LEO - (conjunctions)
   </a>
  </li>
  <li class="toctree-l1">
-  <a class="reference internal" href="examples/itokawa_cubesats.html">
+  <a class="reference internal" href="../examples/itokawa_cubesats.html">
    Swarming Itokawa with cubesats
   </a>
  </li>
@@ -229,17 +244,17 @@
 </p>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="utilities/leo_population.html">
+  <a class="reference internal" href="../utilities/leo_population.html">
    The current LEO population
   </a>
  </li>
  <li class="toctree-l1">
-  <a class="reference internal" href="utilities/simple_atmosphere.html">
+  <a class="reference internal" href="../utilities/simple_atmosphere.html">
    A differentiable atmosphere
   </a>
  </li>
  <li class="toctree-l1">
-  <a class="reference internal" href="utilities/cubes.html">
+  <a class="reference internal" href="../utilities/cubes.html">
    The
    <em>
     Cube
@@ -337,7 +352,7 @@ title="Source repository"
       </li>
       
       <li>
-        <a href="https://github.com/esa/cascade/issues/new?title=Issue%20on%20page%20%2Fuser_guide.html&body=Your%20issue%20content%20here."
+        <a href="https://github.com/esa/cascade/issues/new?title=Issue%20on%20page%20%2Fgenerated/cascade.set_nthreads.html&body=Your%20issue%20content%20here."
    class="headerbtn"
    data-toggle="tooltip"
 data-placement="left"
@@ -365,7 +380,7 @@ title="Open an issue"
   <div class="menu-dropdown__content">
     <ul>
       <li>
-        <a href="_sources/user_guide.rst.txt"
+        <a href="../_sources/generated/cascade.set_nthreads.rst.txt"
    class="headerbtn"
    data-toggle="tooltip"
 data-placement="left"
@@ -414,7 +429,7 @@ title="Print to PDF"
         <div class="col pl-md-3 pl-lg-5 content-container">
             <!-- Table of contents that is only displayed when printing the page -->
             <div id="jb-print-docs-body" class="onlyprint">
-                <h1>User guide</h1>
+                <h1>cascade.set_nthreads</h1>
                 <!-- Table of contents -->
                 <div id="print-main-content">
                     <div id="jb-print-toc">
@@ -426,8 +441,21 @@ title="Print to PDF"
                 
               <div>
                 
-  <section id="user-guide">
-<span id="id1"></span><h1>User guide<a class="headerlink" href="#user-guide" title="Permalink to this headline">#</a></h1>
+  <section id="cascade-set-nthreads">
+<h1>cascade.set_nthreads<a class="headerlink" href="#cascade-set-nthreads" title="Permalink to this headline">#</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="cascade.set_nthreads">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cascade.</span></span><span class="sig-name descname"><span class="pre">set_nthreads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.11)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#cascade.set_nthreads" title="Permalink to this definition">#</a></dt>
+<dd><p>Sets the maximum number of threads allowed.</p>
+<p>Cascades under the hood works with the Threading Building Blocks (TBB) API to control the parallelism of
+all its parts. This function exposes the <em>max_allowed_parallelism</em> TBB global control setter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>n</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><em>int</em></a>) – The maximum allowed number of threads.</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -438,17 +466,17 @@ title="Print to PDF"
                 
     <!-- Previous / next buttons -->
 <div class='prev-next-area'>
-    <a class='left-prev' id="prev-link" href="install.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="cascade.outcome.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Installation</p>
+            <p class="prev-next-title">cascade.outcome</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="api_reference.html" title="next page">
+    <a class='right-next' id="next-link" href="cascade.get_nthreads.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">API reference</p>
+        <p class="prev-next-title">cascade.get_nthreads</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>
@@ -473,7 +501,7 @@ title="Print to PDF"
     </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script src="_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+  <script src="../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
 
 
   </body>

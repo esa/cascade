@@ -30,7 +30,6 @@ cascade is released under the MPL-2.0 license. The authors are Francesco Biscani
    :caption: Contents:
 
    install.rst
-   user_guide.rst
    api_reference.rst
 
 .. grid::
@@ -53,25 +52,6 @@ cascade is released under the MPL-2.0 license. The authors are Francesco Biscani
             :click-parent:
 
             To installation
-
-    .. grid-item-card::
-        :img-top: _static/images/user_guide.svg
-        :text-align: center
-        :padding: 2 2 2 2
-
-        **User Guide**
-
-        TODO what goes here?
-
-        +++
-
-        .. button-ref:: user_guide
-            :ref-type: ref
-            :expand:
-            :color: secondary
-            :click-parent:
-
-            To the User Guide
 
     .. grid-item-card::
         :img-top: _static/images/api.svg

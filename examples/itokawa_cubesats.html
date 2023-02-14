@@ -110,11 +110,6 @@
    Installation
   </a>
  </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="../user_guide.html">
-   User guide
-  </a>
- </li>
  <li class="toctree-l1 has-children">
   <a class="reference internal" href="../api_reference.html">
    API reference
@@ -149,6 +144,16 @@
        cascade.outcome
       </a>
      </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_nthreads.html">
+       cascade.set_nthreads
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.get_nthreads.html">
+       cascade.get_nthreads
+      </a>
+     </li>
     </ul>
    </li>
    <li class="toctree-l2 has-children">
@@ -173,6 +178,16 @@
      <li class="toctree-l3">
       <a class="reference internal" href="../generated/cascade.dynamics.simple_earth.html">
        cascade.dynamics.simple_earth
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.dynamics.mascon_asteroid.html">
+       cascade.dynamics.mascon_asteroid
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.dynamics.mascon_asteroid_energy.html">
+       cascade.dynamics.mascon_asteroid_energy
       </a>
      </li>
     </ul>
@@ -564,7 +579,7 @@ for such a swarm to avoid collision while keeping all the cubesats within some m
 </div>
 <section id="importing-and-defining-the-irregular-body">
 <h2>Importing and defining the irregular body<a class="headerlink" href="#importing-and-defining-the-irregular-body" title="Permalink to this headline">#</a></h2>
-<p>In the example we are going to consider the asteroid <a class="reference external" href="https://en.wikipedia.org/wiki/25143_Itokawa">Itokawa</a> as an example of irregular body, with the understanding that a similar study is possible for any body. We will use mascons to have a representation of irregular bodies. In other words, an asteroid to us will be a set of point masses located in specific positions with some given mass.</p>
+<p>In the example we are going to consider the asteroid <a class="reference external" href="https://en.wikipedia.org/wiki/25143_Itokawa">Itokawa</a>. We will use mascons to have a representation of irregular bodies. In other words, <a class="reference external" href="https://en.wikipedia.org/wiki/25143_Itokawa">Itokawa</a> will be modelled as set of point masses located in specific positions and with some given mass.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;data/itokawa_mascon.pk&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
@@ -579,7 +594,7 @@ for such a swarm to avoid collision while keeping all the cubesats within some m
 </div>
 </div>
 </div>
-<p>In the case of Itokawa, the mascon model of the body is here provided by the pickled file <code class="docutils literal notranslate"><span class="pre">itokawa_mascon.pk</span></code> and was developed in the project <a class="reference external" href="https://github.com/darioizzo/geodesyNets">geodesyNET</a> corresponding to a perfectly uniform density asteroid. We actually know that Itokawa is actually inhomogeneous, but for the purpose of this example this is irrelevant and thus homogenuity is assumed.
+<p>In the case of <a class="reference external" href="https://en.wikipedia.org/wiki/25143_Itokawa">Itokawa</a>, the mascon model of the body is here provided by the pickled file <code class="docutils literal notranslate"><span class="pre">itokawa_mascon.pk</span></code> and was developed in the project <a class="reference external" href="https://github.com/darioizzo/geodesyNets">geodesyNET</a>. This particular mascon model corresponds to a perfectly uniform density asteroid. While Itokawa is actually inhomogeneous, for the purpose of this example a homogenous model can be used too.
 Some physical properties of the asteroid are defined next:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -632,8 +647,8 @@ Some physical properties of the asteroid are defined next:</p>
 <section id="exploring-the-dynamics-of-one-single-cubesat">
 <h2>Exploring the dynamics of one single cubesat<a class="headerlink" href="#exploring-the-dynamics-of-one-single-cubesat" title="Permalink to this headline">#</a></h2>
 <p>Before delving into a full cascade simulation, it is useful to investigate the dynamics of a single cubesat around the irregular body considered. We will do so using directly
-<a class="reference external" href="https://bluescarni.github.io/heyoka.py/index.html">heyoka</a>, knwing that cascade smulations also use Taylor integrators for the dynamics provided via heyoka.</p>
-<p>In then the <code class="code docutils literal notranslate"><span class="pre">cascade.dynamics</span></code> module we provide the dynamics of a spacecraft around a rotating asteroid modelled by a mascon model. The dynamics implements the equations of motion:</p>
+<a class="reference external" href="https://bluescarni.github.io/heyoka.py/index.html">heyoka</a>, knowing that cascade smulations also use Taylor integrators for the dynamics provided via heyoka.</p>
+<p>In the <code class="code docutils literal notranslate"><span class="pre">cascade.dynamics</span></code> module we provide the dynamics of a spacecraft around a rotating asteroid. Such dynamics implements the following equations of motion:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}
 \left\{
@@ -646,12 +661,12 @@ Some physical properties of the asteroid are defined next:</p>
 <p>see the paper <a class="reference external" href="https://arxiv.org/abs/2204.09948">Reliable event detection for Taylor methods in astrodynamics</a> for further information. Note that we are using units where <span class="math notranslate nohighlight">\(G=1\)</span> and <span class="math notranslate nohighlight">\(GM=1\)</span>.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dyn</span> <span class="o">=</span> <span class="n">csc</span><span class="o">.</span><span class="n">dynamics</span><span class="o">.</span><span class="n">rotating_mascon</span><span class="p">(</span><span class="n">Gconst</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">,</span> <span class="n">masses</span><span class="o">=</span><span class="n">mascon_masses</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="n">mascon_points</span><span class="p">,</span> <span class="n">omega</span> <span class="o">=</span> <span class="n">w_vec</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dyn</span> <span class="o">=</span> <span class="n">csc</span><span class="o">.</span><span class="n">dynamics</span><span class="o">.</span><span class="n">mascon_asteroid</span><span class="p">(</span><span class="n">Gconst</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">,</span> <span class="n">masses</span><span class="o">=</span><span class="n">mascon_masses</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="n">mascon_points</span><span class="p">,</span> <span class="n">omega</span> <span class="o">=</span> <span class="n">w_vec</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
-<p>We now instantiate a Taylor integrator using <a class="reference external" href="https://bluescarni.github.io/heyoka.py/index.html">heyoka</a>’s <code class="xref py py-class docutils literal notranslate"><span class="pre">hy.taylor_adaptive</span></code> class. Note that we added two <a class="reference external" href="https://bluescarni.github.io/heyoka.py/notebooks/Event%20detection.html#terminal-events">terminal events</a> to the equations as to perform a manouvre whenever the spacecarft is too close or too far:</p>
+<p>We now instantiate a Taylor integrator using <a class="reference external" href="https://bluescarni.github.io/heyoka.py/index.html">heyoka</a>’s <code class="xref py py-class docutils literal notranslate"><span class="pre">hy.taylor_adaptive</span></code> class. Note that we have added two <a class="reference external" href="https://bluescarni.github.io/heyoka.py/notebooks/Event%20detection.html#terminal-events">terminal events</a> to the equations as to perform a manouvre whenever the spacecarft is too close or too far:</p>
 <div class="math notranslate nohighlight">
 \[
 \Delta \mathbf V =  - 2(\mathbf {\hat r} \cdot \mathbf v) \mathbf {\hat r}
@@ -699,7 +714,7 @@ Some physical properties of the asteroid are defined next:</p>
 </div>
 </div>
 </div>
-<p>We start simulating the orbit from where the cubesats will be deployed, in the non rotating frame. Such an orbit is here designed starting from <span class="math notranslate nohighlight">\(\mathbf r_{ic}\)</span> and a circular velocity of magnitude <span class="math notranslate nohighlight">\(\sqrt{\frac{1}{r_ic}}\)</span>. The resulting dynamics is very sensitive to these choices, given the irregular form of the body and the close proximity to the asteroid we are assuming.</p>
+<p>We start simulating the orbit the cubesats will be deployed from. Such an orbit is here designed in the non-rotating frame with an initial position <span class="math notranslate nohighlight">\(\mathbf r_{ic}\)</span> and a circular velocity of magnitude <span class="math notranslate nohighlight">\(\sqrt{\frac{1}{r_ic}}\)</span>. The resulting dynamics is very sensitive to these choices, given the irregular form of the body and the close proximity to the asteroid.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># This is a phase we can use to design the starting orbit</span>
@@ -735,7 +750,7 @@ Some physical properties of the asteroid are defined next:</p>
 </div>
 <section id="the-mother-trajectory">
 <h3>The “mother” trajectory<a class="headerlink" href="#the-mother-trajectory" title="Permalink to this headline">#</a></h3>
-<p>We now first plot the cubesat trajectory, then compute the control DV that was needed to keep the cubesat at a safe distance.</p>
+<p>We now first plot the cubesat trajectory, then compute the control DV that is needed (if any) to keep the cubesat within the desired range from the asteroid.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># This helper function can be used to transform the simulation output into the inertial frame</span>
@@ -814,7 +829,7 @@ Some physical properties of the asteroid are defined next:</p>
 <img alt="../_images/e418def0d271f3e800164a4ac96c91dbbf28c806d253db2ddd75592b370f2f75.png" src="../_images/e418def0d271f3e800164a4ac96c91dbbf28c806d253db2ddd75592b370f2f75.png" />
 </div>
 </div>
-<p>In case the cubesat manouvres to avoid its entrance into the safety zone, or drifting too far away, we can even evaluate the amount of DV that is provided by the cubesat propulsion system:</p>
+<p>In case the cubesat manouvres to keep itself in the desired range we evaluate the amount of DV that is provided by the cubesat propulsion system:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Total DV: &quot;</span><span class="p">,</span> <span class="n">DV</span> <span class="o">*</span> <span class="n">L</span> <span class="o">/</span> <span class="n">T</span><span class="p">,</span> <span class="s2">&quot;m/s&quot;</span><span class="p">)</span>
@@ -837,7 +852,7 @@ Trajectory duration:  1.0110078428455458 days
 <p>Having had a look at the dynamics of a single cubesat, we move on to study the behaviour of a swarm of cubesats under the same dynamics. We assume that each cubesat has the capability to perform manouvres whenever it gets too close to another element of the swarm, to the central body or whenever it flies too far away.</p>
 <p>We thus instantiate a <a class="reference internal" href="../generated/cascade.sim.html#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">cascade.sim</span></code></a> object to perform a collision simulation where each body has the same collisional radius. Upon the detection of a collision event we will perfrom an avoidance manouvre.
 Upon detection of a reentry or exit event (in this case corresponding to entering the safe sphere) we perform a manouvre to invert the radial component of the velocity.</p>
-<p>At the beginning only the mother craft is in the simulation. Slowly at each deployment we will add cubesats.</p>
+<p>At the beginning only the mother craft is in the simulation. At each deployment a new cubesat will be co-orbiting the asteroid.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Number of cubesats to simulate</span>
@@ -871,8 +886,8 @@ Upon detection of a reentry or exit event (in this case corresponding to enterin
 </div>
 </div>
 </div>
-<p>We now run a simulation where collisions are avoided by a virtual elastic collision (using cubesat <span class="math notranslate nohighlight">\(DV\)</span>)
-and all cubesats are forced to remain within the exit and the safety radius (using cubesat <span class="math notranslate nohighlight">\(DV\)</span>).</p>
+<p>We now run a simulation where collisions are avoided by a collision avoidance manouvre simulating a virtual elastic collision (and using cubesat <span class="math notranslate nohighlight">\(DV\)</span>)
+and to remain within the exit and the safety radius (using cubesat <span class="math notranslate nohighlight">\(DV\)</span>).</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Simulation length in time units</span>
@@ -987,7 +1002,7 @@ Number of re-approach manouvres:  4
 </div>
 </div>
 </div>
-<p>We plot the cubesats positions and the positions of all manouvres.</p>
+<p>Finally we plot the cubesats positions during the simulation and the positions of all manouvres performed.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ev_pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ev_pos</span><span class="p">)</span>
@@ -1042,7 +1057,7 @@ Number of re-approach manouvres:  4
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>All manouvres to keep the swarm within the defined range happen, as expected, at the surface of the spheres defining the allowed zone. The collision avoidance manouvres appear clusered in specific areas defined by the complex dynamics.</p>
+<p>The collision avoidance manouvres appear clusered in specific areas defined by the complex dynamics. If present, all manouvres to keep the swarm within the defined range happen, as expected, at the surface of the spheres defining the allowed zone.</p>
 </div>
 <p>We also plot the <span class="math notranslate nohighlight">\(DV\)</span> distribution.</p>
 <div class="cell docutils container">

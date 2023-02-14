@@ -108,11 +108,6 @@
    Installation
   </a>
  </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="../user_guide.html">
-   User guide
-  </a>
- </li>
  <li class="toctree-l1 has-children">
   <a class="reference internal" href="../api_reference.html">
    API reference
@@ -147,6 +142,16 @@
        cascade.outcome
       </a>
      </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_nthreads.html">
+       cascade.set_nthreads
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.get_nthreads.html">
+       cascade.get_nthreads
+      </a>
+     </li>
     </ul>
    </li>
    <li class="toctree-l2 has-children">
@@ -171,6 +176,16 @@
      <li class="toctree-l3">
       <a class="reference internal" href="../generated/cascade.dynamics.simple_earth.html">
        cascade.dynamics.simple_earth
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.dynamics.mascon_asteroid.html">
+       cascade.dynamics.mascon_asteroid
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.dynamics.mascon_asteroid_energy.html">
+       cascade.dynamics.mascon_asteroid_energy
       </a>
      </li>
     </ul>
@@ -613,7 +628,7 @@ title="Print to PDF"
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/8a426879cfcb4674ed2ae00d5c2f49a8913afdda96d0c4edb2490fc90405a35c.png" src="../_images/8a426879cfcb4674ed2ae00d5c2f49a8913afdda96d0c4edb2490fc90405a35c.png" />
+<img alt="../_images/cd3e644f757b35f65d1aa695be126c34b95d4f6056e394104f8711946b21166c.png" src="../_images/cd3e644f757b35f65d1aa695be126c34b95d4f6056e394104f8711946b21166c.png" />
 </div>
 </div>
 </section>
@@ -639,7 +654,7 @@ title="Print to PDF"
 </div>
 </div>
 </div>
-<p>At the end of this simulation all conjunctions will be stored in the attribute <code class="xref py py-class docutils literal notranslate"><span class="pre">cascade.sim.conjunctions</span></code>. This contains in each line the idx of the two objects, the conjunction time, the closest distance and the states of the two particles at the conjunction.</p>
+<p>At the end of this simulation all conjunctions will be stored in the attribute <a class="reference internal" href="../generated/cascade.sim.html#cascade.sim.conjunctions" title="cascade.sim.conjunctions"><code class="xref py py-class docutils literal notranslate"><span class="pre">cascade.sim.conjunctions</span></code></a>. This contains in each line the idx of the two objects, the conjunction time, the closest distance and the states of the two particles at the conjunction.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">conj_n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">conjunctions</span><span class="p">)</span>
@@ -650,8 +665,8 @@ title="Print to PDF"
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of conjunctions:  474
-Minimal conjunction distance:  0.00011592615595355195
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of conjunctions:  465
+Minimal conjunction distance:  0.0004109803347782125
 </pre></div>
 </div>
 </div>
@@ -685,7 +700,7 @@ Minimal conjunction distance:  0.00011592615595355195
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/a24b506434584728ede8d3227a9dbe7b960399ae980120ea3cee5c5f92ff3b9c.png" src="../_images/a24b506434584728ede8d3227a9dbe7b960399ae980120ea3cee5c5f92ff3b9c.png" />
+<img alt="../_images/bd43555647ffd7062cdf2e0943d9e3d572a4ce3a435ef9172d195fb5ac748694.png" src="../_images/bd43555647ffd7062cdf2e0943d9e3d572a4ce3a435ef9172d195fb5ac748694.png" />
 </div>
 </div>
 <p>as expected, in this case, conjunctions happen more or less uniformly in the Keplerian ring defined by the orbits.</p>
