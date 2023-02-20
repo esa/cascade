@@ -625,7 +625,7 @@ Sets the logger level to "info"
 Cascade under the hood works with the `spdlog C++ logging library <https://github.com/gabime/spdlog>`__ API to control the screen verbosity of
 its screen logs. This function sets the level to "info".
 
-When this level is activated cascade will also report on screen generic information.
+When this level is activated cascade will report the minimal amount of information.
 
 )";
 }
