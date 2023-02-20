@@ -47,6 +47,14 @@ std::string sim_remove_particles_docstring();
 std::string set_nthreads_docstring();
 std::string get_nthreads_docstring();
 
+std::string set_logger_level_trace_docstring();
+std::string set_logger_level_debug_docstring();
+std::string set_logger_level_info_docstring();
+std::string set_logger_level_warn_docstring();
+std::string set_logger_level_err_docstring();
+std::string set_logger_level_critical_docstring();
+
+
 } // namespace cascade_py::docstrings
 
 #endif

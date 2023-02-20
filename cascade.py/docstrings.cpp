@@ -532,7 +532,7 @@ std::string set_nthreads_docstring()
 
 Sets the maximum number of threads allowed.
 
-Cascades under the hood works with the Threading Building Blocks (TBB) API to control the parallelism of
+Cascade under the hood works with the Threading Building Blocks (TBB) API to control the parallelism of
 all its parts. This function exposes the *max_allowed_parallelism* TBB global control setter.
 
 Parameters
@@ -550,7 +550,7 @@ std::string get_nthreads_docstring()
 
 Gets the maximum number of threads allowed.
 
-Cascades under the hood works with the Threading Building Blocks (TBB) API to control the parallelism of
+Cascade under the hood works with the Threading Building Blocks (TBB) API to control the parallelism of
 all its parts. This function exposes the *max_allowed_parallelism* TBB global control getter.
 
 Returns
@@ -558,6 +558,78 @@ Returns
 
 n: int
    The maximum allowed number of threads.
+
+)";
+}
+
+std::string set_logger_level_trace_docstring()
+{
+    return R"(set_logger_level_trace() -> None
+
+Sets the logger level to "trace"
+
+Cascade under the hood works with the `spdlog C++ logging library <https://github.com/gabime/spdlog>`__ API to control the screen verbosity of
+its screen logs. This function sets the level to "trace".
+
+)";
+}
+
+std::string set_logger_level_debug_docstring()
+{
+    return R"(set_logger_level_debug() -> None
+
+Sets the logger level to "debug"
+
+Cascade under the hood works with the `spdlog C++ logging library <https://github.com/gabime/spdlog>`__ API to control the screen verbosity of
+its screen logs. This function sets the level to "debug".
+
+)";
+}
+
+std::string set_logger_level_info_docstring()
+{
+    return R"(set_logger_level_info() -> None
+
+Sets the logger level to "info"
+
+Cascade under the hood works with the `spdlog C++ logging library <https://github.com/gabime/spdlog>`__ API to control the screen verbosity of
+its screen logs. This function sets the level to "info".
+
+)";
+}
+
+std::string set_logger_level_warn_docstring()
+{
+    return R"(set_logger_level_warn() -> None
+
+Sets the logger level to "warn"
+
+Cascade under the hood works with the `spdlog C++ logging library <https://github.com/gabime/spdlog>`__ API to control the screen verbosity of
+its screen logs. This function sets the level to "warn".
+
+)";
+}
+
+std::string set_logger_level_err_docstring()
+{
+    return R"(set_logger_level_err() -> None
+
+Sets the logger level to "err"
+
+Cascade under the hood works with the `spdlog C++ logging library <https://github.com/gabime/spdlog>`__ API to control the screen verbosity of
+its screen logs. This function sets the level to "err".
+
+)";
+}
+
+std::string set_logger_level_critical_docstring()
+{
+    return R"(set_logger_level_critical() -> None
+
+Sets the logger level to "critical"
+
+Cascade under the hood works with the `spdlog C++ logging library <https://github.com/gabime/spdlog>`__ API to control the screen verbosity of
+its screen logs. This function sets the level to "critical".
 
 )";
 }

@@ -10,6 +10,7 @@
 
 #include <cascade/logging.hpp>
 
+#include "docstrings.hpp"
 #include "logging.hpp"
 
 namespace cascade_py
@@ -19,12 +20,12 @@ void expose_logging_setters(py::module_ &m)
 {
     namespace csc = cascade;
 
-    m.def("set_logger_level_trace", &csc::set_logger_level_trace);
-    m.def("set_logger_level_debug", &csc::set_logger_level_debug);
-    m.def("set_logger_level_info", &csc::set_logger_level_info);
-    m.def("set_logger_level_warn", &csc::set_logger_level_warn);
-    m.def("set_logger_level_err", &csc::set_logger_level_err);
-    m.def("set_logger_level_critical", &csc::set_logger_level_critical);
+    m.def("set_logger_level_trace", &csc::set_logger_level_trace, docstrings::set_logger_level_trace_docstring().c_str());
+    m.def("set_logger_level_debug", &csc::set_logger_level_debug, docstrings::set_logger_level_debug_docstring().c_str());
+    m.def("set_logger_level_info", &csc::set_logger_level_info, docstrings::set_logger_level_info_docstring().c_str());
+    m.def("set_logger_level_warn", &csc::set_logger_level_warn, docstrings::set_logger_level_warn_docstring().c_str());
+    m.def("set_logger_level_err", &csc::set_logger_level_err, docstrings::set_logger_level_err_docstring().c_str());
+    m.def("set_logger_level_critical", &csc::set_logger_level_critical, docstrings::set_logger_level_critical_docstring().c_str());
 }
 
 } // namespace cascade_py

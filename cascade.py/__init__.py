@@ -20,6 +20,12 @@ Classes
     outcome
     set_nthreads
     get_nthreads
+    set_logger_level_trace
+    set_logger_level_debug
+    set_logger_level_info
+    set_logger_level_warn
+    set_logger_level_err
+    set_logger_level_critical
 
 """
 
