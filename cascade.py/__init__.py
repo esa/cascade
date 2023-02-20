@@ -17,6 +17,13 @@ Classes
     :template: custom-class-template.rst
 
     sim
+    
+Enums
+---------
+
+.. autosummary::
+    :toctree: generated/
+    
     outcome
 
 Functions
