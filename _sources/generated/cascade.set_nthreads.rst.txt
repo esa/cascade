@@ -3,15 +3,4 @@
 
 .. currentmodule:: cascade
 
-.. autoclass:: set_nthreads
-   :members:
-   :special-members: __init__
-   
-
-   
-   
-   
-
-   
-   
-   
+.. autofunction:: set_nthreads

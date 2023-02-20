@@ -151,6 +151,36 @@
        cascade.get_nthreads
       </a>
      </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="generated/cascade.set_logger_level_trace.html">
+       cascade.set_logger_level_trace
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="generated/cascade.set_logger_level_debug.html">
+       cascade.set_logger_level_debug
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="generated/cascade.set_logger_level_info.html">
+       cascade.set_logger_level_info
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="generated/cascade.set_logger_level_warn.html">
+       cascade.set_logger_level_warn
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="generated/cascade.set_logger_level_err.html">
+       cascade.set_logger_level_err
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="generated/cascade.set_logger_level_critical.html">
+       cascade.set_logger_level_critical
+      </a>
+     </li>
     </ul>
    </li>
    <li class="toctree-l2 has-children">
@@ -444,7 +474,7 @@ title="Print to PDF"
 <h1>cascade<a class="headerlink" href="#cascade" title="Permalink to this headline">#</a></h1>
 <blockquote>
 <div><p>As the number of artificial satellites orbiting our planet grows, the likelihood of collisions increases,
-potentially leading to a chain reaction that could make certain orbits unusable.</p>
+potentially triggering a collisional chain reaction and making certain orbits unusable.</p>
 </div></blockquote>
 <p>cascade is a C++/Python library developed to propagate the evolution of large number of orbiting objects while detecting
 reliably close encounters and collisions. It is coded in modern C++20 with focus on the efficency of the underlying N-body
@@ -452,6 +482,7 @@ simulation with collision/conjunction detection. Its development was motivated t
 collision detection of orbiting space debris populations.</p>
 <p>Notable features include:</p>
 <ul class="simple">
+<li><p>a new and original collision detection algorithm based on high order Taylor expansions,</p></li>
 <li><p>guaranteed detection of all occuring collisions and conjunctions,</p></li>
 <li><p>high precision orbital propagation via Taylor integration,</p></li>
 <li><p>possibility to define custom dynamics,</p></li>

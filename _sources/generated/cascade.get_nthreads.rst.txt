@@ -3,15 +3,4 @@
 
 .. currentmodule:: cascade
 
-.. autoclass:: get_nthreads
-   :members:
-   :special-members: __init__
-   
-
-   
-   
-   
-
-   
-   
-   
+.. autofunction:: get_nthreads

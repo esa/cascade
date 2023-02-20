@@ -36,7 +36,7 @@
     <script src="../_static/design-tabs.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="cascade.dynamics" href="../mod_cascade_dynamics.html" />
+    <link rel="next" title="cascade.set_logger_level_trace" href="cascade.set_logger_level_trace.html" />
     <link rel="prev" title="cascade.set_nthreads" href="cascade.set_nthreads.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
@@ -150,6 +150,36 @@
      <li class="toctree-l3 current active">
       <a class="current reference internal" href="#">
        cascade.get_nthreads
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.set_logger_level_trace.html">
+       cascade.set_logger_level_trace
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.set_logger_level_debug.html">
+       cascade.set_logger_level_debug
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.set_logger_level_info.html">
+       cascade.set_logger_level_info
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.set_logger_level_warn.html">
+       cascade.set_logger_level_warn
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.set_logger_level_err.html">
+       cascade.set_logger_level_err
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="cascade.set_logger_level_critical.html">
+       cascade.set_logger_level_critical
       </a>
      </li>
     </ul>
@@ -443,11 +473,11 @@ title="Print to PDF"
                 
   <section id="cascade-get-nthreads">
 <h1>cascade.get_nthreads<a class="headerlink" href="#cascade-get-nthreads" title="Permalink to this headline">#</a></h1>
-<dl class="py class">
+<dl class="py function">
 <dt class="sig sig-object py" id="cascade.get_nthreads">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cascade.</span></span><span class="sig-name descname"><span class="pre">get_nthreads</span></span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a></span></span><a class="headerlink" href="#cascade.get_nthreads" title="Permalink to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">cascade.</span></span><span class="sig-name descname"><span class="pre">get_nthreads</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a></span></span><a class="headerlink" href="#cascade.get_nthreads" title="Permalink to this definition">#</a></dt>
 <dd><p>Gets the maximum number of threads allowed.</p>
-<p>Cascades under the hood works with the Threading Building Blocks (TBB) API to control the parallelism of
+<p>Cascade under the hood works with the Threading Building Blocks (TBB) API to control the parallelism of
 all its parts. This function exposes the <em>max_allowed_parallelism</em> TBB global control getter.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
@@ -476,10 +506,10 @@ all its parts. This function exposes the <em>max_allowed_parallelism</em> TBB gl
             <p class="prev-next-title">cascade.set_nthreads</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="../mod_cascade_dynamics.html" title="next page">
+    <a class='right-next' id="next-link" href="cascade.set_logger_level_trace.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">cascade.dynamics</span></code></p>
+        <p class="prev-next-title">cascade.set_logger_level_trace</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

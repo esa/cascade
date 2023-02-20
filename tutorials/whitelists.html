@@ -154,6 +154,36 @@
        cascade.get_nthreads
       </a>
      </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_logger_level_trace.html">
+       cascade.set_logger_level_trace
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_logger_level_debug.html">
+       cascade.set_logger_level_debug
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_logger_level_info.html">
+       cascade.set_logger_level_info
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_logger_level_warn.html">
+       cascade.set_logger_level_warn
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_logger_level_err.html">
+       cascade.set_logger_level_err
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_logger_level_critical.html">
+       cascade.set_logger_level_critical
+      </a>
+     </li>
     </ul>
    </li>
    <li class="toctree-l2 has-children">
@@ -645,7 +675,7 @@ title="Print to PDF"
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/3043ee28e52d41da1743a90522e71d49293097c52d81ceb49637728665245714.png" src="../_images/3043ee28e52d41da1743a90522e71d49293097c52d81ceb49637728665245714.png" />
+<img alt="../_images/f2f6942b2c0215b14635b70beb9a3cb84424d4a99e04d5da10f2eac482a01c60.png" src="../_images/f2f6942b2c0215b14635b70beb9a3cb84424d4a99e04d5da10f2eac482a01c60.png" />
 </div>
 </div>
 </section>
@@ -697,8 +727,8 @@ title="Print to PDF"
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[2023-02-14 09:17:00.422] [cascade] [trace] Integrators setup time: 0.810280909s
-[2023-02-14 09:17:00.686] [cascade] [trace] JIT functions setup time: 0.263069601s
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[2023-02-20 15:18:50.190] [cascade] [trace] Integrators setup time: 0.346186353s
+[2023-02-20 15:18:50.346] [cascade] [trace] JIT functions setup time: 0.155735316s
 </pre></div>
 </div>
 </div>
@@ -714,19 +744,19 @@ title="Print to PDF"
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[2023-02-14 09:17:03.519] [cascade] [trace] ---- STEP BEGIN ---
-[2023-02-14 09:17:03.519] [cascade] [trace] Number of chunks: 10
-[2023-02-14 09:17:03.531] [cascade] [trace] Propagation + AABB computation time: 0.012357934s
-[2023-02-14 09:17:03.547] [cascade] [trace] Morton encoding and sorting time: 0.015623162s
-[2023-02-14 09:17:03.591] [cascade] [trace] BVH construction time: 0.044566595s
-[2023-02-14 09:17:03.945] [cascade] [trace] Broad phase collision detection time: 0.354104341s
-[2023-02-14 09:17:03.946] [cascade] [trace] Average number of AABB collisions per particle per chunk: 0.03350329934013198
-[2023-02-14 09:17:03.949] [cascade] [trace] Narrow phase collision detection time: 0.002799526s
-[2023-02-14 09:17:03.949] [cascade] [trace] Total number of collisions detected: 0
-[2023-02-14 09:17:03.949] [cascade] [trace] Total number of conjunctions detected: 0
-[2023-02-14 09:17:03.950] [cascade] [trace] Runtime for append_conj_data(): 2.24e-06s
-[2023-02-14 09:17:03.950] [cascade] [trace] Total propagation time: 0.431442951s
-[2023-02-14 09:17:03.950] [cascade] [trace] ---- STEP END ---
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[2023-02-20 15:18:50.948] [cascade] [trace] ---- STEP BEGIN ---
+[2023-02-20 15:18:50.948] [cascade] [trace] Number of chunks: 10
+[2023-02-20 15:18:50.954] [cascade] [trace] Propagation + AABB computation time: 0.006051181s
+[2023-02-20 15:18:50.956] [cascade] [trace] Morton encoding and sorting time: 0.001223794s
+[2023-02-20 15:18:50.960] [cascade] [trace] BVH construction time: 0.004123854s
+[2023-02-20 15:18:50.975] [cascade] [trace] Broad phase collision detection time: 0.014795491s
+[2023-02-20 15:18:50.975] [cascade] [trace] Average number of AABB collisions per particle per chunk: 0.01936612677464507
+[2023-02-20 15:18:50.975] [cascade] [trace] Narrow phase collision detection time: 0.000364852s
+[2023-02-20 15:18:50.975] [cascade] [trace] Total number of collisions detected: 0
+[2023-02-20 15:18:50.975] [cascade] [trace] Total number of conjunctions detected: 0
+[2023-02-20 15:18:50.975] [cascade] [trace] Runtime for append_conj_data(): 1.47e-06s
+[2023-02-20 15:18:50.975] [cascade] [trace] Total propagation time: 0.026743782s
+[2023-02-20 15:18:50.975] [cascade] [trace] ---- STEP END ---
 </pre></div>
 </div>
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;outcome.success: 0&gt;

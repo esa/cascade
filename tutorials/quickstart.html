@@ -152,6 +152,36 @@
        cascade.get_nthreads
       </a>
      </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_logger_level_trace.html">
+       cascade.set_logger_level_trace
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_logger_level_debug.html">
+       cascade.set_logger_level_debug
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_logger_level_info.html">
+       cascade.set_logger_level_info
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_logger_level_warn.html">
+       cascade.set_logger_level_warn
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_logger_level_err.html">
+       cascade.set_logger_level_err
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_logger_level_critical.html">
+       cascade.set_logger_level_critical
+      </a>
+     </li>
     </ul>
    </li>
    <li class="toctree-l2 has-children">
@@ -550,7 +580,7 @@ title="Print to PDF"
   <section class="tex2jax_ignore mathjax_ignore" id="quickstart">
 <h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">#</a></h1>
 <p>In this tutorial we will setup a quick and simple simulation that gives us the occasion to show the basic features of cascade. For basic astrodynamics
-computations we make use of <a class="reference external" href="https://esa.github.io/pykep/">pykep</a>. We are going to simulate a random population of objects in a Keplerian orbit around the Earth and monitor their collisions and conjunctions.</p>
+computations we make use of <a class="reference external" href="https://esa.github.io/pykep/">pykep</a>. We are going to simulate a random population of 1,000 objects orbiting around the Earth in a purely Keplerian fashion and we will monitor their collisions and conjunctions.</p>
 <p>Let us start with some imports:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -570,7 +600,7 @@ computations we make use of <a class="reference external" href="https://esa.gith
 </div>
 <section id="the-dynamics">
 <h2>The dynamics<a class="headerlink" href="#the-dynamics" title="Permalink to this headline">#</a></h2>
-<p>For this quickstart we will make use a simple non dimensional Keplerian dynamics and make use of the <a class="reference internal" href="../mod_cascade_dynamics.html#module-cascade.dynamics" title="cascade.dynamics"><code class="xref py py-mod docutils literal notranslate"><span class="pre">cascade.dynamics</span></code></a> module to instantiate it.</p>
+<p>For this tutorial we will make use a simple non dimensional Keplerian dynamics and make use of the <a class="reference internal" href="../mod_cascade_dynamics.html#module-cascade.dynamics" title="cascade.dynamics"><code class="xref py py-mod docutils literal notranslate"><span class="pre">cascade.dynamics</span></code></a> module to instantiate it.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>A dynamics is defined by tuples of <a class="reference external" href="https://bluescarni.github.io/heyoka.py/">heyoka</a> expressions containing the state variable and the corresponding expression for its derivative.</p>
@@ -597,7 +627,7 @@ computations we make use of <a class="reference external" href="https://esa.gith
 </section>
 <section id="the-initial-conditions">
 <h2>The initial conditions<a class="headerlink" href="#the-initial-conditions" title="Permalink to this headline">#</a></h2>
-<p>As initial conditions we need to define the starting values for the state of all objects as well as their dimension, which will be used to define collisions. We make sure, for the purpose of this quickstart to define rather large particles as to make sure collisions would show up already early on.</p>
+<p>To fully define the system initial conditions we need to define the starting values for the position and velocity of all orbiting objects as well as their dimension (see <a class="reference internal" href="../generated/cascade.sim.html#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">cascade.sim</span></code></a>), which will be used to define collisions. We here make sure to define rather large particles as to allow collisions show up already early on.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">N</span> <span class="o">=</span> <span class="mi">1000</span> <span class="c1"># number of objects simulated</span>
@@ -644,13 +674,13 @@ computations we make use of <a class="reference external" href="https://esa.gith
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/e71b6d03c6f57676b0e91d79b2d9877eae99a65bdf2648824c358aea132f0b20.png" src="../_images/e71b6d03c6f57676b0e91d79b2d9877eae99a65bdf2648824c358aea132f0b20.png" />
+<img alt="../_images/5dcf1541e5241b7a698b95add9f92399847c6ec9b8af2518015f99e9754f9ac0.png" src="../_images/5dcf1541e5241b7a698b95add9f92399847c6ec9b8af2518015f99e9754f9ac0.png" />
 </div>
 </div>
 </section>
 <section id="building-the-simulation">
 <h2>Building the simulation<a class="headerlink" href="#building-the-simulation" title="Permalink to this headline">#</a></h2>
-<p>cascade main interface is offered via <a class="reference internal" href="../generated/cascade.sim.html#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">cascade.sim</span></code></a>, essentially, a container for the dynamics of n-bodies that interact only via collisions and possible conjunctions. By default a cascade simulation will track collision between all the objects. To activate conjunction tracking, minimal collision radii, object whitelists or reentry/ exit events, specific arguments need to be defined and are the subject of more advanced tutorials.</p>
+<p>cascade main interface is offered via <a class="reference internal" href="../generated/cascade.sim.html#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">cascade.sim</span></code></a>, essentially, a container for the dynamics of n-bodies that interact only via collisions and possible conjunctions. By default a cascade simulation will only track collisions between all the objects. To activate conjunction tracking, minimal collision radii, object whitelists or reentry / exit events, specific arguments need to be defined and are the subject of more advanced tutorials.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sim</span> <span class="o">=</span> <span class="n">csc</span><span class="o">.</span><span class="n">sim</span><span class="p">(</span><span class="n">state</span> <span class="o">=</span> <span class="n">ic_state</span><span class="p">,</span> <span class="n">dyn</span><span class="o">=</span><span class="n">dyn</span><span class="p">,</span> <span class="n">ct</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">90</span><span class="p">)</span>
@@ -658,7 +688,11 @@ computations we make use of <a class="reference external" href="https://esa.gith
 </div>
 </div>
 </div>
-<p>the <code class="docutils literal notranslate"><span class="pre">state</span></code> kwarg initializes the initial conditions for the simulation. the <code class="docutils literal notranslate"><span class="pre">dyn</span></code> kwarg specifies the dynamics and the <code class="docutils literal notranslate"><span class="pre">ct</span></code> kwarg, called collisional timestep, a time interval that represents how frequently cascade resolves collisions and conjunctions between particles. Note that whatever the value of <code class="docutils literal notranslate"><span class="pre">ct</span></code> cascade guarantees the detection of all collisions and conjunctions, but according to its value the resulting cost of the guaranteed algorithm may vary greatly.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">state</span></code> kwarg initializes the initial conditions for the simulation. The <code class="docutils literal notranslate"><span class="pre">dyn</span></code> kwarg specifies the dynamics and the <code class="docutils literal notranslate"><span class="pre">ct</span></code> kwarg, called collisional timestep, a time interval that represents how frequently cascade resolves collisions and conjunctions between particles.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The value chosen for the collisional timestep does not modify the results of the simulation, only its efficiency! Its value should be small enough to allow a good amount of collisions to be excluded on the basis of the preliminary broad-phase of the cascade algorithm. Choosing an exeedingly small value, on the other hand, will result in a slow runtime as too many collision checks are performed.</p>
+</div>
 </section>
 <section id="running-the-simulation-up-to-the-first-collision">
 <h2>Running the simulation up to the first collision<a class="headerlink" href="#running-the-simulation-up-to-the-first-collision" title="Permalink to this headline">#</a></h2>
@@ -672,7 +706,7 @@ computations we make use of <a class="reference external" href="https://esa.gith
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>We have setup things so that a collision is almost certainly happening early on …. if thats the case the simulation <a class="reference internal" href="../generated/cascade.outcome.html#cascade.outcome" title="cascade.outcome"><code class="xref py py-class docutils literal notranslate"><span class="pre">outcome</span></code></a> will be <code class="docutils literal notranslate"><span class="pre">collision</span></code> and the information contained in the  <a class="reference internal" href="../generated/cascade.sim.html#cascade.sim.interrupt_info" title="cascade.sim.interrupt_info"><code class="xref py py-attr docutils literal notranslate"><span class="pre">interrupt_info</span></code></a> attribute will be the ids of the objects involved.</p>
+<p>We have setup things so that a collision is almost certainly happening early on …. if thats the case the simulation <a class="reference internal" href="../generated/cascade.outcome.html#cascade.outcome" title="cascade.outcome"><code class="xref py py-class docutils literal notranslate"><span class="pre">outcome</span></code></a> will be <code class="docutils literal notranslate"><span class="pre">collision</span></code> and the information contained in the <a class="reference internal" href="../generated/cascade.sim.html#cascade.sim.interrupt_info" title="cascade.sim.interrupt_info"><code class="xref py py-attr docutils literal notranslate"><span class="pre">interrupt_info</span></code></a> attribute will be identify the objects involved.</p>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -686,14 +720,14 @@ computations we make use of <a class="reference external" href="https://esa.gith
 </div>
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Outcome:  collision
-Time:  15.75180414327871
-Particle 579 collided with particle 876
+Time:  10.731830411540287
+Particle 89 collided with particle 704
 </pre></div>
 </div>
 </div>
 </div>
-<p>At this point one can react to the collision adding fragments, removing particles, ignoring the collision etc.. to then start again the simulation. In this first tutorial we stop and
-visualize the collision position.</p>
+<p>At this point one can react to the collision adding fragments, removing particles, ignoring the collision etc.. to then start again the simulation. We here stop and
+visualize the position of the collision.</p>
 </section>
 <section id="plotting-the-collision-position">
 <h2>Plotting the collision position<a class="headerlink" href="#plotting-the-collision-position" title="Permalink to this headline">#</a></h2>
@@ -721,7 +755,7 @@ visualize the collision position.</p>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/686dd068bb7d055614a22cc4654fbf1c0107422bcee346877da6bec5b35121ed.png" src="../_images/686dd068bb7d055614a22cc4654fbf1c0107422bcee346877da6bec5b35121ed.png" />
+<img alt="../_images/3ff0efdd6b6ff52c7df2856b2413c043bba2dc803f91db970a2835a3b150e35a.png" src="../_images/3ff0efdd6b6ff52c7df2856b2413c043bba2dc803f91db970a2835a3b150e35a.png" />
 </div>
 </div>
 </section>

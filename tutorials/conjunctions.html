@@ -152,6 +152,36 @@
        cascade.get_nthreads
       </a>
      </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_logger_level_trace.html">
+       cascade.set_logger_level_trace
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_logger_level_debug.html">
+       cascade.set_logger_level_debug
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_logger_level_info.html">
+       cascade.set_logger_level_info
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_logger_level_warn.html">
+       cascade.set_logger_level_warn
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_logger_level_err.html">
+       cascade.set_logger_level_err
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="../generated/cascade.set_logger_level_critical.html">
+       cascade.set_logger_level_critical
+      </a>
+     </li>
     </ul>
    </li>
    <li class="toctree-l2 has-children">
@@ -549,7 +579,7 @@ title="Print to PDF"
                 
   <section class="tex2jax_ignore mathjax_ignore" id="conjunctions">
 <h1>Conjunctions<a class="headerlink" href="#conjunctions" title="Permalink to this headline">#</a></h1>
-<p>In this tutorial we repeat the simulation in <a class="reference internal" href="quickstart.html"><span class="doc std std-doc">quickstart</span></a>, but instead of stopping at a collision to then have the possibility to react and proceed, we only track conjunctions.</p>
+<p>In this tutorial we consider the simulation we described in <a class="reference internal" href="quickstart.html"><span class="doc std std-doc">quickstart</span></a>, but instead of stopping at a collision, to then have the possibility to react and proceed, we will only track conjunctions and switch off collisions.</p>
 <p>Let us start with some imports:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -628,7 +658,7 @@ title="Print to PDF"
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/cd3e644f757b35f65d1aa695be126c34b95d4f6056e394104f8711946b21166c.png" src="../_images/cd3e644f757b35f65d1aa695be126c34b95d4f6056e394104f8711946b21166c.png" />
+<img alt="../_images/be55cda898e6d79100ebe7fd418967ce05aae54cb1a070b08e0456775863293b.png" src="../_images/be55cda898e6d79100ebe7fd418967ce05aae54cb1a070b08e0456775863293b.png" />
 </div>
 </div>
 </section>
@@ -642,7 +672,7 @@ title="Print to PDF"
 </div>
 </div>
 </div>
-<p>Two arguments have been added with respect to <a class="reference internal" href="quickstart.html"><span class="doc std std-doc">quickstart</span></a>. The argument <code class="docutils literal notranslate"><span class="pre">conj_thresh</span></code> defines the conjunction threshold. All conjunction events with closest distance smaller than <code class="docutils literal notranslate"><span class="pre">conj_thresh</span></code> will be detected and reported. The argument <code class="docutils literal notranslate"><span class="pre">min_coll_radius</span></code> ignores all collisions between objects having radius smaller than its value. In this case we use infinity hence switching off all collision events.</p>
+<p>Two arguments have been added with respect to the similar simulation presented in <a class="reference internal" href="quickstart.html"><span class="doc std std-doc">quickstart</span></a>. The argument <code class="docutils literal notranslate"><span class="pre">conj_thresh</span></code> defines the conjunction threshold. All conjunction events with closest distance smaller than <code class="docutils literal notranslate"><span class="pre">conj_thresh</span></code> will be detected and reported. The argument <code class="docutils literal notranslate"><span class="pre">min_coll_radius</span></code> ignores all collisions between objects having radius smaller than its value. In this case we use infinity hence switching off all collision events.</p>
 </section>
 <section id="running-the-simulation">
 <h2>Running the simulation<a class="headerlink" href="#running-the-simulation" title="Permalink to this headline">#</a></h2>
@@ -665,8 +695,8 @@ title="Print to PDF"
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of conjunctions:  465
-Minimal conjunction distance:  0.0004109803347782125
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Number of conjunctions:  485
+Minimal conjunction distance:  0.00014009937859590213
 </pre></div>
 </div>
 </div>
@@ -700,7 +730,7 @@ Minimal conjunction distance:  0.0004109803347782125
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/bd43555647ffd7062cdf2e0943d9e3d572a4ce3a435ef9172d195fb5ac748694.png" src="../_images/bd43555647ffd7062cdf2e0943d9e3d572a4ce3a435ef9172d195fb5ac748694.png" />
+<img alt="../_images/0d5f341815a21b59a7bd71715035d0d5e1c747d3038dd5269157e75284174325.png" src="../_images/0d5f341815a21b59a7bd71715035d0d5e1c747d3038dd5269157e75284174325.png" />
 </div>
 </div>
 <p>as expected, in this case, conjunctions happen more or less uniformly in the Keplerian ring defined by the orbits.</p>
