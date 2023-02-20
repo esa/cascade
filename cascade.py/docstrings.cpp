@@ -571,6 +571,33 @@ Sets the logger level to "trace"
 Cascade under the hood works with the `spdlog C++ logging library <https://github.com/gabime/spdlog>`__ API to control the screen verbosity of
 its screen logs. This function sets the level to "trace".
 
+When this level is activated cascade will also report on screen setuptimes for building and jitting the Taylor
+integrators as well as, for each simulation step, the timings for the various parts of the cascade algorithm.
+
+A typical output may look like:
+
+.. code-block::
+
+    [...] Integrators setup time: 0.810280909s
+    [...] JIT functions setup time: 0.263069601s
+
+    [...] ---- STEP BEGIN ---
+    [...] Number of chunks: 10
+    [...] Propagation + AABB computation time: 0.012357934s
+    [...] Morton encoding and sorting time: 0.015623162s
+    [...] BVH construction time: 0.044566595s
+    [...] Broad phase collision detection time: 0.354104341s
+    [...] Average number of AABB collisions per particle per chunk: 0.03350329934013198
+    [...] Narrow phase collision detection time: 0.002799526s
+    [...] Total number of collisions detected: 0
+    [...] Total number of conjunctions detected: 0
+    [...] Runtime for append_conj_data(): 2.24e-06s
+    [...] Total propagation time: 0.431442951s
+    [...] ---- STEP END ---
+
+This information is useful, among other things, to tune simulation parameters such as the collisional timestep
+and the number of parallel collisional timesteps.
+
 )";
 }
 
@@ -582,6 +609,9 @@ Sets the logger level to "debug"
 
 Cascade under the hood works with the `spdlog C++ logging library <https://github.com/gabime/spdlog>`__ API to control the screen verbosity of
 its screen logs. This function sets the level to "debug".
+
+When this level is activated cascade will also report on screen problems in the
+dynamics propagation, for example invalid states generated.
 
 )";
 }
@@ -595,6 +625,8 @@ Sets the logger level to "info"
 Cascade under the hood works with the `spdlog C++ logging library <https://github.com/gabime/spdlog>`__ API to control the screen verbosity of
 its screen logs. This function sets the level to "info".
 
+When this level is activated cascade will also report on screen generic information.
+
 )";
 }
 
@@ -606,6 +638,9 @@ Sets the logger level to "warn"
 
 Cascade under the hood works with the `spdlog C++ logging library <https://github.com/gabime/spdlog>`__ API to control the screen verbosity of
 its screen logs. This function sets the level to "warn".
+
+When this level is activated cascade may also report on screen various polynomial root finding failiures as well as
+other numerical issues that do not invalidate the computations.
 
 )";
 }
@@ -619,6 +654,8 @@ Sets the logger level to "err"
 Cascade under the hood works with the `spdlog C++ logging library <https://github.com/gabime/spdlog>`__ API to control the screen verbosity of
 its screen logs. This function sets the level to "err".
 
+Cascade is not currently making use of this log level.
+
 )";
 }
 
@@ -630,6 +667,9 @@ Sets the logger level to "critical"
 
 Cascade under the hood works with the `spdlog C++ logging library <https://github.com/gabime/spdlog>`__ API to control the screen verbosity of
 its screen logs. This function sets the level to "critical".
+
+Cascade is not currently making use of this log level.
+
 
 )";
 }

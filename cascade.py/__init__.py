@@ -18,6 +18,13 @@ Classes
 
     sim
     outcome
+
+Functions
+---------
+
+.. autosummary::
+    :toctree: generated/
+    
     set_nthreads
     get_nthreads
     set_logger_level_trace
