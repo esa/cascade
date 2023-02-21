@@ -102,9 +102,9 @@ struct sim::sim_data {
     heyoka::detail::dfloat<double> time;
 
     // The JIT-compiled functions.
-    using pta_cfunc_t = void (*)(double *, const double *, const double *) noexcept;
+    using pta_cfunc_t = void (*)(double *, const double *, const double *, const double *) noexcept;
     pta_cfunc_t pta_cfunc = nullptr;
-    using pssdiff3_cfunc_t = void (*)(double *, const double *, const double *) noexcept;
+    using pssdiff3_cfunc_t = void (*)(double *, const double *, const double *, const double *) noexcept;
     pssdiff3_cfunc_t pssdiff3_cfunc = nullptr;
     using fex_check_t = void (*)(const double *, const double *, const std::uint32_t *, std::uint32_t *) noexcept;
     fex_check_t fex_check = nullptr;

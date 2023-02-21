@@ -182,8 +182,8 @@ target_link_libraries(cascade PUBLIC fmt::fmt)
 find_package(heyoka CONFIG REQUIRED)
 target_link_libraries(cascade PUBLIC heyoka::heyoka)
 message(STATUS "heyoka version: ${heyoka_VERSION}")
-if(heyoka_VERSION VERSION_LESS 0.20.1)
-    message(FATAL_ERROR "heyoka>=0.20.1 is required, but heyoka ${heyoka_VERSION} was found instead")
+if(heyoka_VERSION VERSION_LESS 0.21.0)
+    message(FATAL_ERROR "heyoka>=0.21.0 is required, but heyoka ${heyoka_VERSION} was found instead")
 endif()
 
 # spdlog.
