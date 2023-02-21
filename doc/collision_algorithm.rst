@@ -57,7 +57,8 @@ cascade computes also the polinomial expressions for the relative distance betwe
   r_{ij}\left( \tau \right) = \sum_{n=0}^p r_{ij}^{\left[ n \right]}\left( t_0 \right)\tau^n.
 
 at this point, to know wether this results in a collision or a miss cascade only needs to run a (very clever) polinomial
-root finding algorithm.
+root finding algorithm which excludes efficiently the existence of any root, to only actually compute it
+in the few remaining cases.
 
 .. note::
   The algorithm description above has been simplified to allow the user to understand the basic ideas and relate them 
