@@ -24,6 +24,17 @@ jobs:
           fetch-depth: 2
       - name: Build
         run: bash tools/gha_conda_coverage.sh
+  manylinux228-py311:
+     runs-on: ubuntu-latest
+     container:
+      image: pagmo2/manylinux228_x86_64_with_deps:latest
+      env:
+        CASCADE_PY_BUILD_TYPE: "Python311"
+        #TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+     steps:
+       - uses: actions/checkout@v3
+       - name: Build
+         run: bash tools/gha_manylinux.sh
   windows_2019:
     runs-on: windows-2019
     steps:
