@@ -763,37 +763,37 @@ void sim::narrow_phase_parallel()
                             // translation happens, otherwise we can keep the pointer
                             // to the original polynomials.
                             if (delta_i != 0) {
-                                pta_cfunc(xi_temp.data(), poly_xi, &delta_i);
+                                pta_cfunc(xi_temp.data(), poly_xi, &delta_i, nullptr);
                                 poly_xi = xi_temp.data();
-                                pta_cfunc(yi_temp.data(), poly_yi, &delta_i);
+                                pta_cfunc(yi_temp.data(), poly_yi, &delta_i, nullptr);
                                 poly_yi = yi_temp.data();
-                                pta_cfunc(zi_temp.data(), poly_zi, &delta_i);
+                                pta_cfunc(zi_temp.data(), poly_zi, &delta_i, nullptr);
                                 poly_zi = zi_temp.data();
 
                                 if (pij_conj_active) {
-                                    pta_cfunc(vxi_temp.data(), poly_vxi, &delta_i);
+                                    pta_cfunc(vxi_temp.data(), poly_vxi, &delta_i, nullptr);
                                     poly_vxi = vxi_temp.data();
-                                    pta_cfunc(vyi_temp.data(), poly_vyi, &delta_i);
+                                    pta_cfunc(vyi_temp.data(), poly_vyi, &delta_i, nullptr);
                                     poly_vyi = vyi_temp.data();
-                                    pta_cfunc(vzi_temp.data(), poly_vzi, &delta_i);
+                                    pta_cfunc(vzi_temp.data(), poly_vzi, &delta_i, nullptr);
                                     poly_vzi = vzi_temp.data();
                                 }
                             }
 
                             if (delta_j != 0) {
-                                pta_cfunc(xj_temp.data(), poly_xj, &delta_j);
+                                pta_cfunc(xj_temp.data(), poly_xj, &delta_j, nullptr);
                                 poly_xj = xj_temp.data();
-                                pta_cfunc(yj_temp.data(), poly_yj, &delta_j);
+                                pta_cfunc(yj_temp.data(), poly_yj, &delta_j, nullptr);
                                 poly_yj = yj_temp.data();
-                                pta_cfunc(zj_temp.data(), poly_zj, &delta_j);
+                                pta_cfunc(zj_temp.data(), poly_zj, &delta_j, nullptr);
                                 poly_zj = zj_temp.data();
 
                                 if (pij_conj_active) {
-                                    pta_cfunc(vxj_temp.data(), poly_vxj, &delta_j);
+                                    pta_cfunc(vxj_temp.data(), poly_vxj, &delta_j, nullptr);
                                     poly_vxj = vxj_temp.data();
-                                    pta_cfunc(vyj_temp.data(), poly_vyj, &delta_j);
+                                    pta_cfunc(vyj_temp.data(), poly_vyj, &delta_j, nullptr);
                                     poly_vyj = vyj_temp.data();
-                                    pta_cfunc(vzj_temp.data(), poly_vzj, &delta_j);
+                                    pta_cfunc(vzj_temp.data(), poly_vzj, &delta_j, nullptr);
                                     poly_vzj = vzj_temp.data();
                                 }
                             }
@@ -814,7 +814,7 @@ void sim::narrow_phase_parallel()
                             // We can now construct the polynomial for the
                             // square of the distance.
                             auto *ss_diff_ptr = ss_diff.data();
-                            pssdiff3_cfunc(ss_diff_ptr, diff_input.data(), nullptr);
+                            pssdiff3_cfunc(ss_diff_ptr, diff_input.data(), nullptr, nullptr);
 
                             // Remember the original constant term of the polynomial.
                             const auto orig_const_cf = ss_diff_ptr[0];
