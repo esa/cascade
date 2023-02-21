@@ -48,8 +48,8 @@ setup(
     keywords=KEYWORDS,
     platforms=PLATFORMS,
     install_requires=INSTALL_REQUIRES,
-    packages=["heyoka"],
+    packages=["cascade"],
     # Include pre-compiled extension
-    package_data={"heyoka": [f for f in os.listdir("heyoka/") if f.endswith(".so")]},
+    package_data={"cascade": [f for f in os.listdir("cascade/") if f.endswith(".so")]},
     distclass=BinaryDistribution,
 )
