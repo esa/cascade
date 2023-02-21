@@ -5,9 +5,9 @@ import sys
 
 NAME = "cascade"
 VERSION = "@cascade_VERSION@"
-DESCRIPTION = "Python library for ODE integration via Taylor's method and LLVM"
-LONG_DESCRIPTION = "heyoka is a Python library for the integration of ordinary differential equations (ODEs) via Taylor's method, based on automatic differentiation techniques and aggressive just-in-time compilation via LLVM."
-URL = "https://github.com/bluescarni/heyoka.py"
+DESCRIPTION = "N-body simulation for the evolution of orbital environments"
+LONG_DESCRIPTION = "cascade is a Python library developed to propagate the evolution of a large number of orbiting objects while detecting reliably close encounters and collisions."
+URL = "https://github.com/esa/cascade"
 AUTHOR = "Francesco Biscani, Dario Izzo"
 AUTHOR_EMAIL = "bluescarni@gmail.com"
 LICENSE = "MPL-2.0"
