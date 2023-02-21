@@ -83,6 +83,7 @@ export LD_LIBRARY_PATH="/usr/local/lib64:/usr/local/lib"
 /opt/python/${PYTHON_DIR}/bin/python setup.py bdist_wheel
 auditwheel repair dist/cascade* -w ./dist2
 # Try to install it and run the tests.
+unset LD_LIBRARY_PATH
 cd /
 /opt/python/${PYTHON_DIR}/bin/pip install ${GITHUB_WORKSPACE}/build/wheel/dist2/cascade*
 /opt/python/${PYTHON_DIR}/bin/python -c "import cascade; cascade.test.run_test_suite();"
