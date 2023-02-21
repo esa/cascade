@@ -222,6 +222,11 @@
    </li>
   </ul>
  </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../collision_algorithm.html">
+   Collision Algorithm
+  </a>
+ </li>
 </ul>
 <p aria-level="2" class="caption" role="heading">
  <span class="caption-text">
@@ -579,7 +584,10 @@ title="Print to PDF"
 <li><p><a class="reference external" href="https://www.space-track.org/basicspacedata/query/class/gp/decay_date/null-val/epoch/%3Enow-30/orderby/norad_cat_id/format/json">satcat.json</a> downloaded from <a class="reference external" href="https://celestrak.com">space-track</a> on January 2022</p></li>
 </ul>
 <p>The reason to use both is that, at the time of writing, they contain complementary information. While both contain the tracked objects’ Brouwer mean elements and their <a class="reference external" href="https://en.wikipedia.org/wiki/BSTAR">BSTAR</a>, the information on the radar cross section (RCS) is only given for some satellites in the “old” satcat.txt. For those objects that do not have such an information, the json file reports, at least, a generic “SMALL”, “MEDIUM”, “LARGE” category that can be used to assign to the object a dimension (useful in simulations where detected collisions result in break-ups based on the impact energy).</p>
-<p>Note that the remaining code is written to work with the two files as downloaded in February 2022. We have obtained permission from the SSA Partnership and Coalition Engagement (SPACE) Office (US) to share these, now old, files via the cascade code so that you do not have to download them yorself. In case you do wat to play with the latest versions, you will need a user in the <a class="reference external" href="https://celestrak.com">space-track</a> website.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The code that follows is written to work with the two files as downloaded in February 2022. We have obtained permission from the SSA Partnership and Coalition Engagement (SPACE) Office (US) to share these, now old, files via the cascade code so that you do not have to download them yorself. In case you do want to play with the latest versions, you will need a user in the <a class="reference external" href="https://celestrak.com">space-track</a> website.</p>
+</div>
 <p>Lets start importing the files:</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -807,7 +815,7 @@ First we must compute their orbital elements</p>
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Text(0.5, 0, &#39;collision radius&#39;)
 </pre></div>
 </div>
-<img alt="../_images/c4b094b5a4cc12c8988b7e0dc9ff676325bfa848d94ecfcb693d339f7038612d.png" src="../_images/c4b094b5a4cc12c8988b7e0dc9ff676325bfa848d94ecfcb693d339f7038612d.png" />
+<img alt="../_images/092cf0c5d9fe65952147ee196f1a4b220faa17786c7036e0300b1eea3fb150ec.png" src="../_images/092cf0c5d9fe65952147ee196f1a4b220faa17786c7036e0300b1eea3fb150ec.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -820,7 +828,7 @@ First we must compute their orbital elements</p>
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/5ba9e962fa71a9c48ad0978ccd892f75eb9f6d2c2639af376091a5e09eafd7c2.png" src="../_images/5ba9e962fa71a9c48ad0978ccd892f75eb9f6d2c2639af376091a5e09eafd7c2.png" />
+<img alt="../_images/861649e4c152a600efa1364d8823bc948ab6a6f65733ad361d51fa3736abaf25.png" src="../_images/861649e4c152a600efa1364d8823bc948ab6a6f65733ad361d51fa3736abaf25.png" />
 </div>
 </div>
 <p>Finally we can save all the information into an archive.</p>

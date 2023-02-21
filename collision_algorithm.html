@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>cascade &#8212; cascade 0.1 documentation</title>
+    <title>Collision Algorithm &#8212; cascade 0.1 documentation</title>
     
   <!-- Loaded before other Sphinx assets -->
   <link href="_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
@@ -34,10 +34,12 @@
     <script src="_static/doctools.js"></script>
     <script src="_static/scripts/sphinx-book-theme.js?digest=9c920249402e914e316237a7dbc6769907cce411"></script>
     <script src="_static/design-tabs.js"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="cascade.sim" href="generated/cascade.sim.html" />
-    <link rel="prev" title="API reference" href="api_reference.html" />
+    <link rel="next" title="Quickstart" href="tutorials/quickstart.html" />
+    <link rel="prev" title="cascade.dynamics.mascon_asteroid_energy" href="generated/cascade.dynamics.mascon_asteroid_energy.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
     
@@ -108,25 +110,25 @@
    Installation
   </a>
  </li>
- <li class="toctree-l1 current active has-children">
+ <li class="toctree-l1 has-children">
   <a class="reference internal" href="api_reference.html">
    API reference
   </a>
-  <input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
   <label for="toctree-checkbox-1">
    <i class="fas fa-chevron-down">
    </i>
   </label>
-  <ul class="current">
-   <li class="toctree-l2 current active has-children">
-    <a class="current reference internal" href="#">
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="mod_cascade.html">
      <code class="xref py py-mod docutils literal notranslate">
       <span class="pre">
        cascade
       </span>
      </code>
     </a>
-    <input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+    <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
     <label for="toctree-checkbox-2">
      <i class="fas fa-chevron-down">
      </i>
@@ -222,8 +224,8 @@
    </li>
   </ul>
  </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="collision_algorithm.html">
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
    Collision Algorithm
   </a>
  </li>
@@ -387,7 +389,7 @@ title="Source repository"
       </li>
       
       <li>
-        <a href="https://github.com/esa/cascade/issues/new?title=Issue%20on%20page%20%2Fmod_cascade.html&body=Your%20issue%20content%20here."
+        <a href="https://github.com/esa/cascade/issues/new?title=Issue%20on%20page%20%2Fcollision_algorithm.html&body=Your%20issue%20content%20here."
    class="headerbtn"
    data-toggle="tooltip"
 data-placement="left"
@@ -415,7 +417,7 @@ title="Open an issue"
   <div class="menu-dropdown__content">
     <ul>
       <li>
-        <a href="_sources/mod_cascade.rst.txt"
+        <a href="_sources/collision_algorithm.rst.txt"
    class="headerbtn"
    data-toggle="tooltip"
 data-placement="left"
@@ -474,19 +476,19 @@ title="Print to PDF"
     </div>
     <nav id="bd-toc-nav" aria-label="Page">
         <ul class="visible nav section-nav flex-column">
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#classes">
-   Classes
+ <li class="toc-h1 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#">
+   Collision Algorithm
   </a>
  </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#enums">
-   Enums
+ <li class="toc-h1 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#broad-phase">
+   Broad Phase
   </a>
  </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#functions">
-   Functions
+ <li class="toc-h1 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#narrow-phase">
+   Narrow Phase
   </a>
  </li>
 </ul>
@@ -498,7 +500,7 @@ title="Print to PDF"
         <div class="col pl-md-3 pl-lg-5 content-container">
             <!-- Table of contents that is only displayed when printing the page -->
             <div id="jb-print-docs-body" class="onlyprint">
-                <h1>cascade</h1>
+                <h1>Collision Algorithm</h1>
                 <!-- Table of contents -->
                 <div id="print-main-content">
                     <div id="jb-print-toc">
@@ -508,19 +510,19 @@ title="Print to PDF"
                         </div>
                         <nav aria-label="Page">
                             <ul class="visible nav section-nav flex-column">
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#classes">
-   Classes
+ <li class="toc-h1 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#">
+   Collision Algorithm
   </a>
  </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#enums">
-   Enums
+ <li class="toc-h1 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#broad-phase">
+   Broad Phase
   </a>
  </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#functions">
-   Functions
+ <li class="toc-h1 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#narrow-phase">
+   Narrow Phase
   </a>
  </li>
 </ul>
@@ -533,71 +535,64 @@ title="Print to PDF"
                 
               <div>
                 
-  <span class="target" id="module-cascade"></span><section id="cascade">
-<h1><a class="reference internal" href="#module-cascade" title="cascade"><code class="xref py py-mod docutils literal notranslate"><span class="pre">cascade</span></code></a><a class="headerlink" href="#cascade" title="Permalink to this headline">#</a></h1>
-<section id="classes">
-<h2>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">#</a></h2>
-<table class="autosummary longtable table autosummary">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cascade.sim.html#cascade.sim" title="cascade.sim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sim</span></code></a></p></td>
-<td><p>The simulation class.</p></td>
-</tr>
-</tbody>
-</table>
+  <section id="collision-algorithm">
+<span id="id1"></span><h1>Collision Algorithm<a class="headerlink" href="#collision-algorithm" title="Permalink to this headline">#</a></h1>
+<p>The collision algorithm in cascade is based on the availability, at each step, of Taylor polinomial expansions
+of the system dynamics. These are a product of the Taylor integration scheme chosen to propagate the dynamics
+and are provided at no additional cost (<a class="reference external" href="https://bluescarni.github.io/heyoka/">heyoka</a> API
+allows for an easy extraction of such coefficients).</p>
+<p>The following expressions are thus available:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{align}
+  x_i\left( \tau \right) &amp; = \sum_{n=0}^p x_i^{\left[ n \right]}\left( t_0 \right)\tau^n,\\
+  y_i\left( \tau \right) &amp; = \sum_{n=0}^p y_i^{\left[ n \right]}\left( t_0 \right)\tau^n,\\
+  z_i\left( \tau \right) &amp; = \sum_{n=0}^p z_i^{\left[ n \right]}\left( t_0 \right)\tau^n,\\
+  r_i\left( \tau \right) &amp; = \sum_{n=0}^p r_i^{\left[ n \right]}\left( t_0 \right)\tau^n,
+\end{align}\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\tau \in \left[0, c_t\right]\)</span> is any time coordinate within the so called collisional
+timestep <span class="math notranslate nohighlight">\(c_t\)</span>, a user defined parameter.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In reality these expressions are piecewise
+continuous polynomials since the collisional timestep may be different from the adaptive
+timestep of the Taylor integrator <span class="math notranslate nohighlight">\(h\)</span>. For the purpose of understnding the main algorithmic
+ideas, this is here ignored.</p>
+</div>
+<p>cascade makes use of these expressions to compute <a class="reference external" href="https://en.wikipedia.org/wiki/Bounding_volume">Axis Aligned Bounding boxes (AABB)</a> encapsulating
+the positions of each orbiting objects within the collisional timestep.
+This is done applying interval arithmetic directly  considering that <span class="math notranslate nohighlight">\(\tau \in \left[0, c_t\right]\)</span>.</p>
 </section>
-<section id="enums">
-<h2>Enums<a class="headerlink" href="#enums" title="Permalink to this headline">#</a></h2>
-<table class="autosummary longtable table autosummary">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cascade.outcome.html#cascade.outcome" title="cascade.outcome"><code class="xref py py-obj docutils literal notranslate"><span class="pre">outcome</span></code></a></p></td>
-<td><p>The simulation outcome enum.</p></td>
-</tr>
-</tbody>
-</table>
+<section id="broad-phase">
+<h1>Broad Phase<a class="headerlink" href="#broad-phase" title="Permalink to this headline">#</a></h1>
+<p>The detection of overlaps between bounding boxes is a well-studied problem in computer graphics
+(where it is usually referred to as “broad phase collision detection”).
+In particular, several spatial data structures have been developed to improve upon the naive approach of checking
+for all possible overlaps (which has quadratic complexity in the number of particles <span class="math notranslate nohighlight">\(N\)</span> in the simulation.
+In cascade a <a class="reference external" href="https://en.wikipedia.org/wiki/Bounding_volume_hierarchy">Bounding Volume Hierarchy (BVH)</a> is used over the
+4D AABB defined over the coordinates  <span class="math notranslate nohighlight">\(x,y,z,r\)</span>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Adding the <span class="math notranslate nohighlight">\(r\)</span> coordinate is of great importance to exclude many collisions since orbital
+dynamics has a weak spherical component.</p>
+</div>
 </section>
-<section id="functions">
-<h2>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">#</a></h2>
-<table class="autosummary longtable table autosummary">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cascade.set_nthreads.html#cascade.set_nthreads" title="cascade.set_nthreads"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_nthreads</span></code></a>(n)</p></td>
-<td><p>Sets the maximum number of threads allowed.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/cascade.get_nthreads.html#cascade.get_nthreads" title="cascade.get_nthreads"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_nthreads</span></code></a>()</p></td>
-<td><p>Gets the maximum number of threads allowed.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cascade.set_logger_level_trace.html#cascade.set_logger_level_trace" title="cascade.set_logger_level_trace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_logger_level_trace</span></code></a>()</p></td>
-<td><p>Sets the logger level to &quot;trace&quot;</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/cascade.set_logger_level_debug.html#cascade.set_logger_level_debug" title="cascade.set_logger_level_debug"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_logger_level_debug</span></code></a>()</p></td>
-<td><p>Sets the logger level to &quot;debug&quot;</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cascade.set_logger_level_info.html#cascade.set_logger_level_info" title="cascade.set_logger_level_info"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_logger_level_info</span></code></a>()</p></td>
-<td><p>Sets the logger level to &quot;info&quot;</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/cascade.set_logger_level_warn.html#cascade.set_logger_level_warn" title="cascade.set_logger_level_warn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_logger_level_warn</span></code></a>()</p></td>
-<td><p>Sets the logger level to &quot;warn&quot;</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/cascade.set_logger_level_err.html#cascade.set_logger_level_err" title="cascade.set_logger_level_err"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_logger_level_err</span></code></a>()</p></td>
-<td><p>Sets the logger level to &quot;err&quot;</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/cascade.set_logger_level_critical.html#cascade.set_logger_level_critical" title="cascade.set_logger_level_critical"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_logger_level_critical</span></code></a>()</p></td>
-<td><p>Sets the logger level to &quot;critical&quot;</p></td>
-</tr>
-</tbody>
-</table>
-</section>
+<section id="narrow-phase">
+<h1>Narrow Phase<a class="headerlink" href="#narrow-phase" title="Permalink to this headline">#</a></h1>
+<p>Hopefully, most collisions have been excluded by now and in the remaining cases cascade resolves collisions
+using a computationally more demanding approach: the narrow phase. Assuming the collision between particles <span class="math notranslate nohighlight">\(i, j\)</span>
+was not excluded in the broad phases, and since the polinomial expression for the states are anyway available,
+cascade computes also the polinomial expressions for the relative distance between the potentially colliding objects:</p>
+<div class="math notranslate nohighlight">
+\[r_{ij}\left( \tau \right) = \sum_{n=0}^p r_{ij}^{\left[ n \right]}\left( t_0 \right)\tau^n.\]</div>
+<p>at this point, to know wether this results in a collision or a miss cascade only needs to run a (very clever) polinomial
+root finding algorithm which excludes efficiently the existence of any root, to only actually compute it
+in the few remaining cases.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The algorithm description above has been simplified to allow the user to understand the basic ideas and relate them
+to cascade behaviour, in particular to the information logged by <a class="reference internal" href="generated/cascade.set_logger_level_trace.html#cascade.set_logger_level_trace" title="cascade.set_logger_level_trace"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_logger_level_trace()</span></code></a>
+and to the choice of the collisional timestep in <a class="reference internal" href="generated/cascade.sim.html#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">sim</span></code></a></p>
+</div>
 </section>
 
 
@@ -608,17 +603,17 @@ title="Print to PDF"
                 
     <!-- Previous / next buttons -->
 <div class='prev-next-area'>
-    <a class='left-prev' id="prev-link" href="api_reference.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="generated/cascade.dynamics.mascon_asteroid_energy.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">API reference</p>
+            <p class="prev-next-title">cascade.dynamics.mascon_asteroid_energy</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="generated/cascade.sim.html" title="next page">
+    <a class='right-next' id="next-link" href="tutorials/quickstart.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">cascade.sim</p>
+        <p class="prev-next-title">Quickstart</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

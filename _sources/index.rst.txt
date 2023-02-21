@@ -32,6 +32,7 @@ cascade is released under the MPL-2.0 license. The authors are Francesco Biscani
 
    install.rst
    api_reference.rst
+   collision_algorithm.rst
 
 .. grid::
 
@@ -72,6 +73,25 @@ cascade is released under the MPL-2.0 license. The authors are Francesco Biscani
             :click-parent:
 
             To the API reference
+
+    .. grid-item-card::
+        :img-top: _static/images/user_guide.svg
+        :text-align: center
+        :padding: 2 2 2 2
+
+        **The collision algorithm**
+
+        Where the collision algorithm is outlined.
+
+        +++
+
+        .. button-ref:: collision_algorithm
+            :ref-type: ref
+            :expand:
+            :color: secondary
+            :click-parent:
+
+            To the collision algorithm 
 
 .. toctree::
    :maxdepth: 1

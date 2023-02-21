@@ -224,6 +224,11 @@
    </li>
   </ul>
  </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../collision_algorithm.html">
+   Collision Algorithm
+  </a>
+ </li>
 </ul>
 <p aria-level="2" class="caption" role="heading">
  <span class="caption-text">
@@ -675,7 +680,7 @@ title="Print to PDF"
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/f2f6942b2c0215b14635b70beb9a3cb84424d4a99e04d5da10f2eac482a01c60.png" src="../_images/f2f6942b2c0215b14635b70beb9a3cb84424d4a99e04d5da10f2eac482a01c60.png" />
+<img alt="../_images/ea9d7f856e15b3cc7d423f1bedcadc78ebdcc9d96169e568da451cbb5afa6e84.png" src="../_images/ea9d7f856e15b3cc7d423f1bedcadc78ebdcc9d96169e568da451cbb5afa6e84.png" />
 </div>
 </div>
 </section>
@@ -710,6 +715,26 @@ title="Print to PDF"
     <span class="n">sim</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
 <span class="n">csc</span><span class="o">.</span><span class="n">set_logger_level_trace</span><span class="p">()</span>
 <span class="n">sim</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[2023-02-20 15:18:49.487] [cascade] [trace] ---- STEP BEGIN ---
+[2023-02-20 15:18:49.487] [cascade] [trace] Number of chunks: 10
+[2023-02-20 15:18:49.493] [cascade] [trace] Propagation + AABB computation time: 0.005623239s
+[2023-02-20 15:18:49.494] [cascade] [trace] Morton encoding and sorting time: 0.000868703s
+[2023-02-20 15:18:49.498] [cascade] [trace] BVH construction time: 0.003746423s
+[2023-02-20 15:18:49.514] [cascade] [trace] Broad phase collision detection time: 0.016538086s
+[2023-02-20 15:18:49.514] [cascade] [trace] Average number of AABB collisions per particle per chunk: 64.53106378724254
+[2023-02-20 15:18:49.768] [cascade] [trace] Narrow phase collision detection time: 0.253979335s
+[2023-02-20 15:18:49.768] [cascade] [trace] Total number of collisions detected: 0
+[2023-02-20 15:18:49.768] [cascade] [trace] Total number of conjunctions detected: 12
+[2023-02-20 15:18:49.768] [cascade] [trace] Runtime for append_conj_data(): 4.2e-06s
+[2023-02-20 15:18:49.768] [cascade] [trace] Total propagation time: 0.280920718s
+[2023-02-20 15:18:49.768] [cascade] [trace] ---- STEP END ---
+</pre></div>
+</div>
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>&lt;outcome.success: 0&gt;
 </pre></div>
 </div>
 </div>
