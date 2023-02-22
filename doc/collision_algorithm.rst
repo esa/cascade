@@ -75,7 +75,7 @@ The user defines the number of parallel collisional timesteps :attr:`~cascade.si
 As a consequence, at each :attr:`~cascade.sim.step`, cascade builds the piece-wise polyonomial representation of the system state
 within a time interval of width :math:`N_{c_t} \cdot c_t` rather than only :math:`c_t`. This allows to perform the broad and
 narrow collision detection in parallel over :math:`N_{c_t}` intervals. This strategy reveals to be very effective in situations
-where most of the times the step concludes without any collision detected. It can though be detrimental in a collision
+where most of the times the step concludes without any collision detected. It can, though, be detrimental in a collision
 rich environment as when a collision is detected, all computations that are being performed over
 future time intervals have to be discarded.
 
