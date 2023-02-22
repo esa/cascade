@@ -50,7 +50,7 @@ Its a good idea to check the scripts used to build cascade on these architecture
 cascade has several Python and C++ dependencies. On the C++ side, cascade depends on:
 
 * the `heyoka C++ library <https://github.com/bluescarni/heyoka>`__,
-  version 0.20.1 or later (**mandatory**),
+  version 0.21.0 or later (**mandatory**),
 * the `Boost <https://www.boost.org/>`__ C++ libraries version 1.73 or later (**mandatory**),
 * the `{fmt} <https://fmt.dev/latest/index.html>`__ library (**mandatory**),
 * the `TBB <https://github.com/oneapi-src/oneTBB>`__ library (**mandatory**),
