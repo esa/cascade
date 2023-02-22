@@ -7,7 +7,7 @@ cascade
 =======
 
    As the number of artificial satellites orbiting our planet grows, the likelihood of collisions increases,
-   potentially triggering a collisional chain reaction and making certain orbits unusable.
+   potentially triggering a cascade effect making certain orbits unusable.
 
 cascade is a C++/Python library developed to propagate the evolution of large
 number of orbiting objects while detecting reliably close encounters and collisions.
