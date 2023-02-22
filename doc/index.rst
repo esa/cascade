@@ -10,7 +10,7 @@ cascade
    potentially triggering a collisional chain reaction and making certain orbits unusable.
 
 cascade is a C++/Python library developed to propagate the evolution of large number of orbiting objects while detecting
-reliably close encounters and collisions. It is coded in modern C++20 with focus on the efficency of the underlying N-body 
+reliably close encounters and collisions. It is coded in modern C++20 with focus on the efficiency of the underlying N-body 
 simulation with collision/conjunction detection. Its development was motivated to help conjunction tracking and
 collision detection of orbiting space debris populations.
 
