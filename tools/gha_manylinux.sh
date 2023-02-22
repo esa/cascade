@@ -34,6 +34,14 @@ fi
 # Report the inferred directory whwere python is found.
 echo "PYTHON_DIR: ${PYTHON_DIR}"
 
+# Check if this is a release build.
+if [[ "${GITHUB_REF}" == "refs/tags/v"* ]]; then
+    echo "Tag build detected"
+	export CASCADE_PY_RELEASE_BUILD="yes"
+else
+	echo "Non-tag build detected"
+fi
+
 # The heyoka/heyoka.py versions to be used.
 export HEYOKA_VERSION="0.21.0"
 export HEYOKA_PY_VERSION="0.21.7"
@@ -89,10 +97,10 @@ cd /
 /opt/python/${PYTHON_DIR}/bin/python -c "import cascade; cascade.test.run_test_suite();"
 
 # Upload to PyPI.
-# if [[ "${HEYOKA_PY_RELEASE_BUILD}" == "yes" ]]; then
-# 	/opt/python/${PYTHON_DIR}/bin/pip install twine
-# 	/opt/python/${PYTHON_DIR}/bin/twine upload -u __token__ ${GITHUB_WORKSPACE}/build/wheel/dist2/heyoka*
-# fi
+if [[ "${CASCADE_PY_RELEASE_BUILD}" == "yes" ]]; then
+ 	/opt/python/${PYTHON_DIR}/bin/pip install twine
+ 	/opt/python/${PYTHON_DIR}/bin/twine upload -u ci4esa ${GITHUB_WORKSPACE}/build/wheel/dist2/cascade*
+ fi
 
 set +e
 set +x
