@@ -30,7 +30,7 @@ timestep :math:`c_t`, a user defined parameter.
 
 cascade makes use of these expressions to compute `Axis Aligned Bounding boxes (AABB) <https://en.wikipedia.org/wiki/Bounding_volume>`__ 
 encapsulating the positions of each orbiting objects within the collisional timestep. 
-This is done using `interval arithmetic <https://en.wikipedia.org/wiki/Interval_arithmetic>`__` to compute the polynomial expressions
+This is done using `interval arithmetic <https://en.wikipedia.org/wiki/Interval_arithmetic>`__ to compute the polynomial expressions
 above and considering that :math:`\tau \in \left[0, c_t\right]`. If the bounding boxes do not overlap, clearly
 there will be no possible collision.
 
