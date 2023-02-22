@@ -491,6 +491,11 @@ title="Print to PDF"
    Narrow Phase
   </a>
  </li>
+ <li class="toc-h1 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#parallelism">
+   Parallelism
+  </a>
+ </li>
 </ul>
 
     </nav>
@@ -525,6 +530,11 @@ title="Print to PDF"
    Narrow Phase
   </a>
  </li>
+ <li class="toc-h1 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#parallelism">
+   Parallelism
+  </a>
+ </li>
 </ul>
 
                         </nav>
@@ -537,7 +547,7 @@ title="Print to PDF"
                 
   <section id="collision-algorithm">
 <span id="id1"></span><h1>Collision Algorithm<a class="headerlink" href="#collision-algorithm" title="Permalink to this headline">#</a></h1>
-<p>The collision algorithm in cascade is based on the availability, at each step, of Taylor polinomial expansions
+<p>The collision algorithm in cascade exploits the availability, at each step, of Taylor polynomial expansions
 of the system dynamics. These are a product of the Taylor integration scheme chosen to propagate the dynamics
 and are provided at no additional cost (<a class="reference external" href="https://bluescarni.github.io/heyoka/">heyoka</a> API
 allows for an easy extraction of such coefficients).</p>
@@ -549,18 +559,20 @@ allows for an easy extraction of such coefficients).</p>
   z_i\left( \tau \right) &amp; = \sum_{n=0}^p z_i^{\left[ n \right]}\left( t_0 \right)\tau^n,\\
   r_i\left( \tau \right) &amp; = \sum_{n=0}^p r_i^{\left[ n \right]}\left( t_0 \right)\tau^n,
 \end{align}\end{split}\]</div>
-<p>where <span class="math notranslate nohighlight">\(\tau \in \left[0, c_t\right]\)</span> is any time coordinate within the so called collisional
+<p>where <span class="math notranslate nohighlight">\(\tau \in \left[0, c_t\right]\)</span> is a time coordinate within the so called collisional
 timestep <span class="math notranslate nohighlight">\(c_t\)</span>, a user defined parameter.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>In reality these expressions are piecewise
+<p>To be precise, these expressions are piecewise
 continuous polynomials since the collisional timestep may be different from the adaptive
-timestep of the Taylor integrator <span class="math notranslate nohighlight">\(h\)</span>. For the purpose of understnding the main algorithmic
+timestep of the Taylor integrator <span class="math notranslate nohighlight">\(h\)</span>. For the purpose of understanding the main algorithmic
 ideas, this is here ignored.</p>
 </div>
-<p>cascade makes use of these expressions to compute <a class="reference external" href="https://en.wikipedia.org/wiki/Bounding_volume">Axis Aligned Bounding boxes (AABB)</a> encapsulating
-the positions of each orbiting objects within the collisional timestep.
-This is done applying interval arithmetic directly  considering that <span class="math notranslate nohighlight">\(\tau \in \left[0, c_t\right]\)</span>.</p>
+<p>cascade makes use of these expressions to compute <a class="reference external" href="https://en.wikipedia.org/wiki/Bounding_volume">Axis Aligned Bounding boxes (AABB)</a>
+encapsulating the positions of each orbiting objects within the collisional timestep.
+This is done using <cite>interval arithmetic &lt;https://en.wikipedia.org/wiki/Interval_arithmetic&gt;`__</cite> to compute the polynomial expressions
+above and considering that <span class="math notranslate nohighlight">\(\tau \in \left[0, c_t\right]\)</span>. If the bounding boxes do not overlap, clearly
+there will be no possible collision.</p>
 </section>
 <section id="broad-phase">
 <h1>Broad Phase<a class="headerlink" href="#broad-phase" title="Permalink to this headline">#</a></h1>
@@ -573,26 +585,38 @@ In cascade a <a class="reference external" href="https://en.wikipedia.org/wiki/B
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Adding the <span class="math notranslate nohighlight">\(r\)</span> coordinate is of great importance to exclude many collisions since orbital
-dynamics has a weak spherical component.</p>
+dynamics has a weak radial component.</p>
 </div>
 </section>
 <section id="narrow-phase">
 <h1>Narrow Phase<a class="headerlink" href="#narrow-phase" title="Permalink to this headline">#</a></h1>
 <p>Hopefully, most collisions have been excluded by now and in the remaining cases cascade resolves collisions
 using a computationally more demanding approach: the narrow phase. Assuming the collision between particles <span class="math notranslate nohighlight">\(i, j\)</span>
-was not excluded in the broad phases, and since the polinomial expression for the states are anyway available,
-cascade computes also the polinomial expressions for the relative distance between the potentially colliding objects:</p>
+was not excluded in the broad phase, and since the polynomial expression for the states are anyway available,
+cascade computes also the polynomial expressions for the relative distance between the potentially colliding objects:</p>
 <div class="math notranslate nohighlight">
 \[r_{ij}\left( \tau \right) = \sum_{n=0}^p r_{ij}^{\left[ n \right]}\left( t_0 \right)\tau^n.\]</div>
-<p>at this point, to know wether this results in a collision or a miss cascade only needs to run a (very clever) polinomial
-root finding algorithm which excludes efficiently the existence of any root, to only actually compute it
-in the few remaining cases.</p>
+<p>at this point, to know wether this results in a collision or a miss, cascade only needs to run its clever polynomial
+root finding algorithm which excludes efficiently the existence of any root applying
+<a class="reference external" href="https://en.wikipedia.org/wiki/Descartes'_rule_of_signs">Descartes rule</a> ,
+to only actually compute it in the few remaining cases.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The algorithm description above has been simplified to allow the user to understand the basic ideas and relate them
 to cascade behaviour, in particular to the information logged by <a class="reference internal" href="generated/cascade.set_logger_level_trace.html#cascade.set_logger_level_trace" title="cascade.set_logger_level_trace"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_logger_level_trace()</span></code></a>
-and to the choice of the collisional timestep in <a class="reference internal" href="generated/cascade.sim.html#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">sim</span></code></a></p>
+and to the choice of the collisional timestep <a class="reference internal" href="generated/cascade.sim.html#cascade.sim.ct" title="cascade.sim.ct"><code class="xref py py-attr docutils literal notranslate"><span class="pre">ct</span></code></a></p>
 </div>
+</section>
+<section id="parallelism">
+<h1>Parallelism<a class="headerlink" href="#parallelism" title="Permalink to this headline">#</a></h1>
+<p>The main source of parallelism in cascade derives from the execution of parallel collisional timesteps.
+The user defines the number of parallel collisional timesteps <a class="reference internal" href="generated/cascade.sim.html#cascade.sim.n_par_ct" title="cascade.sim.n_par_ct"><code class="xref py py-attr docutils literal notranslate"><span class="pre">n_par_ct</span></code></a> here denoted with <span class="math notranslate nohighlight">\(N_{c_t}\)</span>.
+As a consequence, at each <a class="reference internal" href="generated/cascade.sim.html#cascade.sim.step" title="cascade.sim.step"><code class="xref py py-attr docutils literal notranslate"><span class="pre">step</span></code></a>, cascade builds the piece-wise polyonomial representation of the system state
+within a time interval of width <span class="math notranslate nohighlight">\(N_{c_t} \cdot c_t\)</span> rather than only <span class="math notranslate nohighlight">\(c_t\)</span>. This allows to perform the broad and
+narrow collision detection in parallel over <span class="math notranslate nohighlight">\(N_{c_t}\)</span> intervals. This strategy reveals to be very effective in situations
+where most of the times the step concludes without any collision detected. It can, though, be detrimental in a collision
+rich environment as when a collision is detected, all computations that are being performed over
+future time intervals have to be discarded.</p>
 </section>
 
 

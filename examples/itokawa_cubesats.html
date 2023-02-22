@@ -902,7 +902,7 @@ Upon detection of a reentry or exit event (in this case corresponding to enterin
 </div>
 </div>
 <p>We are now ready to instantiate a cascade simulation. With respect to previous examples we here need to make use of the argument <code class="docutils literal notranslate"><span class="pre">compact_mode</span></code> else the just in time compilation of the internal Taylor integrators will take too much time. With <code class="docutils literal notranslate"><span class="pre">compact_mode</span></code> we are sacrificing some optimizations in the jitted code but we allow the simulation object to be built in a few seconds only even if the mascon model has tens of thousands of mascons adding to the right hand side of the dynamics.</p>
-<p>We have also added an <code class="docutils literal notranslate"><span class="pre">exit_radius</span></code> as to be able to trigger events when cubesats are going too far from the center and thus keep the entire swarm always close to the asteroid.</p>
+<p>We have also set an <code class="docutils literal notranslate"><span class="pre">exit_radius</span></code> argument as to be able to trigger events when cubesats are going too far from the center and thus keep the entire swarm always close to the asteroid.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Number of collisional timesteps to be processed in parallel.</span>

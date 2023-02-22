@@ -767,7 +767,7 @@ Note that this cost is to be paid only once. As far as the dynamics remains unch
 </div>
 </div>
 </div>
-<p>we also need to set the starting time of the simulation so that the dynamics, written in the EME2000 reference frame (see ~<code class="xref py py-class docutils literal notranslate"><span class="pre">sim.dynamics.simple_earth</span></code>) will be correctly computing perturbations affected by
+<p>we also need to set the starting time of the simulation so that the dynamics, written in the EME2000 reference frame (see <a class="reference internal" href="../generated/cascade.dynamics.simple_earth.html#cascade.dynamics.simple_earth" title="cascade.dynamics.simple_earth"><code class="xref py py-func docutils literal notranslate"><span class="pre">cascade.dynamics.simple_earth()</span></code></a>) will be correctly computing perturbations affected by
 the Sun, Moon and Earth positions. The EME reference frame we used to write the equations of motion as defined at noon of the 1st of January 2000. We thus need to start our simulation at a <span class="math notranslate nohighlight">\(t_0\)</span> accounting for the time
 passed since that epoch.</p>
 <div class="cell docutils container">
@@ -923,7 +923,7 @@ Time projected to simulate 20 years is  4.347343726787303  hours
 </div>
 </div>
 </div>
-<p>The total simulation time, ultimately determined by the underlying CPU architecture, is sensitive also to the choices made for  <code class="docutils literal notranslate"><span class="pre">n_par_ct</span></code> and <code class="docutils literal notranslate"><span class="pre">collisional_step</span></code> which determine the efficient use of the CPUs as well as the perfromances of the underlying original collision detection algorithm based on the manipulation of the dense output of the Taylor integrators.</p>
+<p>The total simulation time, ultimately determined by the underlying CPU architecture, is sensitive also to the choices made for <a class="reference internal" href="../generated/cascade.sim.html#cascade.sim.ct" title="cascade.sim.ct"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cascade.sim.ct</span></code></a> and <a class="reference internal" href="../generated/cascade.sim.html#cascade.sim.n_par_ct" title="cascade.sim.n_par_ct"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cascade.sim.n_par_ct</span></code></a> which determine the efficient use of the CPUs as well as the perfromances of the underlying <a class="reference internal" href="../collision_algorithm.html#collision-algorithm"><span class="std std-ref">Collision Algorithm</span></a> based on the manipulation of the dense output of the Taylor integrators.</p>
 </section>
 </section>
 

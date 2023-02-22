@@ -82,7 +82,7 @@
    "id": "2f2749ae",
    "metadata": {},
    "source": [
-    "On top of all the info distributed from the [US Space Surveillance Network (SSN)](https://en.wikipedia.org/wiki/United_States_Space_Surveillance_Network) we have added to the satcat (see [The current LEO population](<./../utilities/leo_population.ipynb>) notebook) dictionary an estimate of the object radius which we will need to define the various collisional radii. As we will be using a dynamics that also models the atmospheric drag via the BSTAR coefficient, we create the array to be used as parameter when instantiating a :class:`~cascade.sim`."
+    "On top of all the info distributed from the [US Space Surveillance Network (SSN)](https://en.wikipedia.org/wiki/United_States_Space_Surveillance_Network) we have added to the satcat (see [The current LEO population](<./../utilities/leo_population.ipynb>) notebook) dictionary an estimate of the object radius which we will need to define the various collisional radii. As we will be using a dynamics that also models the atmospheric drag via the BSTAR coefficient, we create the array to be used as parameter when instantiating a {class}`cascade.sim` object."
    ]
   },
   {
@@ -405,7 +405,7 @@
    "id": "40526c4e",
    "metadata": {},
    "source": [
-    "The total simulation time, ultimately determined by the underlying CPU architecture, is sensitive also to the choices made for  `n_par_ct` and `collisional_step` which determine the efficient use of the CPUs as well as the perfromances of the underlying original collision detection algorithm based on the manipulation of the dense output of the Taylor integrators.\n",
+    "The total simulation time, ultimately determined by the underlying CPU architecture, is sensitive also to the choices made for {attr}`cascade.sim.ct` and {attr}`cascade.sim.n_par_ct` which determine the efficient use of the CPUs as well as the perfromances of the underlying [](collision_algorithm) based on the manipulation of the dense output of the Taylor integrators.\n",
     "\n",
     "It is worth here noting that for this week long prediction and all the current tracked LEO population it takes less tha 30 seconds on 32 parallel threads!"
    ]
