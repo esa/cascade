@@ -30,7 +30,7 @@ jobs:
       image: pagmo2/manylinux228_x86_64_with_deps:latest
       env:
         CASCADE_PY_BUILD_TYPE: "Python311"
-        #TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+        TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
      steps:
        - uses: actions/checkout@v3
        - name: Build
@@ -41,7 +41,7 @@ jobs:
       image: pagmo2/manylinux228_x86_64_with_deps:latest
       env:
         CASCADE_PY_BUILD_TYPE: "Python310"
-        #TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+        TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
      steps:
        - uses: actions/checkout@v3
        - name: Build
@@ -52,7 +52,7 @@ jobs:
       image: pagmo2/manylinux228_x86_64_with_deps:latest
       env:
         CASCADE_PY_BUILD_TYPE: "Python39"
-        #TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+        TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
      steps:
        - uses: actions/checkout@v3
        - name: Build
@@ -63,7 +63,7 @@ jobs:
       image: pagmo2/manylinux228_x86_64_with_deps:latest
       env:
         CASCADE_PY_BUILD_TYPE: "Python38"
-        #TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+        TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
      steps:
        - uses: actions/checkout@v3
        - name: Build
