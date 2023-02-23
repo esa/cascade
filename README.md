@@ -35,8 +35,8 @@ Notable features include:
 * an original collision detection algorithm exploiting high order Taylor expansions.
 * guaranteed detection of all occuring collisions and conjunctions.
 * high precision orbital propagation via Taylor integration.
-* possibility to define custom dynamics,
-* seamless usage of modern SIMD instruction sets (including AVX/AVX2/AVX-512/Neon/VSX),
+* possibility to define custom dynamics.
+* seamless usage of modern SIMD instruction sets (including AVX/AVX2/AVX-512/Neon/VSX).
 * seamless multi-threaded parallelisation.
 
 Installation
