@@ -81,8 +81,8 @@ make -j4 install
 
 # Making the wheel and installing it
 cd wheel
-# Copy the installed cascade.py files into the current dir.
-cp -r `/opt/python/${PYTHON_DIR}/bin/python -c 'import site; print(site.getsitepackages()[0])'`/cascade ./
+# Move the installed cascade.py files into the current dir.
+mv `/opt/python/${PYTHON_DIR}/bin/python -c 'import site; print(site.getsitepackages()[0])'`/cascade ./
 # Create the wheel and repair it.
 # NOTE: this is temporary because some libraries in the docker
 # image are installed in lib64 rather than lib and they are
