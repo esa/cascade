@@ -3,7 +3,7 @@ from setuptools import setup
 from setuptools.dist import Distribution
 import sys
 
-NAME = "cascade.py"
+NAME = "esa_cascade"
 VERSION = "@cascade_VERSION@"
 DESCRIPTION = "N-body simulation for the evolution of orbital environments"
 LONG_DESCRIPTION = "A Python library to propagate the evolution of a large number of orbiting objects while detecting reliably close encounters and collisions."
