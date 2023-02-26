@@ -48,7 +48,7 @@ setup(
     keywords=KEYWORDS,
     platforms=PLATFORMS,
     install_requires=INSTALL_REQUIRES,
-    packages=["cascade"],
+    packages=["cascade", "cascade.dynamics"],
     # Include pre-compiled extension
     package_data={"cascade": [f for f in os.listdir("cascade/") if f.endswith(".so")]},
     distclass=BinaryDistribution,
