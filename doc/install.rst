@@ -3,8 +3,8 @@
 Installation
 ============
 
-Installing from a package manager
----------------------------------
+Packages
+--------
 
 Conda
 ^^^^^
@@ -25,13 +25,37 @@ to the channels. Assuming a working installation of conda:
     It is useful to check the scripts we use to build and test cascade since they use conda. You can find the ones for Linux and OSX in
     `the tools folder <https://github.com/esa/cascade/tree/main/tools>`__ of our github repository.
 
-The conda packages for cascade are maintained by the core development team,
-and they are regularly updated when new cascade versions are released.
+The conda package for cascade is maintained by the core development team,
+and it is regularly updated when new cascade versions are released. Note that the
+conda package includes both the C++ library and the Python bindings.
 
 Please refer to the `conda documentation <https://docs.conda.io/en/latest/>`__
 for instructions on how to setup and manage
 your conda installation.
 
+pip
+^^^
+
+A cascade package for x86-64 Linux is available on `PyPI <https://pypi.org/project/esa_cascade/>`__.
+You can install it via ``pip``:
+
+.. code-block:: console
+
+   $ pip install esa_cascade
+
+Note that the PyPI name of the project is esa_cascade (rather than cascade) in order to avoid
+name collisions with an existing project.
+
+Note also that the PyPI package includes only the Python bindings (and not the C++ library).
+
+.. warning::
+
+   cascade relies on a stack of C++ dependencies which are bundled in the ``pip`` package.
+   There is a non-negligible chance of conflicts with other packages which might also depend on and bundle
+   the same C++ libraries, which can lead to unpredictable runtime errors and hard-to-diagnose
+   issues.
+
+   We encourage users to install cascade via conda rather than ``pip`` whenever possible.
 
 Installation from source
 ------------------------
