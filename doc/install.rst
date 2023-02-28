@@ -25,8 +25,8 @@ to the channels. Assuming a working installation of conda:
     It is useful to check the scripts we use to build and test cascade since they use conda. You can find the ones for Linux and OSX in
     `the tools folder <https://github.com/esa/cascade/tree/main/tools>`__ of our github repository.
 
-The conda packages for cascade are maintained by the core development team,
-and they are regularly updated when new cascade versions are released. Note that the
+The conda package for cascade is maintained by the core development team,
+and it is regularly updated when new cascade versions are released. Note that the
 conda package includes both the C++ library and the Python bindings.
 
 Please refer to the `conda documentation <https://docs.conda.io/en/latest/>`__
