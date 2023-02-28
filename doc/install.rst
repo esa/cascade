@@ -27,7 +27,7 @@ to the channels. Assuming a working installation of conda:
 
 The conda packages for cascade are maintained by the core development team,
 and they are regularly updated when new cascade versions are released. Note that the
-conda package of cascade includes both the C++ library and the Python bindings.
+conda package includes both the C++ library and the Python bindings.
 
 Please refer to the `conda documentation <https://docs.conda.io/en/latest/>`__
 for instructions on how to setup and manage
@@ -46,7 +46,7 @@ You can install it via ``pip``:
 Note that the PyPI name of the project is esa_cascade (rather than cascade) in order to avoid
 name collisions with an existing project.
 
-Note also that the cascade PyPI package includes only the Python binding (and not the C++ library).
+Note also that the PyPI package includes only the Python bindings (and not the C++ library).
 
 .. warning::
 
