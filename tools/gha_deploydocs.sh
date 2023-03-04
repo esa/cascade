@@ -10,7 +10,7 @@ set -e
 sudo apt-get install wget
 
 # Install conda+deps.
-wget https://github.com/conda-forge/miniforge/releases/download/22.9.0-3/Mambaforge-22.9.0-3-Linux-x86_64.sh -O mambaforge.sh
+wget https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh -O mambaforge.sh
 export deps_dir=$HOME/local
 export PATH="$HOME/mambaforge/bin:$PATH"
 bash mambaforge.sh -b -p $HOME/mambaforge
@@ -19,7 +19,7 @@ mamba env create -f cascade_devel.yml -q -p $deps_dir
 source activate $deps_dir
 # NOTE: do some explicit version pinning here, as the interdeps
 # between several sphinx packages are **very** fragile.
-mamba install sphinx='4.5.*' myst-nb='0.17.*' sphinx-book-theme='0.3.*' sphinx-design matplotlib pykep sgp4
+mamba install sphinx='5.3.*' myst-nb='0.17.*' sphinx-book-theme='1.0.*' sphinx-design matplotlib pykep sgp4
 
 # Create the build dir and cd into it.
 mkdir build
