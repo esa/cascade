@@ -38,7 +38,6 @@
 #include <heyoka/llvm_state.hpp>
 #include <heyoka/math/pow.hpp>
 #include <heyoka/math/sum.hpp>
-#include <heyoka/math/sum_sq.hpp>
 #include <heyoka/taylor.hpp>
 #include <heyoka/variable.hpp>
 
@@ -509,14 +508,14 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
         auto make_exit_eq = [&]() {
             assert(m_exit_radius > 0);
 
-            return hy::sum_sq({x, y, z}) - m_exit_radius * m_exit_radius;
+            return fix_nn(x * x + y * y + z * z) - m_exit_radius * m_exit_radius;
         };
 
         auto make_reentry_eq = [&]() {
             if (auto *dbl_ptr = std::get_if<double>(&m_reentry_radius)) {
                 assert(*dbl_ptr > 0);
 
-                return hy::sum_sq({x, y, z}) - *dbl_ptr * *dbl_ptr;
+                return fix_nn(x * x + y * y + z * z) - *dbl_ptr * *dbl_ptr;
             } else {
                 const auto &ax_vec = std::get<std::vector<double>>(m_reentry_radius);
 
@@ -526,7 +525,8 @@ void sim::finalise_ctor(std::vector<std::pair<heyoka::expression, heyoka::expres
                 const auto ax_b = ax_vec[1];
                 const auto ax_c = ax_vec[2];
 
-                return hy::sum_sq({ax_b * ax_c * x, ax_a * ax_c * y, ax_a * ax_b * z})
+                return fix_nn((ax_b * ax_c * x) * (ax_b * ax_c * x) + (ax_a * ax_c * y) * (ax_a * ax_c * y)
+                              + (ax_a * ax_b * z) * (ax_a * ax_b * z))
                        - ax_a * ax_a * ax_b * ax_b * ax_c * ax_c;
             }
         };

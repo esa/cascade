@@ -16,7 +16,6 @@
 
 #include <heyoka/expression.hpp>
 #include <heyoka/math/pow.hpp>
-#include <heyoka/math/sum_sq.hpp>
 
 #include <cascade/sim.hpp>
 
@@ -37,9 +36,9 @@ std::vector<std::pair<heyoka::expression, heyoka::expression>> kepler(double mu)
     return {hy::prime(x) = vx,
             hy::prime(y) = vy,
             hy::prime(z) = vz,
-            hy::prime(vx) = -mu * x * hy::pow(hy::sum_sq({x, y, z}), -1.5),
-            hy::prime(vy) = -mu * y * hy::pow(hy::sum_sq({x, y, z}), -1.5),
-            hy::prime(vz) = -mu * z * hy::pow(hy::sum_sq({x, y, z}), -1.5)};
+            hy::prime(vx) = -mu * x * hy::pow(x * x + y * y + z * z, -1.5),
+            hy::prime(vy) = -mu * y * hy::pow(x * x + y * y + z * z, -1.5),
+            hy::prime(vz) = -mu * z * hy::pow(x * x + y * y + z * z, -1.5)};
 }
 
 } // namespace cascade::dynamics

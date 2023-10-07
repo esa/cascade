@@ -18,7 +18,6 @@
 #include <heyoka/expression.hpp>
 #include <heyoka/math/pow.hpp>
 #include <heyoka/math/sum.hpp>
-#include <heyoka/math/sum_sq.hpp>
 #include <heyoka/taylor.hpp>
 
 #include <cascade/sim.hpp>
@@ -81,9 +80,9 @@ TEST_CASE("heyoka comparison")
             hy::prime(x) = vx,
             hy::prime(y) = vy,
             hy::prime(z) = vz,
-            hy::prime(vx) = -x * hy::pow(hy::sum_sq({x, y, z}), -1.5),
-            hy::prime(vy) = -y * hy::pow(hy::sum_sq({x, y, z}), -1.5),
-            hy::prime(vz) = -z * hy::pow(hy::sum_sq({x, y, z}), -1.5)};
+            hy::prime(vx) = -x * hy::pow(x * x + y * y + z * z, -1.5),
+            hy::prime(vy) = -y * hy::pow(x * x + y * y + z * z, -1.5),
+            hy::prime(vz) = -z * hy::pow(x * x + y * y + z * z, -1.5)};
 
         hy::taylor_adaptive<double> ta(dynamics, std::vector<double>(6u));
 

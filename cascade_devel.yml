@@ -6,13 +6,13 @@ dependencies:
   - cxx-compiler
   - ninja
   - cmake >=3.18
-  - python =3.10
+  - python =3.11
   - tbb-devel
   - tbb
   - boost-cpp >=1.73
   - fmt
-  - heyoka >=0.21.0
-  - heyoka.py >=0.21.0
+  - heyoka =3.0.*
+  - heyoka.py =3.0.*
   - spdlog
   - pybind11 >=2.10
   - xtensor

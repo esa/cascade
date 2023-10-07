@@ -234,8 +234,6 @@ void sim::add_jit_functions()
     hy::detail::llvm_add_fex_check(state, fp_t, m_data->s_ta.get_order(), 1);
     hy::detail::llvm_add_poly_rtscc(state, fp_t, m_data->s_ta.get_order(), 1);
 
-    state.optimise();
-
     state.compile();
 
     m_data->pta_cfunc = reinterpret_cast<decltype(m_data->pta_cfunc)>(state.jit_lookup("pta_cfunc"));
