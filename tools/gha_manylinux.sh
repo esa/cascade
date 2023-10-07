@@ -43,8 +43,8 @@ else
 fi
 
 # The heyoka/heyoka.py versions to be used.
-export HEYOKA_VERSION="0.21.0"
-export HEYOKA_PY_VERSION="0.21.7"
+export HEYOKA_VERSION="3.0.0"
+export HEYOKA_PY_VERSION="3.0.0"
 
 # Python mandatory deps.
 /opt/python/${PYTHON_DIR}/bin/pip install heyoka==${HEYOKA_PY_VERSION} numpy
