@@ -11,6 +11,7 @@
 import typing
 import heyoka as hy
 
+
 def _compute_atmospheric_density(h):
     """
     Returns the heyoka expression for the atmosheric density in kg.m^3.
@@ -46,10 +47,16 @@ def _compute_atmospheric_density(h):
 
 
 def simple_earth(
-    J2: bool=True, J3: bool=False, C22S22: bool=True, sun: bool=False, moon: bool=False, SRP: bool=False, drag: bool=True
+    J2: bool = True,
+    J3: bool = False,
+    C22S22: bool = True,
+    sun: bool = False,
+    moon: bool = False,
+    SRP: bool = False,
+    drag: bool = True,
 ) -> typing.List[typing.Tuple[hy.expression, hy.expression]]:
     """Perturbed dynamics around the Earth.
-    
+
     Returns heyoka expressions to be used as dynamics in :class:`~cascade.sim` and corresponding
     to the Earth orbital environment as perturbed by selectable term (all in SI units).
 
@@ -121,7 +128,7 @@ def simple_earth(
     dyn = kepler(mu=GMe_SI)
 
     # Define the radius squared
-    magr2 = hy.sum_sq([x, y, z])
+    magr2 = x**2 + y**2 + z**2
 
     Re_SI = Re_ * 1000
     if J2:
@@ -314,7 +321,7 @@ def simple_earth(
     drag_par_idx = 0
     if drag:
         # Adds the drag force.
-        magv2 = hy.sum_sq([vx, vy, vz])
+        magv2 = vx**2 + vy**2 + vz**2
         magv = hy.sqrt(magv2)
         # Here we consider a spherical Earth ... would be easy to account for the oblateness effect.
         altitude = hy.sqrt(magr2) - Re_SI
