@@ -10,7 +10,7 @@ if(NOT CMAKE_BUILD_TYPE)
 	FORCE)
 endif()
 
-project(cascade VERSION 0.1.6 LANGUAGES CXX C)
+project(cascade VERSION 0.1.7 LANGUAGES CXX C)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/yacma")
 
@@ -143,8 +143,8 @@ set(CASCADE_SRC_FILES
 
 # Setup of the cascade shared library.
 add_library(cascade SHARED "${CASCADE_SRC_FILES}")
-set_property(TARGET cascade PROPERTY VERSION "1.0")
-set_property(TARGET cascade PROPERTY SOVERSION 1)
+set_property(TARGET cascade PROPERTY VERSION "2.0")
+set_property(TARGET cascade PROPERTY SOVERSION 2)
 set_target_properties(cascade PROPERTIES CXX_VISIBILITY_PRESET hidden)
 set_target_properties(cascade PROPERTIES VISIBILITY_INLINES_HIDDEN TRUE)
 
@@ -175,19 +175,15 @@ find_package(Boost 1.73 REQUIRED)
 target_link_libraries(cascade PUBLIC Boost::boost)
 
 # fmt.
-find_package(fmt CONFIG REQUIRED)
+find_package(fmt REQUIRED CONFIG)
 target_link_libraries(cascade PUBLIC fmt::fmt)
 
 # heyoka.
-find_package(heyoka CONFIG REQUIRED)
+find_package(heyoka 3.0.0 REQUIRED CONFIG)
 target_link_libraries(cascade PUBLIC heyoka::heyoka)
-message(STATUS "heyoka version: ${heyoka_VERSION}")
-if(heyoka_VERSION VERSION_LESS 0.21.0)
-    message(FATAL_ERROR "heyoka>=0.21.0 is required, but heyoka ${heyoka_VERSION} was found instead")
-endif()
 
 # spdlog.
-find_package(spdlog CONFIG REQUIRED)
+find_package(spdlog REQUIRED CONFIG)
 target_link_libraries(cascade PRIVATE spdlog::spdlog)
 
 # Installation of the header files.

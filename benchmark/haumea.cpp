@@ -28,7 +28,6 @@
 #include <heyoka/math/cos.hpp>
 #include <heyoka/math/pow.hpp>
 #include <heyoka/math/sin.hpp>
-#include <heyoka/math/sum_sq.hpp>
 #include <heyoka/math/time.hpp>
 
 #include <cascade/logging.hpp>
@@ -126,8 +125,8 @@ int main()
     auto pert_y_s = mu_s * ((y_s - y) * dps_m3 - y_s * dcs_m3);
     auto pert_z_s = mu_s * ((z_s - z) * dps_m3 - z_s * dcs_m3);
 
-    const auto I = (Ac * x * x + Bc * y * y + Cc * z * z) / hy::sum_sq({x, y, z});
-    const auto Vell = G / 2. * (Ac + Bc + Cc - 3. * I) * hy::pow(hy::sum_sq({x, y, z}), -3. / 2);
+    const auto I = (Ac * x * x + Bc * y * y + Cc * z * z) / (x * x + y * y + z * z);
+    const auto Vell = G / 2. * (Ac + Bc + Cc - 3. * I) * hy::pow(x * x + y * y + z * z, -3. / 2);
 
     pert_x_s += hy::diff(Vell, x);
     pert_y_s += hy::diff(Vell, y);

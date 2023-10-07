@@ -30,7 +30,6 @@
 #include <heyoka/math/pow.hpp>
 #include <heyoka/math/sin.hpp>
 #include <heyoka/math/sqrt.hpp>
-#include <heyoka/math/sum_sq.hpp>
 #include <heyoka/math/time.hpp>
 
 #include <cascade/logging.hpp>
@@ -194,7 +193,8 @@ int main(int ac, char *av[])
         H5Easy::File par_file("test_par_612813.hdf5", H5Easy::File::ReadOnly);
         par_file.getDataSet("/par").read(pars);
 
-        // We switch off drag as to avoid to see too many reentries (in connection to the event reentry_radius being halved)
+        // We switch off drag as to avoid to see too many reentries (in connection to the event reentry_radius being
+        // halved)
         drag_factor = 0.;
     } else {
         state = read_file("test_ic_19647.txt");
@@ -229,7 +229,7 @@ int main(int ac, char *av[])
     auto dyn = dynamics::kepler(GMe);
 
     // Add the J2 terms.
-    auto magr2 = hy::sum_sq({x, y, z});
+    auto magr2 = x * x + y * y + z * z;
     auto J2term1 = GMe * (Re * Re) * std::sqrt(5) * C20 / (2. * hy::sqrt(magr2));
     auto J2term2 = 3. / (magr2 * magr2);
     auto J2term3 = 15. * (z * z) / (magr2 * magr2 * magr2);
@@ -275,7 +275,7 @@ int main(int ac, char *av[])
     dyn[5].second += fC22z + fS22z;
 
     // Add the drag force.
-    auto magv2 = hy::sum_sq({vx, vy, vz});
+    auto magv2 = vx * vx + vy * vy + vz * vz;
     auto magv = hy::sqrt(magv2);
     // Here we consider a spherical Earth ... would be easy to account for the oblateness effect on the altitude.
     auto altitude = hy::sqrt(magr2) - Re;
