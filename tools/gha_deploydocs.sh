@@ -17,9 +17,7 @@ bash mambaforge.sh -b -p $HOME/mambaforge
 mamba env create -f cascade_devel.yml -q -p $deps_dir
 # Adding the necessary tools for doc building
 source activate $deps_dir
-# NOTE: do some explicit version pinning here, as the interdeps
-# between several sphinx packages are **very** fragile.
-mamba install sphinx='5.3.*' myst-nb='0.17.*' sphinx-book-theme='1.0.*' sphinx-design matplotlib pykep sgp4
+mamba install sphinx myst-nb sphinx-book-theme sphinx-design matplotlib pykep sgp4
 
 # Create the build dir and cd into it.
 mkdir build
