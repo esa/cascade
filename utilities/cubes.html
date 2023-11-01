@@ -19,12 +19,12 @@
   </script>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=ac02cc09edc035673794" rel="stylesheet" />
-<link href="../_static/styles/bootstrap.css?digest=ac02cc09edc035673794" rel="stylesheet" />
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=ac02cc09edc035673794" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
 
   
-  <link href="../_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=ac02cc09edc035673794" rel="stylesheet" />
+  <link href="../_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
   <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
@@ -35,9 +35,9 @@
     <link rel="stylesheet" type="text/css" href="../_static/design-style.1e8bd061cd6da7fc9cf755528e8ffc24.min.css" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=ac02cc09edc035673794" />
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=ac02cc09edc035673794" />
-  <script src="../_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=ac02cc09edc035673794"></script>
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=365ca57ee442770a23c6" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=365ca57ee442770a23c6" />
+  <script src="../_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=365ca57ee442770a23c6"></script>
 
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
@@ -132,13 +132,14 @@
   
   
   
+  
     
     
       
     
     
-    <img src="../_static/logo.png" class="logo__image only-light" alt="Logo image"/>
-    <script>document.write(`<img src="../_static/logo.png" class="logo__image only-dark" alt="Logo image"/>`);</script>
+    <img src="../_static/logo.png" class="logo__image only-light" alt="cascade 0.1.7 documentation - Home"/>
+    <script>document.write(`<img src="../_static/logo.png" class="logo__image only-dark" alt="cascade 0.1.7 documentation - Home"/>`);</script>
   
   
 </a></div>
@@ -463,6 +464,7 @@ N_{tot} = \int_{t_s}^{t_f} P_{ij} ds = [t_f - t_s] P_{ij}
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
 
 <span class="c1"># sgp4 imports</span>
 <span class="kn">import</span> <span class="nn">sgp4</span>
@@ -547,7 +549,8 @@ In our implementation the cubes start from the origin. In other words, along the
 <span class="sd">        a list containing lists of satelites idx occupying the same cube</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># init</span>
-    <span class="n">retval</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">in_same_cube</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">pairs</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">cubes</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
 
     <span class="c1"># We compute the floored Cartesian coordinates identifying the bins.</span>
@@ -560,8 +563,11 @@ In our implementation the cubes start from the origin. In other words, along the
     <span class="c1"># We find bins with more than one object</span>
     <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">cubes</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cubes</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">retval</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cubes</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
-    <span class="k">return</span> <span class="n">retval</span>
+            <span class="n">in_same_cube</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cubes</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+    <span class="c1"># We compute all the combinations between the pairs</span>
+    <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">in_same_cube</span><span class="p">:</span>
+        <span class="n">pairs</span><span class="o">.</span><span class="n">extend</span><span class="p">(((</span><span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">combinations</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="mi">2</span><span class="p">)))))</span>
+    <span class="k">return</span> <span class="n">pairs</span>
 </pre></div>
 </div>
 </div>
@@ -575,7 +581,7 @@ This makes the <em>Cube</em> approach scale remarkably well as an n-body collisi
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>33.1 ms ± 178 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>28.1 ms ± 4.92 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
 </pre></div>
 </div>
 </div>
@@ -627,7 +633,7 @@ We start precomputing all the positions and velocities of the orbiting objects i
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Time to perform all numerical integrations:  19.566089153289795
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Time to perform all numerical integrations:  7.937011003494263
 </pre></div>
 </div>
 </div>
@@ -647,11 +653,11 @@ We start precomputing all the positions and velocities of the orbiting objects i
     <span class="n">undecayed</span> <span class="o">=</span> <span class="n">undecayed</span> <span class="o">-</span> <span class="n">decayed</span>
     <span class="n">undecayed_l</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">undecayed</span><span class="p">])</span>
     <span class="c1"># We detect all satellites couples in the same cube of Lcube km size</span>
-    <span class="n">collision</span> <span class="o">=</span> <span class="n">cubes</span><span class="p">(</span><span class="n">r_sgp4</span><span class="p">[</span><span class="n">undecayed_l</span><span class="p">,</span><span class="n">i</span><span class="p">,:],</span> <span class="n">cube_dimension</span> <span class="o">=</span> <span class="n">Lcube</span><span class="p">)</span>
+    <span class="n">pairs</span> <span class="o">=</span> <span class="n">cubes</span><span class="p">(</span><span class="n">r_sgp4</span><span class="p">[</span><span class="n">undecayed_l</span><span class="p">,</span><span class="n">i</span><span class="p">,:],</span> <span class="n">cube_dimension</span> <span class="o">=</span> <span class="n">Lcube</span><span class="p">)</span>
     <span class="c1">#kdt = KDTree(r[undecayed_l,i,:])</span>
     <span class="c1">#collision = list(kdt.query_pairs(Lcube))</span>
     <span class="c1">#print(collision)</span>
-    <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">collision</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">pairs</span><span class="p">:</span>
         <span class="c1"># we get the indexes in r,v</span>
         <span class="n">idx1</span> <span class="o">=</span> <span class="n">undecayed_l</span><span class="p">[</span><span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
         <span class="n">idx2</span> <span class="o">=</span> <span class="n">undecayed_l</span><span class="p">[</span><span class="n">pair</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
@@ -689,19 +695,22 @@ We start precomputing all the positions and velocities of the orbiting objects i
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Collision! pair: [14084, 14352], years: 0.6844626967830253
-Collision! pair: [8170, 13942], years: 1.7659137577002053
-Collision! pair: [12625, 18100], years: 1.943874058863792
-Collision! pair: [13644, 15509], years: 2.6694045174537986
-Collision! pair: [13059, 15181], years: 6.1738535249828885
-Collision! pair: [13322, 14410], years: 9.267624914442163
-Collision! pair: [1012, 11892], years: 10.581793292265571
-Collision! pair: [4762, 4984], years: 16.632443531827516
-Collision! pair: [1671, 5447], years: 16.79671457905544
-Time elasped:  67.86483788490295
-Decayed objects:  4990
-Number of collisions:  9
-Expected number of collisions:  11.538803066221181
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Collision! pair: (15977, 16424), years: 0.8213552361396304
+Collision! pair: (15935, 16388), years: 1.273100616016427
+Collision! pair: (1041, 6320), years: 1.4921286789869952
+Collision! pair: (13484, 13591), years: 3.1074606433949348
+Collision! pair: (13689, 13950), years: 6.365503080082136
+Collision! pair: (14107, 15279), years: 10.704996577686517
+Collision! pair: (3897, 15176), years: 11.567419575633128
+Collision! pair: (10109, 11757), years: 12.320328542094456
+Collision! pair: (12350, 13019), years: 13.566050650239562
+Collision! pair: (4910, 12250), years: 14.099931553730322
+Collision! pair: (13633, 14012), years: 15.824777549623546
+Collision! pair: (2869, 3364), years: 16.892539356605067
+Time elasped:  51.43294858932495
+Decayed objects:  4992
+Number of collisions:  12
+Expected number of collisions:  13.336892648579166
 </pre></div>
 </div>
 </div>
@@ -795,8 +804,8 @@ By Francesco Biscani and Dario Izzo
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script src="../_static/scripts/bootstrap.js?digest=ac02cc09edc035673794"></script>
-<script src="../_static/scripts/pydata-sphinx-theme.js?digest=ac02cc09edc035673794"></script>
+  <script src="../_static/scripts/bootstrap.js?digest=365ca57ee442770a23c6"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=365ca57ee442770a23c6"></script>
 
   <footer class="bd-footer">
   </footer>
