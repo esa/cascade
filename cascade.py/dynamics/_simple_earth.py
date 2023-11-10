@@ -253,7 +253,7 @@ def simple_earth(
             - 205 * hy.cos(llm - 2 * Dm)
             - 171 * hy.cos(lm + 2 * Dm)
             - 152 * hy.cos(lm + llm - 2 * Dm)
-        )
+        ) * 1000
 
         lambda_m = L0 + (np.pi / 180) * (
             (22640 / 3600) * hy.sin(lm)
