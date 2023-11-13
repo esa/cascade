@@ -49,6 +49,7 @@ def _compute_atmospheric_density(h):
 def simple_earth(
     J2: bool = True,
     J3: bool = False,
+    J4: bool = False,
     C22S22: bool = True,
     sun: bool = False,
     moon: bool = False,
@@ -80,6 +81,7 @@ def simple_earth(
     Args:
         J2 (bool, optional): adds the Earth J2 spherical harmonic (C20 Stokes' coefficient). Defaults to True.
         J3 (bool, optional): adds the Earth J3 spherical harmonic (C30 Stokes' coefficient). Defaults to False.
+        J4 (bool, optional): adds the Earth J4 spherical harmonic (C40 Stokes' coefficient). Defaults to False.
         C22S22 (bool, optional): adds the Earth C22 and S22 Stokes' coefficients. Defaults to True.
         sun (bool, optional): adds the Sun gravity. Defaults to False.
         moon (bool, optional): adds the Moon gravity. Defaults to False.
@@ -104,6 +106,7 @@ def simple_earth(
     C22 = 2.43914352398e-6
     S22 = -1.40016683654e-6
     J3_dim_value = -2.61913e29  # (m^6/s^2) is # name is to differentiate from kwarg
+    J4_adim_value = -1.61989759991697e-6 # [-]
     theta_g = (
         np.pi / 180
     ) * 280.4606  # [rad] # This value defines the rotation of the Earth fixed system at t0
@@ -158,6 +161,14 @@ def simple_earth(
         dyn[3] = (dyn[3][0], dyn[3][1] + fJ3x)
         dyn[4] = (dyn[4][0], dyn[4][1] + fJ3y)
         dyn[5] = (dyn[5][0], dyn[5][1] + fJ3z)
+    
+    if J4:
+        fJ4x = ((15*J4_adim_value*GMe_SI*(Re_SI**4)*x)/(8*((x**2 + y**2 + z**2)**3.5))) * (1 - ((14*(z**2))/((x**2 + y**2 + z**2))) + (21*(z**4)/((x**2 + y**2 + z**2)**2)))
+        fJ4y = ((15*J4_adim_value*GMe_SI*(Re_SI**4)*y)/(8*((x**2 + y**2 + z**2)**3.5))) * (1 - ((14*(z**2))/((x**2 + y**2 + z**2))) + (21*(z**4)/((x**2 + y**2 + z**2)**2)))
+        fJ4z = ((15*J4_adim_value*GMe_SI*(Re_SI**4)*z)/(8*((x**2 + y**2 + z**2)**3.5))) * (5 - ((70*(z**2))/(3*(x**2 + y**2 + z**2))) + (21*(z**4)/((x**2 + y**2 + z**2)**2)))   
+        dyn[3] = (dyn[3][0], dyn[3][1] + fJ4x)
+        dyn[4] = (dyn[4][0], dyn[4][1] + fJ4y)
+        dyn[5] = (dyn[5][0], dyn[5][1] + fJ4z) 
 
     if C22S22:
         X = x * hy.cos(theta_g + nu_e * hy.time) + y * hy.sin(theta_g + nu_e * hy.time)
