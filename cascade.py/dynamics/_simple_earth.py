@@ -74,8 +74,9 @@ def simple_earth(
 
     .. note::
        If *drag* is active, the BSTAR coefficient (SI units) of the object must be passed as a first
-       simulation parameter in :class:`~cascade.sim`, if *SRP* is active, the object area (SI units) must be also passed as a
-       simulation parameter (after BSTAR if present).
+       simulation parameter in :class:`~cascade.sim`, if *SRP* is active, the term Cr*AOM (SI units) must be also passed as a
+       simulation parameter (after BSTAR if present), being Cr the coefficient of reflectivity of the spacecraft and AOM the 
+       area-to-mass-ratio.
 
 
     Args:
@@ -254,6 +255,7 @@ def simple_earth(
         Fm = phi_mp + phi_ma + phi_ms + (np.pi / 180) * 93.27283
         Dm = phi_mp + phi_ma - phi_m + (np.pi / 180) * 297.85027
 
+        # Careful, here we multiply by 1000 as the units are meters and not km as in the original paper where the eqs were presented.  
         rm = (
             385000
             - 20905 * hy.cos(lm)
