@@ -64,7 +64,7 @@
 
 #endif
 
-#include "mdspan/mdspan"
+#include <heyoka/mdspan.hpp>
 
 #if defined(__clang__) || defined(__GNUC__)
 
