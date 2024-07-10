@@ -11,8 +11,8 @@ dependencies:
   - tbb
   - boost-cpp >=1.73
   - fmt
-  - heyoka =3.0.*
-  - heyoka.py =3.0.*
+  - heyoka =5*
+  - heyoka.py =5*
   - spdlog
   - pybind11 >=2.10
   - xtensor

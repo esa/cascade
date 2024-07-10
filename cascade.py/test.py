@@ -60,7 +60,7 @@ class dynamics_test_case(_ut.TestCase):
     def test_perturbation_magnitudes(self):
         from .dynamics import simple_earth, kepler
         import numpy as np
-        from heyoka import make_cfunc
+        from heyoka import cfunc, make_vars
 
         dynkep = simple_earth(
             J2=False,
@@ -90,9 +90,11 @@ class dynamics_test_case(_ut.TestCase):
             drag=False,
         )
 
-        dynkep_c = make_cfunc([dynkep[i][1] for i in [3, 4, 5]])
-        dynJ2_c = make_cfunc([dynJ2[i][1] for i in [3, 4, 5]])
-        dynJ3_c = make_cfunc([dynJ3[i][1] for i in [3, 4, 5]])
+        # Dynamical variables.
+        x, y, z, vx, vy, vz = make_vars("x", "y", "z", "vx", "vy", "vz")
+        dynkep_c = cfunc([dynkep[i][1] for i in [3, 4, 5]], vars=[x,y,z])
+        dynJ2_c = cfunc([dynJ2[i][1] for i in [3, 4, 5]], vars=[x,y,z])
+        dynJ3_c = cfunc([dynJ3[i][1] for i in [3, 4, 5]], vars=[x,y,z])
 
         # We compute the various acceleration magnitudes at 7000 km
         pos = np.array([7000000.0, 0.0, 0.0])

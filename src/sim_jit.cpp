@@ -33,7 +33,7 @@
 
 #endif
 
-#include "mdspan/mdspan"
+#include <heyoka/mdspan.hpp>
 
 #if defined(__clang__) || defined(__GNUC__)
 
@@ -109,7 +109,7 @@ void add_poly_translator_a(hy::llvm_state &s, std::uint32_t order)
     }
 
     // Add the compiled function.
-    hy::add_cfunc<double>(s, "pta_cfunc", out, hy::kw::vars = std::move(cfs));
+    hy::add_cfunc<double>(s, "pta_cfunc", out, cfs);
 }
 
 // Add a compiled function to compute the sum of the squares
@@ -214,7 +214,7 @@ void add_poly_ssdiff3_cfunc(hy::llvm_state &s, std::uint32_t order)
     }
 
     // Add the compiled function.
-    hy::add_cfunc<double>(s, "ssdiff3_cfunc", out, hy::kw::vars = std::move(vars));
+    hy::add_cfunc<double>(s, "ssdiff3_cfunc", out, vars);
 }
 
 } // namespace

@@ -26,52 +26,52 @@ jobs:
           fetch-depth: 2
       - name: Build
         run: bash tools/gha_conda_coverage.sh
-  manylinux228-py311:
-     runs-on: ubuntu-latest
-     container:
-      image: pagmo2/manylinux228_x86_64_with_deps:latest
-      env:
-        CASCADE_PY_BUILD_TYPE: "Python311"
-        TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
-     steps:
-       - uses: actions/checkout@v3
-       - name: Build
-         run: bash tools/gha_manylinux.sh
-  manylinux228-py310:
-     runs-on: ubuntu-latest
-     container:
-      image: pagmo2/manylinux228_x86_64_with_deps:latest
-      env:
-        CASCADE_PY_BUILD_TYPE: "Python310"
-        TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
-     steps:
-       - uses: actions/checkout@v3
-       - name: Build
-         run: bash tools/gha_manylinux.sh
-  manylinux228-py39:
-     runs-on: ubuntu-latest
-     container:
-      image: pagmo2/manylinux228_x86_64_with_deps:latest
-      env:
-        CASCADE_PY_BUILD_TYPE: "Python39"
-        TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
-     steps:
-       - uses: actions/checkout@v3
-       - name: Build
-         run: bash tools/gha_manylinux.sh
-  manylinux228-py38:
-     runs-on: ubuntu-latest
-     container:
-      image: pagmo2/manylinux228_x86_64_with_deps:latest
-      env:
-        CASCADE_PY_BUILD_TYPE: "Python38"
-        TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
-     steps:
-       - uses: actions/checkout@v3
-       - name: Build
-         run: bash tools/gha_manylinux.sh
+  #manylinux228-py311:
+  #   runs-on: ubuntu-latest
+  #   container:
+  #    image: pagmo2/manylinux228_x86_64_with_deps:latest
+  #    env:
+  #      CASCADE_PY_BUILD_TYPE: "Python311"
+  #      TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Build
+  #       run: bash tools/gha_manylinux.sh
+  #manylinux228-py310:
+  #   runs-on: ubuntu-latest
+  #   container:
+  #    image: pagmo2/manylinux228_x86_64_with_deps:latest
+  #    env:
+  #      CASCADE_PY_BUILD_TYPE: "Python310"
+  #      TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Build
+  #       run: bash tools/gha_manylinux.sh
+  #manylinux228-py39:
+  #   runs-on: ubuntu-latest
+  #   container:
+  #    image: pagmo2/manylinux228_x86_64_with_deps:latest
+  #    env:
+  #      CASCADE_PY_BUILD_TYPE: "Python39"
+  #      TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Build
+  #       run: bash tools/gha_manylinux.sh
+  #manylinux228-py38:
+  #   runs-on: ubuntu-latest
+  #   container:
+  #    image: pagmo2/manylinux228_x86_64_with_deps:latest
+  #    env:
+  #      CASCADE_PY_BUILD_TYPE: "Python38"
+  #      TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Build
+  #       run: bash tools/gha_manylinux.sh
   windows_2019:
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v3
       - name: Add msbuild to PATH
@@ -89,7 +89,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake ../ -G "Visual Studio 16 2019" -A x64 -DCMAKE_INSTALL_PREFIX=C:\Miniconda\envs\cascade_devel\Library -DCASCADE_BUILD_TESTS=yes -DBoost_NO_BOOST_CMAKE=ON -DCASCADE_BUILD_PYTHON_BINDINGS=yes
+          cmake ../ -G "Visual Studio 17 2022" -A x64 -DCMAKE_INSTALL_PREFIX=C:\Miniconda\envs\cascade_devel\Library -DCASCADE_BUILD_TESTS=yes -DBoost_NO_BOOST_CMAKE=ON -DCASCADE_BUILD_PYTHON_BINDINGS=yes
           cmake --build . -j4 --config Release --target install
           ctest -j4 -V -C Release
           cd c:\

@@ -179,7 +179,7 @@ find_package(fmt REQUIRED CONFIG)
 target_link_libraries(cascade PUBLIC fmt::fmt)
 
 # heyoka.
-find_package(heyoka 3.0.0 REQUIRED CONFIG)
+find_package(heyoka 5 REQUIRED CONFIG)
 target_link_libraries(cascade PUBLIC heyoka::heyoka)
 
 # spdlog.
