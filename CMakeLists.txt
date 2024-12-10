@@ -10,7 +10,7 @@ if(NOT CMAKE_BUILD_TYPE)
 	FORCE)
 endif()
 
-project(cascade VERSION 0.1.8 LANGUAGES CXX C)
+project(cascade VERSION 0.1.9 LANGUAGES CXX C)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/yacma")
 
@@ -169,22 +169,24 @@ target_include_directories(cascade PUBLIC
 find_package(TBB REQUIRED CONFIG)
 target_link_libraries(cascade PRIVATE TBB::tbb)
 
-# Boost.
-# NOTE: need 1.73 for atomic_ref.
-find_package(Boost 1.73 REQUIRED)
-target_link_libraries(cascade PUBLIC Boost::boost)
-
 # fmt.
 find_package(fmt REQUIRED CONFIG)
 target_link_libraries(cascade PUBLIC fmt::fmt)
 
 # heyoka.
-find_package(heyoka 5 REQUIRED CONFIG)
+find_package(heyoka 6 REQUIRED CONFIG)
 target_link_libraries(cascade PUBLIC heyoka::heyoka)
 
 # spdlog.
 find_package(spdlog REQUIRED CONFIG)
 target_link_libraries(cascade PRIVATE spdlog::spdlog)
+
+# Boost.
+# NOTE: need 1.73 for atomic_ref.
+# NOTE: it seems this must to be after find_package(heyoka 6 REQUIRED CONFIG) else 
+# cmake will complain of the missing target Boost::serialization
+find_package(Boost 1.73 REQUIRED CONFIG)
+target_link_libraries(cascade PUBLIC Boost::boost)
 
 # Installation of the header files.
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/cascade" DESTINATION include)

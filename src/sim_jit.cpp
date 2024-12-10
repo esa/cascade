@@ -227,7 +227,7 @@ void sim::add_jit_functions()
 
     auto &state = m_data->state;
 
-    auto *fp_t = hy::detail::to_llvm_type<double>(state.context());
+    auto *fp_t = hy::detail::to_internal_llvm_type<double>(state);
 
     detail::add_poly_translator_a(state, m_data->s_ta.get_order());
     detail::add_poly_ssdiff3_cfunc(state, m_data->s_ta.get_order());
