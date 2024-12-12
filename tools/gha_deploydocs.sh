@@ -10,13 +10,13 @@ set -e
 sudo apt-get install wget
 
 # Install conda+deps.
-wget https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh -O mambaforge.sh
+wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O miniforge.sh
 export deps_dir=$HOME/local
-export PATH="$HOME/mambaforge/bin:$PATH"
-bash mambaforge.sh -b -p $HOME/mambaforge
-mamba env create -f cascade_devel.yml -q -p $deps_dir
-# Adding the necessary tools for doc building
+export PATH="$HOME/miniforge/bin:$PATH"
+bash miniforge.sh -b -p $HOME/miniforge
+conda env create -f cascade_devel.yml -q -p $deps_dir
 source activate $deps_dir
+# Adding the necessary tools for doc building
 mamba install sphinx myst-nb sphinx-book-theme sphinx-design matplotlib pykep sgp4
 
 # Create the build dir and cd into it.
