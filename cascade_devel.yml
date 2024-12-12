@@ -6,7 +6,7 @@ dependencies:
   - cxx-compiler
   - ninja
   - cmake >=3.18
-  - python=3.11
+  - python
   - tbb-devel
   - tbb
   - libboost-devel >=1.86
