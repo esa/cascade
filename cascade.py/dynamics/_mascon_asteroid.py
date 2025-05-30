@@ -38,8 +38,7 @@ def mascon_asteroid(Gconst: float, points, masses, omega) -> typing.List[typing.
     Returns:
         The dynamics in the same units used by the input arguments. Can be used directly to instantiate a :class:`~cascade.sim`.
     """
-    from heyoka import make_mascon_system
-    return make_mascon_system(Gconst, points, masses, omega)
+    return hy.model.mascon(Gconst, masses, points, omega)
 
 def mascon_asteroid_energy(state, Gconst: float, points, masses, omega):
     """Energy in the :class:`~cascade.dynamics.mascon_asteroid` dynamics.
