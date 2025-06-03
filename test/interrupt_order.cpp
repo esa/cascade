@@ -11,7 +11,7 @@
 #include <variant>
 #include <vector>
 
-#include <xtensor/xadapt.hpp>
+#include <xtensor/containers/xadapt.hpp>
 #include <xtensor/xarray.hpp>
 #include <xtensor/xview.hpp>
 

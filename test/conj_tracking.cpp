@@ -16,7 +16,7 @@
 
 #include <fmt/core.h>
 
-#include <xtensor/xadapt.hpp>
+#include <xtensor/containers/xadapt.hpp>
 #include <xtensor/xio.hpp>
 #include <xtensor/xview.hpp>
 

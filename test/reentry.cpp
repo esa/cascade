@@ -14,7 +14,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
-#include <xtensor/xadapt.hpp>
+#include <xtensor/containers/xadapt.hpp>
 #include <xtensor/xarray.hpp>
 #include <xtensor/xview.hpp>
 
