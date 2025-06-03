@@ -13,7 +13,7 @@
 
 #include <boost/math/constants/constants.hpp>
 
-#include <xtensor/containers/xadapt.hpp>
+#include <xtensor/xadapt.hpp>
 
 #include <heyoka/expression.hpp>
 #include <heyoka/math/pow.hpp>

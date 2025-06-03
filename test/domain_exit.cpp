@@ -10,7 +10,7 @@
 #include <initializer_list>
 #include <vector>
 
-#include <xtensor/containers/xadapt.hpp>
+#include <xtensor/xadapt.hpp>
 #include <xtensor/xarray.hpp>
 #include <xtensor/xview.hpp>
 

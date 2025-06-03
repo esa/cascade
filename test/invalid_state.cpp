@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include <xtensor/containers/xadapt.hpp>
+#include <xtensor/xadapt.hpp>
 #include <xtensor/xio.hpp>
 #include <xtensor/xview.hpp>
 

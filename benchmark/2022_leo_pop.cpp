@@ -23,7 +23,7 @@
 #include <boost/math/constants/constants.hpp>
 #include <boost/program_options.hpp>
 
-#include <xtensor/containers/xadapt.hpp>
+#include <xtensor/xadapt.hpp>
 
 #include <heyoka/math/cos.hpp>
 #include <heyoka/math/exp.hpp>

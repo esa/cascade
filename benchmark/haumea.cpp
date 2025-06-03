@@ -21,7 +21,7 @@
 #include <boost/math/constants/constants.hpp>
 
 #include <xtensor-blas/xlinalg.hpp>
-#include <xtensor/containers/xadapt.hpp>
+#include <xtensor/xadapt.hpp>
 #include <xtensor/xfixed.hpp>
 #include <xtensor/xio.hpp>
 
