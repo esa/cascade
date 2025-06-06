@@ -11,8 +11,8 @@ dependencies:
   - tbb
   - libboost-devel >=1.86
   - fmt
-  - heyoka =6*
-  - heyoka.py =6*
+  - heyoka
+  - heyoka.py
   - spdlog
   - pybind11 >=2.10
   - xtensor = 0.25  # v0.26 intrdouces breaking changes
