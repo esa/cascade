@@ -16,30 +16,27 @@
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
   </script>
-  <!-- 
-    this give us a css class that will be invisible only if js is disabled 
-  -->
-  <noscript>
-    <style>
-      .pst-js-only { display: none !important; }
-
-    </style>
-  </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=a3416100" />
+  
+  <link href="../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=eba8b062" />
     <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
   
-  <!-- So that users can add custom icons -->
-  <script src="../_static/scripts/fontawesome.js?digest=26a4bc78f4c0ddb94549"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
     <script src="../_static/documentation_options.js?v=c52cfe39"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
@@ -55,7 +52,6 @@
     <link rel="prev" title="cascade" href="../mod_cascade.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.1.9" />
   </head>
   
   
@@ -71,8 +67,19 @@
     <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
   
-  <dialog id="pst-search-dialog">
-    
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
 <form class="bd-search d-flex align-items-center"
       action="../search.html"
       method="get">
@@ -80,6 +87,7 @@
   <input type="search"
          class="form-control"
          name="q"
+         id="search-input"
          placeholder="Search..."
          aria-label="Search..."
          autocomplete="off"
@@ -87,8 +95,8 @@
          autocapitalize="off"
          spellcheck="false"/>
   <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
-</form>
-  </dialog>
+</form></div>
+  </div>
 
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
@@ -104,8 +112,7 @@
       
       
       
-      <dialog id="pst-primary-sidebar-modal"></dialog>
-      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+      <div class="bd-sidebar-primary bd-sidebar">
         
 
   
@@ -135,17 +142,21 @@
     
     
     <img src="../_static/logo.png" class="logo__image only-light" alt="cascade 0.1.9 documentation - Home"/>
-    <img src="../_static/logo.png" class="logo__image only-dark pst-js-only" alt="cascade 0.1.9 documentation - Home"/>
+    <script>document.write(`<img src="../_static/logo.png" class="logo__image only-dark" alt="cascade 0.1.9 documentation - Home"/>`);</script>
   
   
 </a></div>
         <div class="sidebar-primary-item">
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
- <i class="fa-solid fa-magnifying-glass"></i>
- <span class="search-button__default-text">Search</span>
- <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-</button></div>
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
         <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
     <div class="bd-toc-item navbar-nav active">
         
@@ -358,16 +369,24 @@
 
 
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button>
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
 
 
-<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
     <i class="fa-solid fa-magnifying-glass fa-lg"></i>
-</button>
+  </button>
+`);
+</script>
 <button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
     <span class="fa-solid fa-list"></span>
 </button>
@@ -433,7 +452,7 @@
 <h1>cascade.sim<a class="headerlink" href="#cascade-sim" title="Link to this heading">#</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="cascade.sim">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cascade.</span></span><span class="sig-name descname"><span class="pre">sim</span></span><a class="headerlink" href="#cascade.sim" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cascade.</span></span><span class="sig-name descname"><span class="pre">sim</span></span><a class="headerlink" href="#cascade.sim" title="Link to this definition">#</a></dt>
 <dd><p>The simulation class.</p>
 <p>This class acts as a container for a collection of spherical particles, propagating their
 states in time according to user-defined dynamical equations and accounting for
@@ -449,7 +468,7 @@ can be formulated via the <a class="reference external" href="https://github.com
 Alternatively, ready-made dynamical equations for a variety of use cases are available in the
 <a class="reference internal" href="../mod_cascade_dynamics.html#module-cascade.dynamics" title="cascade.dynamics"><code class="xref py py-mod docutils literal notranslate"><span class="pre">cascade.dynamics</span></code></a> module.</p>
 <p class="rubric">Methods</p>
-<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#cascade.sim.__init__" title="cascade.sim.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(state, ct[, dyn, reentry_radius, ...])</p></td>
 <td><p>Constructor.</p></td>
@@ -473,7 +492,7 @@ Alternatively, ready-made dynamical equations for a variety of use cases are ava
 </table>
 </div>
 <p class="rubric">Attributes</p>
-<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#cascade.sim.coll_whitelist" title="cascade.sim.coll_whitelist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">coll_whitelist</span></code></a></p></td>
 <td><p>Collision whitelist.</p></td>
@@ -534,7 +553,7 @@ Alternatively, ready-made dynamical equations for a variety of use cases are ava
 </div>
 <dl class="py method">
 <dt class="sig sig-object py" id="cascade.sim.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><span class="pre">numpy.ndarray</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.double" title="(in NumPy v2.1)"><span class="pre">numpy.double</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ct</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">dyn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.13)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.13)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.13)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://bluescarni.github.io/heyoka.py/autosummary_generated/heyoka.expression.html#heyoka.expression" title="(in heyoka.py)"><span class="pre">heyoka.expression</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://bluescarni.github.io/heyoka.py/autosummary_generated/heyoka.expression.html#heyoka.expression" title="(in heyoka.py)"><span class="pre">heyoka.expression</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reentry_radius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.13)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.13)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exit_radius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.13)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.13)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><span class="pre">numpy.ndarray</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.double" title="(in NumPy v2.1)"><span class="pre">numpy.double</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.13)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_accuracy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compact_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_par_ct</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conj_thresh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_coll_radius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coll_whitelist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Set" title="(in Python v3.13)"><span class="pre">Set</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">set()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conj_whitelist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Set" title="(in Python v3.13)"><span class="pre">Set</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">set()</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cascade.sim.__init__" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><span class="pre">numpy.ndarray</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.double" title="(in NumPy v2.3)"><span class="pre">numpy.double</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ct</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">dyn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.13)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.13)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.13)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://bluescarni.github.io/heyoka.py/autosummary_generated/heyoka.expression.html#heyoka.expression" title="(in heyoka.py)"><span class="pre">heyoka.expression</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://bluescarni.github.io/heyoka.py/autosummary_generated/heyoka.expression.html#heyoka.expression" title="(in heyoka.py)"><span class="pre">heyoka.expression</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reentry_radius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.13)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.13)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exit_radius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.13)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.13)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><span class="pre">numpy.ndarray</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.double" title="(in NumPy v2.3)"><span class="pre">numpy.double</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.13)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_accuracy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compact_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_par_ct</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conj_thresh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_coll_radius</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coll_whitelist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Set" title="(in Python v3.13)"><span class="pre">Set</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">set()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conj_whitelist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Set" title="(in Python v3.13)"><span class="pre">Set</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">set()</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cascade.sim.__init__" title="Link to this definition">#</a></dt>
 <dd><p>Constructor.</p>
 <p>The only two mandatory arguments for the constructor are the initial state and the collisional
 timestep. Several additional configuration options for the simulation can be specified either at
@@ -542,7 +561,7 @@ or after construction.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>state</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><em>numpy.ndarray</em></a><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.double" title="(in NumPy v2.1)"><em>numpy.double</em></a><em>]</em>) – <p>The initial state vector for the simulation. Must be a two-dimensional array of shape
+<li><p><strong>state</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>numpy.ndarray</em></a><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.double" title="(in NumPy v2.3)"><em>numpy.double</em></a><em>]</em>) – <p>The initial state vector for the simulation. Must be a two-dimensional array of shape
 <span class="math notranslate nohighlight">\(n\times 7\)</span>, where the number of rows <span class="math notranslate nohighlight">\(n\)</span> is the number of particles in the simulation,
 the first 6 columns contain the cartesian state variables <span class="math notranslate nohighlight">\(\left( x,y,z,v_x,v_y,v_z \right)\)</span>
 of each particle, and the seventh column contains the particle sizes.</p>
@@ -565,7 +584,7 @@ is stopped. If no reentry radius is provided (the default), then no reentry even
 <li><p><strong>exit_radius</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.13)"><em>Optional</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a><em>] </em><em>= None</em>) – Exit radius. If provided, the simulation will track the distance of all particles
 from the origin, and when a particle’s distance from the origin exceeds the provided limit,
 the simulation will stop with an exit event. By default, no exit radius is defined.</p></li>
-<li><p><strong>pars</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.13)"><em>Optional</em></a><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><em>numpy.ndarray</em></a><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.double" title="(in NumPy v2.1)"><em>numpy.double</em></a><em>]</em><em>] </em><em>= None</em>) – <p>Values of the dynamical parameters. If the particles’ dynamical equations contain
+<li><p><strong>pars</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.13)"><em>Optional</em></a><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>numpy.ndarray</em></a><em>[</em><a class="reference external" href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.double" title="(in NumPy v2.3)"><em>numpy.double</em></a><em>]</em><em>] </em><em>= None</em>) – <p>Values of the dynamical parameters. If the particles’ dynamical equations contain
 runtime parameters, their values can be provided via this argument, which must
 be a two-dimensional array of shape <span class="math notranslate nohighlight">\(n\times N_p\)</span>, where <span class="math notranslate nohighlight">\(n\)</span> is the
 number of particles in the simulation and <span class="math notranslate nohighlight">\(N_p\)</span> is the number of runtime
@@ -616,7 +635,7 @@ conjunction whitelist can be changed at any time via the <code class="docutils l
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.coll_whitelist">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">coll_whitelist</span></span><a class="headerlink" href="#cascade.sim.coll_whitelist" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">coll_whitelist</span></span><a class="headerlink" href="#cascade.sim.coll_whitelist" title="Link to this definition">#</a></dt>
 <dd><p>Collision whitelist.</p>
 <p>This <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code></a> contains the list of particles considered during the detection of
 collision events. If this list is empty, then <em>all</em> particles are considered during
@@ -625,7 +644,7 @@ the detection of collision events.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.compact_mode">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">compact_mode</span></span><a class="headerlink" href="#cascade.sim.compact_mode" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">compact_mode</span></span><a class="headerlink" href="#cascade.sim.compact_mode" title="Link to this definition">#</a></dt>
 <dd><p>Compact mode.</p>
 <p>If enabled, the just-in-time compilation process will manipulate efficiently
 also very long expression for the dynamics. This is useful, for example, when using long expansions
@@ -636,7 +655,7 @@ cannot be changed after construction.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.conj_thresh">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">conj_thresh</span></span><a class="headerlink" href="#cascade.sim.conj_thresh" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">conj_thresh</span></span><a class="headerlink" href="#cascade.sim.conj_thresh" title="Link to this definition">#</a></dt>
 <dd><p>Conjunction threshold.</p>
 <p>Conjunctions are tracked only if the conjunction distance
 is less than this threshold. By default, this value is set to zero, which means
@@ -646,7 +665,7 @@ at any time.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.conj_whitelist">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">conj_whitelist</span></span><a class="headerlink" href="#cascade.sim.conj_whitelist" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">conj_whitelist</span></span><a class="headerlink" href="#cascade.sim.conj_whitelist" title="Link to this definition">#</a></dt>
 <dd><p>Conjunction whitelist.</p>
 <p>This <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code></a> contains the list of particles considered during the detection of
 conjunction events. If this list is empty, then <em>all</em> particles are considered during
@@ -655,17 +674,17 @@ the detection of conjunction events.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.conjunctions">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">conjunctions</span></span><a class="headerlink" href="#cascade.sim.conjunctions" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">conjunctions</span></span><a class="headerlink" href="#cascade.sim.conjunctions" title="Link to this definition">#</a></dt>
 <dd><p>Conjunctions recorded during the simulation.</p>
 <p>A read-only attribute containing all the conjunction events. The events are stored in a
-<a class="reference external" href="https://numpy.org/doc/stable/user/basics.rec.html#structured-arrays" title="(in NumPy v2.1)"><span class="xref std std-ref">structured array</span></a> containing the following records:</p>
+<a class="reference external" href="https://numpy.org/doc/stable/user/basics.rec.html#structured-arrays" title="(in NumPy v2.3)"><span class="xref std std-ref">structured array</span></a> containing the following records:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">i</span></code>, (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>): id of the first particle involved in the conjunction event,</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">j</span></code>, (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>): id of the first particle involved in the conjunction event,</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">t</span></code>, (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>): time of the conjunction event,</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">dist</span></code>, (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>): closest approach distance,</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">state_i</span></code>, (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>): state (<span class="math notranslate nohighlight">\(x,y,z,vx,vy,vz\)</span>) of the first particle at the conjunction,</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">state_j</span></code>, (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>): state (<span class="math notranslate nohighlight">\(x,y,z,vx,vy,vz\)</span>) of the second particle at the conjunction.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">state_i</span></code>, (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>): state (<span class="math notranslate nohighlight">\(x,y,z,vx,vy,vz\)</span>) of the first particle at the conjunction,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">state_j</span></code>, (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a>): state (<span class="math notranslate nohighlight">\(x,y,z,vx,vy,vz\)</span>) of the second particle at the conjunction.</p></li>
 </ul>
 <p>Whenever the cascade simulation is made with a <a class="reference internal" href="#cascade.sim.conj_thresh" title="cascade.sim.conj_thresh"><code class="xref py py-attr docutils literal notranslate"><span class="pre">conj_thresh</span></code></a> larger than its
 default zero value, all conjunction events of whitelisted objects (or of all objects in case no whitelist is provided)
@@ -674,7 +693,7 @@ are detected and tracked. A conjunction event will not stop the simulation hence
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.ct">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ct</span></span><a class="headerlink" href="#cascade.sim.ct" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ct</span></span><a class="headerlink" href="#cascade.sim.ct" title="Link to this definition">#</a></dt>
 <dd><p>Collisional time.</p>
 <p>This <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> represents the length in time units of the collisional timestep. Must be positive and finite.
 It can be set and its value will be used in the next call to the propagation methods
@@ -683,7 +702,7 @@ It can be set and its value will be used in the next call to the propagation met
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.exit_radius">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">exit_radius</span></span><a class="headerlink" href="#cascade.sim.exit_radius" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">exit_radius</span></span><a class="headerlink" href="#cascade.sim.exit_radius" title="Link to this definition">#</a></dt>
 <dd><p>Exit radius.</p>
 <p>If an exit radius is provided upon construction, the simulation will track the distance of all particles
 from the origin, and when a particle’s distance from the origin exceeds this limit,
@@ -693,7 +712,7 @@ and this attribute contains the scalar <code class="docutils literal notranslate
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.high_accuracy">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">high_accuracy</span></span><a class="headerlink" href="#cascade.sim.high_accuracy" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">high_accuracy</span></span><a class="headerlink" href="#cascade.sim.high_accuracy" title="Link to this definition">#</a></dt>
 <dd><p>High-accuracy mode.</p>
 <p>If enabled, the numerical integrator will employ techniques
 to minimise the accumulation of floating-point truncation errors, at the price
@@ -703,7 +722,7 @@ in long-running simulations. High-accuracy mode cannot be changed after construc
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.interrupt_info">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">interrupt_info</span></span><a class="headerlink" href="#cascade.sim.interrupt_info" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">interrupt_info</span></span><a class="headerlink" href="#cascade.sim.interrupt_info" title="Link to this definition">#</a></dt>
 <dd><p>Interrupt info.</p>
 <p>Returns the information on the outcome of the latest call to
 the propagation methods of the <a class="reference internal" href="#cascade.sim" title="cascade.sim"><code class="xref py py-class docutils literal notranslate"><span class="pre">sim</span></code></a>
@@ -723,7 +742,7 @@ the simulation domain;</p></li>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.min_coll_radius">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">min_coll_radius</span></span><a class="headerlink" href="#cascade.sim.min_coll_radius" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">min_coll_radius</span></span><a class="headerlink" href="#cascade.sim.min_coll_radius" title="Link to this definition">#</a></dt>
 <dd><p>Minimum collisional radius.</p>
 <p>A collision between two particles is detected
 only if the radius of at least one particle is greater than this value. By default,
@@ -735,7 +754,7 @@ at any time.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.n_par_ct">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_par_ct</span></span><a class="headerlink" href="#cascade.sim.n_par_ct" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_par_ct</span></span><a class="headerlink" href="#cascade.sim.n_par_ct" title="Link to this definition">#</a></dt>
 <dd><p>Number of collisional timesteps to be processed in parallel.</p>
 <p>This is a tuning parameter that, while not affecting the correctness of the simulation,
 can greatly influence its performance. The optimal value of this parameter
@@ -745,14 +764,14 @@ to experiment with different values to determine which one works best.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.npars">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">npars</span></span><a class="headerlink" href="#cascade.sim.npars" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">npars</span></span><a class="headerlink" href="#cascade.sim.npars" title="Link to this definition">#</a></dt>
 <dd><p>Number of runtime paramenters.</p>
 <p>A read-only attribute containing the number of runtime parameters in the dynamics <span class="math notranslate nohighlight">\(N_p\)</span>.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.nparts">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">nparts</span></span><a class="headerlink" href="#cascade.sim.nparts" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">nparts</span></span><a class="headerlink" href="#cascade.sim.nparts" title="Link to this definition">#</a></dt>
 <dd><p>Number of particles.</p>
 <p>A read-only attribute containing the current number of particles. The number of particles ina  simulation can be controlled
 by removing particles via methods such as <a class="reference internal" href="#cascade.sim.remove_particles" title="cascade.sim.remove_particles"><code class="xref py py-meth docutils literal notranslate"><span class="pre">remove_particles()</span></code></a> or <a class="reference internal" href="#cascade.sim.set_new_state_pars" title="cascade.sim.set_new_state_pars"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_new_state_pars()</span></code></a>.</p>
@@ -760,9 +779,9 @@ by removing particles via methods such as <a class="reference internal" href="#c
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.pars">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pars</span></span><a class="headerlink" href="#cascade.sim.pars" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pars</span></span><a class="headerlink" href="#cascade.sim.pars" title="Link to this definition">#</a></dt>
 <dd><p>Values of the runtime parameters appearing in the objects dynamics.</p>
-<p>The parameters are stored in a two-dimensional <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> of shape <span class="math notranslate nohighlight">\(n\times N_p\)</span>, where
+<p>The parameters are stored in a two-dimensional <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> of shape <span class="math notranslate nohighlight">\(n\times N_p\)</span>, where
 <span class="math notranslate nohighlight">\(n\)</span> is the number of particles in the simulation and <span class="math notranslate nohighlight">\(N_p\)</span> is the number of runtime
 parameters appearing in the dynamical equations.</p>
 <p>While this is a read-only property (in the sense that it is not possible to set
@@ -793,7 +812,7 @@ the epoch the first event was triggered.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.reentry_radius">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">reentry_radius</span></span><a class="headerlink" href="#cascade.sim.reentry_radius" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">reentry_radius</span></span><a class="headerlink" href="#cascade.sim.reentry_radius" title="Link to this definition">#</a></dt>
 <dd><p>The radius of the reentry domain.</p>
 <p>The reentry domain is modelled either as a sphere (in which case this property
 will be a single scalar representing the radius of the reentry sphere) or
@@ -819,7 +838,7 @@ attribute contains the scalar <code class="docutils literal notranslate"><span c
 <dt class="sig sig-object py" id="cascade.sim.reset_conjunctions">
 <span class="sig-name descname"><span class="pre">reset_conjunctions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#cascade.sim.reset_conjunctions" title="Link to this definition">#</a></dt>
 <dd><p>Reset the conjunctions list.</p>
-<p>Clears the <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> storing conjunctions events, thus freeing all associated memory.
+<p>Clears the <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> storing conjunctions events, thus freeing all associated memory.
 This is useful in very long simulations where the number of conjunction events can grow
 substantially. The user can then store them in some other form, or extract relevant statistics
 to then reset the conjunctions.</p>
@@ -827,7 +846,7 @@ to then reset the conjunctions.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="cascade.sim.set_new_state_pars">
-<span class="sig-name descname"><span class="pre">set_new_state_pars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><span class="pre">numpy.ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_pars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><span class="pre">numpy.ndarray</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#cascade.sim.set_new_state_pars" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">set_new_state_pars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><span class="pre">numpy.ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_pars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><span class="pre">numpy.ndarray</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#cascade.sim.set_new_state_pars" title="Link to this definition">#</a></dt>
 <dd><p>Sets new values for the simulation state and parameters.</p>
 <p>If no <em>pars</em> are passed only the state will be set and all
 parameters, if present, will be set to zero.</p>
@@ -838,7 +857,7 @@ into <a class="reference internal" href="#cascade.sim.state" title="cascade.sim.
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>new_state</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><em>numpy.ndarray</em></a>) – The new state for all particles (the shape must be <span class="math notranslate nohighlight">\(n \times 7\)</span>).</p></li>
+<li><p><strong>new_state</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>numpy.ndarray</em></a>) – The new state for all particles (the shape must be <span class="math notranslate nohighlight">\(n \times 7\)</span>).</p></li>
 <li><p><strong>new_pars</strong> (<em>numpy.ndarray = None</em>) – The new runtime parameters for the dynamics of all particles (the shape must be <span class="math notranslate nohighlight">\(n \times N_p\)</span>).</p></li>
 </ul>
 </dd>
@@ -847,9 +866,9 @@ into <a class="reference internal" href="#cascade.sim.state" title="cascade.sim.
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.state">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">state</span></span><a class="headerlink" href="#cascade.sim.state" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">state</span></span><a class="headerlink" href="#cascade.sim.state" title="Link to this definition">#</a></dt>
 <dd><p>State of all the particles currently in the simulation.</p>
-<p>The state is stored in a two-dimensional <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> of shape
+<p>The state is stored in a two-dimensional <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> of shape
 <span class="math notranslate nohighlight">\(n\times 7\)</span>, where the number of rows <span class="math notranslate nohighlight">\(n\)</span> is the number of particles in the simulation,
 the first 6 columns contain the cartesian state variables <span class="math notranslate nohighlight">\(\left( x,y,z,v_x,v_y,v_z \right)\)</span>
 of each particle, and the seventh column contains the particle sizes.</p>
@@ -878,7 +897,7 @@ interval, the simulation will stop and set its state/time at the epoch the first
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.time">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">time</span></span><a class="headerlink" href="#cascade.sim.time" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">time</span></span><a class="headerlink" href="#cascade.sim.time" title="Link to this definition">#</a></dt>
 <dd><p>Current simulation time.</p>
 <p>This <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> contains the value of the current simulation time. It can be set, and
 it is referred to in the dynamics equation as <code class="docutils literal notranslate"><span class="pre">heyoka.time</span></code>.</p>
@@ -886,7 +905,7 @@ it is referred to in the dynamics equation as <code class="docutils literal notr
 
 <dl class="py property">
 <dt class="sig sig-object py" id="cascade.sim.tol">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">tol</span></span><a class="headerlink" href="#cascade.sim.tol" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">tol</span></span><a class="headerlink" href="#cascade.sim.tol" title="Link to this definition">#</a></dt>
 <dd><p>Numerical integration tolerance.</p>
 <p>The tolerance used when numerically solving the dynamical equations. If not provided,
 it defaults to the double-precision epsilon (<span class="math notranslate nohighlight">\(\sim 2.2\times 10^{-16}\)</span>). The integration
@@ -933,8 +952,7 @@ tolerance cannot be changed after construction.</p>
             
             
               
-                <dialog id="pst-secondary-sidebar-modal"></dialog>
-                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
 
   <div class="sidebar-secondary-item">
@@ -1018,8 +1036,8 @@ By Francesco Biscani and Dario Izzo
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549"></script>
-<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549"></script>
+  <script src="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
 
   <footer class="bd-footer">
   </footer>
