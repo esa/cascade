@@ -417,7 +417,7 @@ def run_test_suite():
     retval = 0
 
     suite = _ut.TestLoader().loadTestsFromTestCase(dynamics_test_case)
-    suite.addTests(_ut.makeSuite(sim_test_case))
+    suite.addTests(_ut.TestLoader().loadTestsFromTestCase(sim_test_case))
 
     test_result = _ut.TextTestRunner(verbosity=2).run(suite)
 

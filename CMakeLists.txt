@@ -174,7 +174,7 @@ find_package(fmt REQUIRED CONFIG)
 target_link_libraries(cascade PUBLIC fmt::fmt)
 
 # heyoka.
-find_package(heyoka 6 REQUIRED CONFIG)
+find_package(heyoka REQUIRED CONFIG)
 target_link_libraries(cascade PUBLIC heyoka::heyoka)
 
 # spdlog.
@@ -183,7 +183,7 @@ target_link_libraries(cascade PRIVATE spdlog::spdlog)
 
 # Boost.
 # NOTE: need 1.73 for atomic_ref.
-# NOTE: it seems this must to be after find_package(heyoka 6 REQUIRED CONFIG) else 
+# NOTE: it seems this must to be after find_package(heyoka REQUIRED CONFIG) else 
 # cmake will complain of the missing target Boost::serialization
 find_package(Boost 1.73 REQUIRED CONFIG)
 target_link_libraries(cascade PUBLIC Boost::boost)
