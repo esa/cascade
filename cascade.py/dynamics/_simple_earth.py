@@ -9,16 +9,16 @@
 # This little helper returns the heyoka expression for the density using
 # an exponential fit
 import typing
+import numpy as np
 import heyoka as hy
-
+from cascade.dynamics import kepler
 
 def _compute_atmospheric_density(h):
     """
     Returns the heyoka expression for the atmosheric density in kg.m^3.
     Input is the altitude in m.
     """
-    import numpy as np
-    import heyoka as hy
+    
 
     # This array is produced by fitting
     best_x = np.array(
@@ -45,6 +45,43 @@ def _compute_atmospheric_density(h):
         retval += alpha * hy.exp(-(h - gamma) * beta)
     return retval
 
+def ECI2ECEF(days_since_J2000):
+    """
+    This function returns the rotation matrix from ECI to ECEF at a given number of days elapsed since J2000
+    Args:
+        - days_since_J2000 (`float`): days elapsed since J2000
+
+    Returns:
+        - `list`: Earth rotation matrix
+    """
+    era = (
+        2
+        * np.pi
+        * (0.7790572732640 + 1.00273781191135448 * days_since_J2000)       # Earth rotation angle
+    )
+    R = [[hy.cos(era), hy.sin(era), 0], [-hy.sin(era), hy.cos(era), 0], [0, 0, 1]]
+    return R
+
+
+def _compute_density_thermonets(r, f107, f107a, ap):
+    """
+    Returns the heyoka expression for the atmosheric density in kg.m^3, computed through ThermoNets
+    """
+
+    # days elapsed since the reference epoch J2000 (1st Jan 2000 12:00)
+    days_since_J2000 = hy.time / 86400
+
+    doy = days_since_J2000
+    
+    
+    xyz_ecef = np.matmul(ECI2ECEF(days_since_J2000), r)      # matrix multiplication   r_ECEF = R(ECI2ECEF) @ r_ECI
+
+    h, lat, lon = hy.model.cart2geo([xyz_ecef[0], xyz_ecef[1], xyz_ecef[2]])     # compute geodetic cooordinates [h is in meters]
+
+    density_nn = hy.model.nrlmsise00_tn(geodetic=[h / 1000, lat, lon], f107=f107, f107a=f107a, ap=ap, time_expr=doy)     # compute density [h must be in kilometers]
+
+    return density_nn
+
 
 def simple_earth(
     J2: bool = True,
@@ -55,6 +92,7 @@ def simple_earth(
     moon: bool = False,
     SRP: bool = False,
     drag: bool = True,
+    thermonets: bool = False,
 ) -> typing.List[typing.Tuple[hy.expression, hy.expression]]:
     """Perturbed dynamics around the Earth.
 
@@ -92,33 +130,23 @@ def simple_earth(
     Returns:
         The dynamics in SI units. Can be used to instantiate a :class:`~cascade.sim`.
     """
-    from cascade.dynamics import kepler
-    import heyoka as hy
-    import numpy as np
+    
 
     # constants (final underscore reminds us its not SI)
     GMe_ = 3.986004407799724e5  # [km^3/sec^2]
     GMo_ = 1.32712440018e11  # [km^3/sec^2]
     GMm_ = 4.9028e3  # [km^3/sec^2]
     Re_ = 6378.1363  # [km]
-    C20 = (
-        -4.84165371736e-4
-    )  # (J2 in m^5/s^2 is 1.75553E25, C20 is the Stokes coefficient)
-    C22 = 2.43914352398e-6
-    S22 = -1.40016683654e-6
-    J3_dim_value = -2.61913e29  # (m^6/s^2) is # name is to differentiate from kwarg
-    J4_adim_value = -1.61989759991697e-6 # [-]
-    theta_g = (
-        np.pi / 180
-    ) * 280.4606  # [rad] # This value defines the rotation of the Earth fixed system at t0
-    nu_e = (np.pi / 180) * (
-        4.178074622024230e-3
-    )  # [rad/sec] # This value represents the Earth spin angular velocity.
+    
+    
+    
+    theta_g = (np.pi / 180) * 280.4606  # [rad] # This value defines the rotation of the Earth fixed system at t0
+    nu_e = (np.pi / 180) * (4.178074622024230e-3)  # [rad/sec] # This value represents the Earth spin angular velocity.
     nu_o = (np.pi / 180) * (1.1407410259335311e-5)  # [rad/sec]
     nu_ma = (np.pi / 180) * (1.512151961904581e-4)  # [rad/sec]
     nu_mp = (np.pi / 180) * (1.2893925235125941e-6)  # [rad/sec]
     nu_ms = (np.pi / 180) * (6.128913003523574e-7)  # [rad/sec]
-    alpha_o_ = 1.49619e8  # [km]
+    alpha_o_ = 1.49619e8  # 1 AU in [km]
     epsilon = (np.pi / 180) * 23.4392911  # [rad]
     phi_o = (np.pi / 180) * 357.5256  # [rad]
     Omega_plus_w = (np.pi / 180) * 282.94  # [rad]
@@ -128,64 +156,67 @@ def simple_earth(
     x, y, z, vx, vy, vz = hy.make_vars("x", "y", "z", "vx", "vy", "vz")
 
     # Create Keplerian dynamics in SI units.
+    Re_SI = Re_ * 1000
     GMe_SI = GMe_ * 1e9
     dyn = kepler(mu=GMe_SI)
 
     # Define the radius squared
-    magr2 = x**2 + y**2 + z**2
+    r2 = x**2 + y**2 + z**2
+    # Define the radius
+    r = hy.sqrt(r2)
 
-    Re_SI = Re_ * 1000
+    
     if J2:
-        J2term1 = GMe_SI * (Re_SI**2) * np.sqrt(5) * C20 / (2 * magr2 ** (1 / 2))
-        J2term2 = 3 / (magr2**2)
-        J2term3 = 15 * (z**2) / (magr2**3)
-        fJ2x = J2term1 * x * (J2term2 - J2term3)
-        fJ2y = J2term1 * y * (J2term2 - J2term3)
-        fJ2z = J2term1 * z * (3 * J2term2 - J2term3)
+        J2_adim = -0.1082635854 * 1e-2             # from 'https://en.wikipedia.org/wiki/Geopotential_spherical_harmonic_model'
+        J2 = - J2_adim * GMe_SI * Re_SI**2
+        u_J2 = J2/(2*r**5)*(3*z**2 - r2)
+        fJ2x = - hy.diff(u_J2,x)
+        fJ2y = - hy.diff(u_J2,y)
+        fJ2z = - hy.diff(u_J2,z)
         dyn[3] = (dyn[3][0], dyn[3][1] + fJ2x)
         dyn[4] = (dyn[4][0], dyn[4][1] + fJ2y)
         dyn[5] = (dyn[5][0], dyn[5][1] + fJ2z)
 
     if J3:
-        magr9 = magr2 ** (1 / 2) * magr2**4  # r**9
-        fJ3x = J3_dim_value * x * y / magr9 * (10 * z**2 - 15 / 2 * (x**2 + y**2))
-        fJ3y = J3_dim_value * z * y / magr9 * (10 * z**2 - 15 / 2 * (x**2 + y**2))
-        fJ3z = (
-            J3_dim_value
-            * 1
-            / magr9
-            * (
-                4 * z**2 * (z**2 - 3 * (x**2 + y**2))
-                + 3 / 2 * (x**2 + y**2) ** 2
-            )
-        )
+        J3_adim = 0.2532435346 * 1e-5             # from 'https://en.wikipedia.org/wiki/Geopotential_spherical_harmonic_model'
+        J3 = - J3_adim * GMe_SI * Re_SI**3
+        u_J3 = J3*z/(2*r**7)*(5*z**2-3*r2)
+        fJ3x = - hy.diff(u_J3,x)
+        fJ3y = - hy.diff(u_J3,y)
+        fJ3z = - hy.diff(u_J3,z)
         dyn[3] = (dyn[3][0], dyn[3][1] + fJ3x)
         dyn[4] = (dyn[4][0], dyn[4][1] + fJ3y)
         dyn[5] = (dyn[5][0], dyn[5][1] + fJ3z)
     
     if J4:
-        fJ4x = ((15*J4_adim_value*GMe_SI*(Re_SI**4)*x)/(8*((x**2 + y**2 + z**2)**3.5))) * (1 - ((14*(z**2))/((x**2 + y**2 + z**2))) + (21*(z**4)/((x**2 + y**2 + z**2)**2)))
-        fJ4y = ((15*J4_adim_value*GMe_SI*(Re_SI**4)*y)/(8*((x**2 + y**2 + z**2)**3.5))) * (1 - ((14*(z**2))/((x**2 + y**2 + z**2))) + (21*(z**4)/((x**2 + y**2 + z**2)**2)))
-        fJ4z = ((15*J4_adim_value*GMe_SI*(Re_SI**4)*z)/(8*((x**2 + y**2 + z**2)**3.5))) * (5 - ((70*(z**2))/(3*(x**2 + y**2 + z**2))) + (21*(z**4)/((x**2 + y**2 + z**2)**2)))   
+        J4_adim = 0.1619331205*1e-5               # from 'https://en.wikipedia.org/wiki/Geopotential_spherical_harmonic_model'
+        J4 = - J4_adim * GMe_SI * Re_SI**4
+        u_J4 = J4/8*(35*z**4 - 30*r2*z**2 + 3*r2**2)/r**9
+        fJ4x = - hy.diff(u_J4,x)
+        fJ4y = - hy.diff(u_J4,y)
+        fJ4z = - hy.diff(u_J4,z)  
         dyn[3] = (dyn[3][0], dyn[3][1] + fJ4x)
         dyn[4] = (dyn[4][0], dyn[4][1] + fJ4y)
         dyn[5] = (dyn[5][0], dyn[5][1] + fJ4z) 
 
     if C22S22:
+        C22 = 2.43914352398e-6
+        S22 = -1.40016683654e-6
+
         X = x * hy.cos(theta_g + nu_e * hy.time) + y * hy.sin(theta_g + nu_e * hy.time)
         Y = -x * hy.sin(theta_g + nu_e * hy.time) + y * hy.cos(theta_g + nu_e * hy.time)
         Z = z
 
         C22term1 = (
-            5 * GMe_SI * (Re_SI**2) * np.sqrt(15) * C22 / (2 * magr2 ** (7 / 2))
+            5 * GMe_SI * (Re_SI**2) * np.sqrt(15) * C22 / (2 * r2 ** (7 / 2))
         )
-        C22term2 = GMe_SI * (Re_SI**2) * np.sqrt(15) * C22 / (magr2 ** (5 / 2))
+        C22term2 = GMe_SI * (Re_SI**2) * np.sqrt(15) * C22 / (r2 ** (5 / 2))
         fC22X = C22term1 * X * (Y**2 - X**2) + C22term2 * X
         fC22Y = C22term1 * Y * (Y**2 - X**2) - C22term2 * Y
         fC22Z = C22term1 * Z * (Y**2 - X**2)
 
-        S22term1 = 5 * GMe_SI * (Re_SI**2) * np.sqrt(15) * S22 / (magr2 ** (7.0 / 2))
-        S22term2 = GMe_SI * (Re_SI**2) * np.sqrt(15) * S22 / (magr2 ** (5.0 / 2))
+        S22term1 = 5 * GMe_SI * (Re_SI**2) * np.sqrt(15) * S22 / (r2 ** (7.0 / 2))
+        S22term2 = GMe_SI * (Re_SI**2) * np.sqrt(15) * S22 / (r2 ** (5.0 / 2))
         fS22X = -S22term1 * (X**2) * Y + S22term2 * Y
         fS22Y = -S22term1 * X * (Y**2) + S22term2 * X
         fS22Z = -S22term1 * X * Y * Z
@@ -331,16 +362,23 @@ def simple_earth(
         dyn[4] = (dyn[4][0], dyn[4][1] + fMoonY)
         dyn[5] = (dyn[5][0], dyn[5][1] + fMoonZ)
 
-    drag_par_idx = 0
     if drag:
         # Adds the drag force.
+        BSTAR = hy.par[0]
         magv2 = vx**2 + vy**2 + vz**2
         magv = hy.sqrt(magv2)
-        # Here we consider a spherical Earth ... would be easy to account for the oblateness effect.
-        altitude = hy.sqrt(magr2) - Re_SI
-        density = _compute_atmospheric_density(altitude)
+
+        if thermonets:
+            f107 = hy.par[1]
+            f107a = hy.par[2]
+            ap = hy.par[3]
+            density = _compute_density_thermonets(r = [x, y, z], f107 = f107, f107a = f107a, ap = ap)      # time must be seconds elapsed since J2000
+        else:
+            altitude = r - Re_SI   # Here we consider a spherical Earth ... would be easy to account for the oblateness effect.
+            density = _compute_atmospheric_density(altitude)
+
         ref_density = 0.1570 / Re_SI
-        fdrag = density / ref_density * hy.par[drag_par_idx] * magv
+        fdrag = density / ref_density * BSTAR * magv
         fdragx = -fdrag * vx
         fdragy = -fdrag * vy
         fdragz = -fdrag * vz
@@ -348,14 +386,20 @@ def simple_earth(
         dyn[4] = (dyn[4][0], dyn[4][1] + fdragy)
         dyn[5] = (dyn[5][0], dyn[5][1] + fdragz)
 
-    srp_par_idx = 0
+    
     if SRP:
+        if drag and thermonets:
+            k = hy.par[4]                 # c_r * A / m    where c_r is the reflectivity, A is the area facing the Sun and m is the S/C mass (D.A. Vallado - Fundamentals of Astrodynamics and Applications - 4th Edition - Section 8.6.4)
+        elif drag and not thermonets:
+            k = hy.par[1]
+        elif not drag:
+            k = hy.par[0]
+        
         PSRP_SI = PSRP_ / 1000.0  # [kg/(m*sec^2)]
-        alpha_o_SI = alpha_o_ * 1000.0  # [m]
-        if drag:
-            srp_par_idx = 1
+        alpha_o_SI = alpha_o_ * 1000.0  # 1 AU in [m]
+           
         SRPterm = (
-            hy.par[srp_par_idx] * PSRP_SI * (alpha_o_SI**2) / (magRRo2 ** (3.0 / 2))
+            k * PSRP_SI * (alpha_o_SI**2) / (magRRo2 ** (3.0 / 2))
         )
         fSRPX = SRPterm * (x - Xo)
         fSRPY = SRPterm * (y - Yo)
