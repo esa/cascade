@@ -131,13 +131,13 @@ class dynamics_test_case(_ut.TestCase):
 
         # Check atmospheric density from ThermoNets
         # Space weather indices at J2000 (1st January 2000, 12:00:00 TT)
-        f107 = 129.9
-        f107a = 166.2
-        ap = 30
+        f107_val = 129.9
+        f107a_val = 166.2
+        ap_val = 30
 
         density_func = _compute_density_thermonets(r=[x,y,z],f107=f107,f107a=f107a,ap=ap)
         density_c = cfunc([density_func], vars=[x,y,z,f107,f107a,ap])
-        density = density_c([pos[0],pos[1],pos[2],f107,f107a,ap],time=0.)
+        density = density_c([pos[0],pos[1],pos[2],f107_val,f107a_val,ap_val],time=0.)
 
         # Check magnitude
         self.assertTrue(density > 5e-14)
