@@ -13,39 +13,37 @@ class dynamics_test_case(_ut.TestCase):
     def runTest(self):
         self.test_simple_earth_api()
         self.test_kepler_equivalence()
+        self.test_perturbation_magnitudes()
 
     def test_simple_earth_api(self):
         from .dynamics import simple_earth
 
         simple_earth(
-            J2=True,
-            J3=False,
-            C22S22=False,
-            sun=False,
-            moon=False,
-            SRP=False,
-            drag=False,
+            J2=True, J3=False, J4=False, C22S22=False, sun=False, moon=False, SRP=False, drag=False, thermonets=False
         )
         simple_earth(
-            J2=True, J3=True, C22S22=False, sun=False, moon=False, SRP=False, drag=False
+            J2=True, J3=True, J4=False, C22S22=False, sun=False, moon=False, SRP=False, drag=False, thermonets=False
         )
         simple_earth(
-            J2=True, J3=True, C22S22=True, sun=False, moon=False, SRP=False, drag=False
+            J2=True, J3=True, J4=True, C22S22=False, sun=False, moon=False, SRP=False, drag=False, thermonets=False
         )
         simple_earth(
-            J2=True, J3=True, C22S22=True, sun=True, moon=False, SRP=False, drag=False
+            J2=True, J3=True, J4=True, C22S22=True, sun=False, moon=False, SRP=False, drag=False, thermonets=False
         )
         simple_earth(
-            J2=True, J3=True, C22S22=True, sun=True, moon=True, SRP=False, drag=False
+            J2=True, J3=True, J4=True, C22S22=True, sun=True, moon=False, SRP=False, drag=False, thermonets=False
         )
         simple_earth(
-            J2=True, J3=True, C22S22=True, sun=True, moon=True, SRP=True, drag=False
+            J2=True, J3=True, J4=True, C22S22=True, sun=True, moon=True, SRP=False, drag=False, thermonets=False
         )
         simple_earth(
-            J2=True, J3=True, C22S22=True, sun=True, moon=True, SRP=False, drag=True
+            J2=True, J3=True, J4=True, C22S22=True, sun=True, moon=True, SRP=True, drag=False, thermonets=False
         )
         simple_earth(
-            J2=True, J3=True, C22S22=True, sun=True, moon=True, SRP=True, drag=True
+            J2=True, J3=True, J4=True, C22S22=True, sun=True, moon=True, SRP=True, drag=True, thermonets=False
+        )
+        simple_earth(
+            J2=True, J3=True, J4=True, C22S22=True, sun=True, moon=True, SRP=True, drag=True, thermonets=True
         )
 
     def test_kepler_equivalence(self):
@@ -58,57 +56,92 @@ class dynamics_test_case(_ut.TestCase):
         self.assertEqual(dyn1, dyn2)
 
     def test_perturbation_magnitudes(self):
-        from .dynamics import simple_earth, kepler
+        from .dynamics import simple_earth, kepler, _compute_density_thermonets
         import numpy as np
         from heyoka import cfunc, make_vars
 
         dynkep = simple_earth(
             J2=False,
             J3=False,
+            J4=False,
             C22S22=False,
             sun=False,
             moon=False,
             SRP=False,
             drag=False,
+            thermonets=False
         )
         dynJ2 = simple_earth(
             J2=True,
             J3=False,
+            J4=False,
             C22S22=False,
             sun=False,
             moon=False,
             SRP=False,
             drag=False,
+            thermonets=False
         )
         dynJ3 = simple_earth(
             J2=False,
             J3=True,
+            J4=False,
             C22S22=False,
             sun=False,
             moon=False,
             SRP=False,
             drag=False,
+            thermonets=False
+        )
+        dynJ4 = simple_earth(
+            J2=False,
+            J3=False,
+            J4=True,
+            C22S22=False,
+            sun=False,
+            moon=False,
+            SRP=False,
+            drag=False,
+            thermonets=False
         )
 
         # Dynamical variables.
-        x, y, z, vx, vy, vz = make_vars("x", "y", "z", "vx", "vy", "vz")
+        x, y, z, f107, f107a, ap = make_vars("x", "y", "z", "f107","f107a","ap")
         dynkep_c = cfunc([dynkep[i][1] for i in [3, 4, 5]], vars=[x,y,z])
         dynJ2_c = cfunc([dynJ2[i][1] for i in [3, 4, 5]], vars=[x,y,z])
         dynJ3_c = cfunc([dynJ3[i][1] for i in [3, 4, 5]], vars=[x,y,z])
+        dynJ4_c = cfunc([dynJ4[i][1] for i in [3, 4, 5]], vars=[x,y,z])
 
         # We compute the various acceleration magnitudes at 7000 km
         pos = np.array([7000000.0, 0.0, 0.0])
         acckep = dynkep_c(pos)
         accJ2 = dynJ2_c(pos) - dynkep_c(pos)
         accJ3 = dynJ3_c(pos) - dynkep_c(pos)
+        accJ4 = dynJ4_c(pos) - dynkep_c(pos)
 
         # And check magnitudes
         self.assertTrue(np.linalg.norm(acckep) > 8)
         self.assertTrue(np.linalg.norm(accJ2) > 0.01)
         self.assertTrue(np.linalg.norm(accJ3) > 0.00001)
+        self.assertTrue(np.linalg.norm(accJ4) > 0.00001)
         self.assertTrue(np.linalg.norm(acckep) < 10)
         self.assertTrue(np.linalg.norm(accJ2) < 0.1)
         self.assertTrue(np.linalg.norm(accJ3) < 0.0001)
+        self.assertTrue(np.linalg.norm(accJ4) < 0.0001)
+
+        # Check atmospheric density from ThermoNets
+        # Space weather indices at J2000 (1st January 2000, 12:00:00 TT)
+        f107 = 129.9
+        f107a = 166.2
+        ap = 30
+
+        density_func = _compute_density_thermonets(r=[x,y,z],f107=f107,f107a=f107a,ap=ap)
+        density_c = cfunc([density_func], vars=[x,y,z,f107,f107a,ap])
+        density = density_c([pos[0],pos[1],pos[2],f107,f107a,ap],time=0.)
+
+        # Check magnitude
+        self.assertTrue(density > 5e-14)
+        self.assertTrue(density < 1e-13)
 
 
 class sim_test_case(_ut.TestCase):
