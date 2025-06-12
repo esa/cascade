@@ -12,7 +12,7 @@ wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge
 export deps_dir=$HOME/local
 export PATH="$HOME/miniforge3/bin:$PATH"
 bash miniforge3.sh -b -p $HOME/miniforge3
-mamba env create --file=kep3_devel.yml -q -p $deps_dir
+mamba env create --file=cascade_devel.yml -q -p $deps_dir
 source activate $deps_dir
 
 mkdir build
