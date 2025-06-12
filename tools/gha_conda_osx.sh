@@ -6,16 +6,13 @@ set -x
 # Exit on error.
 set -e
 
-# Core deps.
-sudo apt-get install wget
 
 # Install conda+deps.
-wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O miniforge.sh
+wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh -O miniforge3.sh
 export deps_dir=$HOME/local
-export PATH="$HOME/miniforge/bin:$PATH"
-bash miniforge.sh -b -p $HOME/miniforge
-conda env create -f cascade_devel.yml -q -p $deps_dir
-source activate $deps_dir
+export PATH="$HOME/miniforge3/bin:$PATH"
+bash miniforge3.sh -b -p $HOME/miniforge3
+mamba env create --file=cascade_devel.yml -q -p $deps_dir
 source activate $deps_dir
 
 mkdir build
