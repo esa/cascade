@@ -97,7 +97,7 @@ jobs:
           cd c:\
           python -c "from cascade import test; test.run_test_suite()"
   osx_11:
-    runs-on: macos-11
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - name: Build
