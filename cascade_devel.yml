@@ -11,7 +11,7 @@ dependencies:
   - tbb
   - libboost-devel >=1.86
   - fmt
-  - heyoka
+  - heyoka >=7.4
   - heyoka.py
   - spdlog
   - pybind11 >=2.10
