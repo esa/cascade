@@ -6,11 +6,9 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include <cmath>
 #include <initializer_list>
 #include <iostream>
 #include <limits>
-#include <variant>
 #include <vector>
 
 #include <fmt/format.h>
@@ -18,9 +16,11 @@
 
 #include <boost/math/constants/constants.hpp>
 
-#include <xtensor/xadapt.hpp>
-#include <xtensor/xio.hpp>
-#include <xtensor/xview.hpp>
+#include <xtensor/containers/xarray.hpp>
+#include <xtensor/containers/xadapt.hpp>
+#include <xtensor/views/xview.hpp>
+#include <xtensor/io/xio.hpp>
+
 
 #include <cascade/sim.hpp>
 

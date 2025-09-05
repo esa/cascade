@@ -21,9 +21,9 @@
 #include <boost/math/constants/constants.hpp>
 
 #include <xtensor-blas/xlinalg.hpp>
-#include <xtensor/xadapt.hpp>
-#include <xtensor/xfixed.hpp>
-#include <xtensor/xio.hpp>
+#include <xtensor/containers/xadapt.hpp>
+#include <xtensor/containers/xfixed.hpp>
+#include <xtensor/io/xio.hpp>
 
 #include <heyoka/math/cos.hpp>
 #include <heyoka/math/pow.hpp>

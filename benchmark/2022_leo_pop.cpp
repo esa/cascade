@@ -12,10 +12,7 @@
 #include <fstream>
 #include <initializer_list>
 #include <iostream>
-#include <random>
 #include <string>
-#include <utility>
-#include <variant>
 #include <vector>
 
 #include <oneapi/tbb/global_control.h>
@@ -23,7 +20,7 @@
 #include <boost/math/constants/constants.hpp>
 #include <boost/program_options.hpp>
 
-#include <xtensor/xadapt.hpp>
+#include <xtensor/containers/xadapt.hpp>
 
 #include <heyoka/math/cos.hpp>
 #include <heyoka/math/exp.hpp>

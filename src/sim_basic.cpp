@@ -24,6 +24,7 @@
 #include <variant>
 #include <vector>
 
+#include <exception> // removing this results in an error since boost safe nmerics is not including it?
 #include <boost/safe_numerics/safe_integer.hpp>
 
 #include <fmt/format.h>

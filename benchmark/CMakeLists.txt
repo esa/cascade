@@ -1,6 +1,9 @@
 # Find the xtensor bits.
 find_package(xtensor REQUIRED CONFIG)
 find_package(xtensor-blas REQUIRED CONFIG)
+
+# Set the policy to NEW to use BoostConfig
+cmake_policy(SET CMP0167 NEW)
 find_package(Boost COMPONENTS program_options REQUIRED)
 
 # Find HDF5.

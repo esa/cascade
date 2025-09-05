@@ -29,8 +29,8 @@
 #endif
 
 #ifdef H5_USE_XTENSOR
-#include <xtensor/xarray.hpp>
-#include <xtensor/xtensor.hpp>
+#include <xtensor/containers/xarray.hpp>
+#include <xtensor/containers/xtensor.hpp>
 #endif
 
 // optionally enable Eigen plug-in and load the library

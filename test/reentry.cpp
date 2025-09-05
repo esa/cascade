@@ -9,14 +9,13 @@
 #include <cmath>
 #include <initializer_list>
 #include <stdexcept>
-#include <variant>
 #include <vector>
 
 #include <boost/algorithm/string/predicate.hpp>
 
-#include <xtensor/xadapt.hpp>
-#include <xtensor/xarray.hpp>
-#include <xtensor/xview.hpp>
+#include <xtensor/containers/xarray.hpp>
+#include <xtensor/containers/xadapt.hpp>
+#include <xtensor/views/xview.hpp>
 
 #include <cascade/logging.hpp>
 #include <cascade/sim.hpp>
