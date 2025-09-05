@@ -9,9 +9,6 @@ target_compile_options(cascade_test PRIVATE
   "$<$<CONFIG:MinSizeRel>:${CASCADE_CXX_FLAGS_RELEASE}>"
 )
 
-# Setup the C++ standard.
-target_compile_features(cascade_test PRIVATE cxx_std_20)
-set_property(TARGET cascade_test PROPERTY CXX_EXTENSIONS NO)
 
 function(ADD_CASCADE_TESTCASE arg1)
   add_executable(${arg1} ${arg1}.cpp)
@@ -23,8 +20,6 @@ function(ADD_CASCADE_TESTCASE arg1)
     "$<$<CONFIG:MinSizeRel>:${CASCADE_CXX_FLAGS_RELEASE}>"
   )
   # Setup the C++ standard.
-  target_compile_features(${arg1} PRIVATE cxx_std_20)
-  set_property(TARGET ${arg1} PROPERTY CXX_EXTENSIONS NO)
   add_test(${arg1} ${arg1})
 endfunction()
 

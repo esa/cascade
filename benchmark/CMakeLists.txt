@@ -19,9 +19,6 @@ function(ADD_CASCADE_BENCHMARK arg1)
     "$<$<CONFIG:RelWithDebInfo>:${CASCADE_CXX_FLAGS_RELEASE}>"
     "$<$<CONFIG:MinSizeRel>:${CASCADE_CXX_FLAGS_RELEASE}>"
   )
-  # Setup the C++ standard.
-  target_compile_features(${arg1} PRIVATE cxx_std_20)
-  set_property(TARGET ${arg1} PROPERTY CXX_EXTENSIONS NO)
 endfunction()
 
 # Data files needed by some benchmarks.

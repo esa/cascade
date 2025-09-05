@@ -155,11 +155,6 @@ target_compile_options(cascade PRIVATE
     "$<$<CONFIG:MinSizeRel>:${CASCADE_CXX_FLAGS_RELEASE}>"
 )
 
-# Ensure that C++20 is employed when both compiling and consuming cascade.
-target_compile_features(cascade PUBLIC cxx_std_20)
-# Enforce vanilla C++20 when compiling cascade.
-set_property(TARGET cascade PROPERTY CXX_EXTENSIONS NO)
-
 target_include_directories(cascade PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
